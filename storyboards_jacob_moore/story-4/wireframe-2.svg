@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 375 812" width="375" height="812">
+  <!-- Phone Frame -->
+  <rect x="0" y="0" width="375" height="812" rx="30" ry="30" fill="#FFFFFF" stroke="#333333" stroke-width="2"/>
+
+  <!-- Status Bar -->
+  <text x="30" y="28" font-family="Helvetica, Arial, sans-serif" font-size="14" fill="#333333" font-weight="bold">9:41 AM</text>
+  <text x="310" y="28" font-family="Helvetica, Arial, sans-serif" font-size="14" fill="#333333" font-weight="bold">100%</text>
+  <rect x="340" y="18" width="22" height="12" rx="2" ry="2" fill="none" stroke="#333333" stroke-width="1.5"/>
+  <rect x="362" y="22" width="3" height="4" rx="1" fill="#333333"/>
+  <rect x="342" y="20" width="16" height="8" rx="1" fill="#333333"/>
+
+  <!-- Header Bar -->
+  <rect x="0" y="44" width="375" height="56" fill="#F5F5F5"/>
+  <!-- Back Arrow -->
+  <polyline points="28,72 16,72" fill="none" stroke="#333333" stroke-width="2.5" stroke-linecap="round"/>
+  <polyline points="22,64 14,72 22,80" fill="none" stroke="#333333" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Title -->
+  <text x="187" y="78" font-family="Helvetica, Arial, sans-serif" font-size="18" fill="#333333" font-weight="bold" text-anchor="middle">Plan Your Trip</text>
+
+  <!-- Route Stop List Card -->
+  <rect x="16" y="116" width="343" height="380" rx="12" fill="#FAFAFA" stroke="#E0E0E0" stroke-width="1"/>
+
+  <!-- Vertical connecting line (left side) -->
+  <line x1="48" y1="158" x2="48" y2="440" stroke="#AAAAAA" stroke-width="2" stroke-dasharray="6,4"/>
+
+  <!-- Starting Point: Home -->
+  <circle cx="48" cy="158" r="10" fill="#666666" stroke="#444444" stroke-width="1.5"/>
+  <circle cx="48" cy="158" r="4" fill="#FFFFFF"/>
+  <text x="72" y="153" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#888888">Starting Point</text>
+  <text x="72" y="170" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#333333" font-weight="bold">Home (Current Location)</text>
+
+  <!-- Stop 1: Lincoln Elementary -->
+  <circle cx="48" cy="248" r="14" fill="#FFFFFF" stroke="#555555" stroke-width="2"/>
+  <text x="48" y="253" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#555555" text-anchor="middle" font-weight="bold">1</text>
+  <text x="72" y="240" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#888888">Stop 1 - Drop-off</text>
+  <text x="72" y="258" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#333333" font-weight="bold">Lincoln Elementary</text>
+  <!-- Remove button -->
+  <circle cx="336" cy="248" r="11" fill="#F0F0F0" stroke="#CCCCCC" stroke-width="1"/>
+  <line x1="331" y1="243" x2="341" y2="253" stroke="#999999" stroke-width="2" stroke-linecap="round"/>
+  <line x1="341" y1="243" x2="331" y2="253" stroke="#999999" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- Stop 2: Sunshine Daycare -->
+  <circle cx="48" cy="338" r="14" fill="#FFFFFF" stroke="#555555" stroke-width="2"/>
+  <text x="48" y="343" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#555555" text-anchor="middle" font-weight="bold">2</text>
+  <text x="72" y="330" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#888888">Stop 2 - Drop-off</text>
+  <text x="72" y="348" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#333333" font-weight="bold">Sunshine Daycare</text>
+  <!-- Remove button -->
+  <circle cx="336" cy="338" r="11" fill="#F0F0F0" stroke="#CCCCCC" stroke-width="1"/>
+  <line x1="331" y1="333" x2="341" y2="343" stroke="#999999" stroke-width="2" stroke-linecap="round"/>
+  <line x1="341" y1="333" x2="331" y2="343" stroke="#999999" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- Stop 3: Maria's Office -->
+  <circle cx="48" cy="428" r="14" fill="#FFFFFF" stroke="#555555" stroke-width="2"/>
+  <text x="48" y="433" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#555555" text-anchor="middle" font-weight="bold">3</text>
+  <text x="72" y="418" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#888888">Final Destination</text>
+  <text x="72" y="436" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#333333" font-weight="bold">Maria's Office (Downtown)</text>
+  <!-- Remove button -->
+  <circle cx="336" cy="428" r="11" fill="#F0F0F0" stroke="#CCCCCC" stroke-width="1"/>
+  <line x1="331" y1="423" x2="341" y2="433" stroke="#999999" stroke-width="2" stroke-linecap="round"/>
+  <line x1="341" y1="423" x2="331" y2="433" stroke="#999999" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- Solid circles on the connecting line for visual continuity -->
+  <circle cx="48" cy="200" r="3" fill="#AAAAAA"/>
+  <circle cx="48" cy="290" r="3" fill="#AAAAAA"/>
+  <circle cx="48" cy="380" r="3" fill="#AAAAAA"/>
+
+  <!-- Map Preview -->
+  <rect x="16" y="512" width="343" height="150" rx="12" fill="#E8E8E8" stroke="#CCCCCC" stroke-width="1"/>
+  <text x="187" y="570" font-family="Helvetica, Arial, sans-serif" font-size="14" fill="#999999" text-anchor="middle">Route Map Preview</text>
+  <!-- Route line on map -->
+  <polyline points="60,620 120,560 220,580 320,540" fill="none" stroke="#666666" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Stop markers on map -->
+  <circle cx="60" cy="620" r="6" fill="#888888" stroke="#FFFFFF" stroke-width="1.5"/>
+  <circle cx="120" cy="560" r="6" fill="#666666" stroke="#FFFFFF" stroke-width="1.5"/>
+  <circle cx="220" cy="580" r="6" fill="#666666" stroke="#FFFFFF" stroke-width="1.5"/>
+  <circle cx="320" cy="540" r="6" fill="#444444" stroke="#FFFFFF" stroke-width="1.5"/>
+  <!-- Stop labels on map -->
+  <text x="60" y="640" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#777777" text-anchor="middle">Home</text>
+  <text x="120" y="552" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#777777" text-anchor="middle">Lincoln</text>
+  <text x="220" y="598" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#777777" text-anchor="middle">Sunshine</text>
+  <text x="320" y="532" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#777777" text-anchor="middle">Office</text>
+
+  <!-- Route Summary -->
+  <rect x="16" y="678" width="343" height="44" rx="8" fill="#F0F0F0" stroke="#E0E0E0" stroke-width="1"/>
+  <text x="187" y="705" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#555555" text-anchor="middle" font-weight="500">3 stops  --  ~35 min  --  ~$24</text>
+
+  <!-- Confirm Route Button -->
+  <rect x="24" y="738" width="327" height="52" rx="26" fill="#333333"/>
+  <text x="187" y="770" font-family="Helvetica, Arial, sans-serif" font-size="17" fill="#FFFFFF" text-anchor="middle" font-weight="bold">Confirm Route</text>
+</svg>

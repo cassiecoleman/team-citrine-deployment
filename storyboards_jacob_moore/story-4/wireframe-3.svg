@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 375 812" width="375" height="812">
+  <!-- Phone Frame -->
+  <rect x="0" y="0" width="375" height="812" rx="30" ry="30" fill="#FFFFFF" stroke="#333333" stroke-width="2"/>
+
+  <!-- Status Bar -->
+  <text x="30" y="28" font-family="Helvetica, Arial, sans-serif" font-size="14" fill="#333333" font-weight="bold">9:41 AM</text>
+  <text x="310" y="28" font-family="Helvetica, Arial, sans-serif" font-size="14" fill="#333333" font-weight="bold">100%</text>
+  <rect x="340" y="18" width="22" height="12" rx="2" ry="2" fill="none" stroke="#333333" stroke-width="1.5"/>
+  <rect x="362" y="22" width="3" height="4" rx="1" fill="#333333"/>
+  <rect x="342" y="20" width="16" height="8" rx="1" fill="#333333"/>
+
+  <!-- Header Bar -->
+  <rect x="0" y="44" width="375" height="56" fill="#F5F5F5"/>
+  <text x="187" y="78" font-family="Helvetica, Arial, sans-serif" font-size="18" fill="#333333" font-weight="bold" text-anchor="middle">Trip in Progress</text>
+
+  <!-- Map Area -->
+  <rect x="16" y="116" width="343" height="280" rx="12" fill="#E8E8E8" stroke="#CCCCCC" stroke-width="1"/>
+  <!-- Map grid for texture -->
+  <line x1="60" y1="140" x2="60" y2="370" stroke="#DDDDDD" stroke-width="0.5"/>
+  <line x1="140" y1="140" x2="140" y2="370" stroke="#DDDDDD" stroke-width="0.5"/>
+  <line x1="220" y1="140" x2="220" y2="370" stroke="#DDDDDD" stroke-width="0.5"/>
+  <line x1="300" y1="140" x2="300" y2="370" stroke="#DDDDDD" stroke-width="0.5"/>
+  <line x1="30" y1="180" x2="345" y2="180" stroke="#DDDDDD" stroke-width="0.5"/>
+  <line x1="30" y1="230" x2="345" y2="230" stroke="#DDDDDD" stroke-width="0.5"/>
+  <line x1="30" y1="280" x2="345" y2="280" stroke="#DDDDDD" stroke-width="0.5"/>
+  <line x1="30" y1="330" x2="345" y2="330" stroke="#DDDDDD" stroke-width="0.5"/>
+
+  <!-- Route line on map -->
+  <polyline points="70,320 150,200 250,250 330,170" fill="none" stroke="#666666" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Completed segment highlight -->
+  <polyline points="70,320 150,200" fill="none" stroke="#444444" stroke-width="4" stroke-linecap="round"/>
+
+  <!-- Stop 1 marker (current - approaching) -->
+  <circle cx="150" cy="200" r="12" fill="#444444" stroke="#FFFFFF" stroke-width="2.5"/>
+  <text x="150" y="205" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#FFFFFF" text-anchor="middle" font-weight="bold">1</text>
+
+  <!-- Stop 2 marker -->
+  <circle cx="250" cy="250" r="10" fill="#999999" stroke="#FFFFFF" stroke-width="2"/>
+  <text x="250" y="254" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#FFFFFF" text-anchor="middle" font-weight="bold">2</text>
+
+  <!-- Stop 3 marker -->
+  <circle cx="330" cy="170" r="10" fill="#999999" stroke="#FFFFFF" stroke-width="2"/>
+  <text x="330" y="174" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#FFFFFF" text-anchor="middle" font-weight="bold">3</text>
+
+  <!-- Car/current position icon -->
+  <circle cx="110" cy="260" r="8" fill="#333333" stroke="#FFFFFF" stroke-width="2"/>
+  <polygon points="110,254 115,262 105,262" fill="#FFFFFF"/>
+
+  <!-- Stop labels on map -->
+  <text x="150" y="188" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#555555" text-anchor="middle" font-weight="bold">Lincoln El.</text>
+  <text x="250" y="270" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#777777" text-anchor="middle">Sunshine</text>
+  <text x="330" y="160" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#777777" text-anchor="middle">Office</text>
+
+  <!-- Arrival Banner -->
+  <rect x="16" y="412" width="343" height="56" rx="12" fill="#444444"/>
+  <text x="187" y="445" font-family="Helvetica, Arial, sans-serif" font-size="17" fill="#FFFFFF" text-anchor="middle" font-weight="bold">Arriving at Stop 1 of 3</text>
+
+  <!-- Current Stop Large Text -->
+  <text x="187" y="502" font-family="Helvetica, Arial, sans-serif" font-size="22" fill="#333333" text-anchor="middle" font-weight="bold">Lincoln Elementary</text>
+
+  <!-- Progress Indicator: 3 dots -->
+  <circle cx="152" cy="536" r="10" fill="#444444" stroke="#333333" stroke-width="1.5"/>
+  <line x1="162" y1="536" x2="178" y2="536" stroke="#CCCCCC" stroke-width="2"/>
+  <circle cx="188" cy="536" r="10" fill="none" stroke="#CCCCCC" stroke-width="2"/>
+  <line x1="198" y1="536" x2="214" y2="536" stroke="#CCCCCC" stroke-width="2"/>
+  <circle cx="224" cy="536" r="10" fill="none" stroke="#CCCCCC" stroke-width="2"/>
+
+  <!-- Remaining Stops List -->
+  <rect x="16" y="566" width="343" height="120" rx="12" fill="#F7F7F7" stroke="#E8E8E8" stroke-width="1"/>
+
+  <!-- Next stop -->
+  <text x="36" y="596" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#888888" font-weight="500">NEXT</text>
+  <text x="36" y="616" font-family="Helvetica, Arial, sans-serif" font-size="16" fill="#333333" font-weight="bold">Sunshine Daycare</text>
+  <text x="330" y="608" font-family="Helvetica, Arial, sans-serif" font-size="14" fill="#666666" text-anchor="end">10 min</text>
+
+  <!-- Divider -->
+  <line x1="36" y1="632" x2="339" y2="632" stroke="#E0E0E0" stroke-width="1"/>
+
+  <!-- Then stop -->
+  <text x="36" y="654" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#888888" font-weight="500">THEN</text>
+  <text x="36" y="674" font-family="Helvetica, Arial, sans-serif" font-size="16" fill="#333333" font-weight="bold">Maria's Office</text>
+  <text x="330" y="666" font-family="Helvetica, Arial, sans-serif" font-size="14" fill="#666666" text-anchor="end">20 min</text>
+
+  <!-- Contact Driver Button -->
+  <rect x="24" y="706" width="327" height="52" rx="26" fill="none" stroke="#333333" stroke-width="2"/>
+  <text x="187" y="738" font-family="Helvetica, Arial, sans-serif" font-size="17" fill="#333333" text-anchor="middle" font-weight="bold">Contact Driver</text>
+
+  <!-- Phone icon in button -->
+  <rect x="100" y="722" width="14" height="20" rx="3" fill="none" stroke="#333333" stroke-width="1.5"/>
+  <line x1="104" y1="737" x2="110" y2="737" stroke="#333333" stroke-width="1"/>
+</svg>

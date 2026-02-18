@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 375 812" width="375" height="812">
+  <!-- Phone Frame -->
+  <rect x="0" y="0" width="375" height="812" rx="30" ry="30" fill="#fff" stroke="#333" stroke-width="2"/>
+
+  <!-- Status Bar -->
+  <rect x="0" y="0" width="375" height="44" rx="30" ry="30" fill="#f5f5f5"/>
+  <rect x="0" y="20" width="375" height="24" fill="#f5f5f5"/>
+  <text x="40" y="32" font-family="Arial, sans-serif" font-size="14" fill="#333" font-weight="bold">9:41</text>
+  <!-- Battery Icon -->
+  <rect x="315" y="20" width="24" height="12" rx="2" ry="2" fill="none" stroke="#333" stroke-width="1.5"/>
+  <rect x="339" y="24" width="3" height="5" rx="1" ry="1" fill="#333"/>
+  <rect x="317" y="22" width="18" height="8" rx="1" ry="1" fill="#333"/>
+  <!-- Signal Bars -->
+  <rect x="280" y="27" width="3" height="5" fill="#333"/>
+  <rect x="285" y="25" width="3" height="7" fill="#333"/>
+  <rect x="290" y="22" width="3" height="10" fill="#333"/>
+  <rect x="295" y="19" width="3" height="13" fill="#333"/>
+
+  <!-- Navigation Bar with Back Arrow -->
+  <rect x="0" y="44" width="375" height="56" fill="#fff"/>
+  <line x1="0" y1="100" x2="375" y2="100" stroke="#e0e0e0" stroke-width="1"/>
+  <!-- Back Arrow -->
+  <path d="M28 72 L16 72 L24 64" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M16 72 L24 80" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Title -->
+  <text x="187" y="78" font-family="Arial, sans-serif" font-size="18" fill="#333" font-weight="bold" text-anchor="middle">Schedule a Ride</text>
+
+  <!-- From Field -->
+  <text x="24" y="132" font-family="Arial, sans-serif" font-size="13" fill="#999" font-weight="bold">FROM</text>
+  <rect x="16" y="142" width="343" height="56" rx="12" ry="12" fill="#f5f5f5" stroke="#e0e0e0" stroke-width="1"/>
+  <!-- Home Icon -->
+  <path d="M40 162 L52 152 L64 162 L64 178 L40 178 Z" fill="none" stroke="#333" stroke-width="1.5"/>
+  <rect x="48" y="170" width="8" height="8" fill="none" stroke="#333" stroke-width="1"/>
+  <text x="78" y="175" font-family="Arial, sans-serif" font-size="15" fill="#333">123 Oak Street (Home)</text>
+
+  <!-- To Field -->
+  <text x="24" y="224" font-family="Arial, sans-serif" font-size="13" fill="#999" font-weight="bold">TO</text>
+  <rect x="16" y="234" width="343" height="56" rx="12" ry="12" fill="#f5f5f5" stroke="#e0e0e0" stroke-width="1"/>
+  <!-- School Icon -->
+  <rect x="42" y="256" width="20" height="16" fill="none" stroke="#333" stroke-width="1.5"/>
+  <path d="M38 256 L52 248 L66 256" fill="none" stroke="#333" stroke-width="1.5"/>
+  <rect x="49" y="264" width="6" height="8" fill="none" stroke="#333" stroke-width="1"/>
+  <text x="78" y="268" font-family="Arial, sans-serif" font-size="15" fill="#333">Lincoln Elementary School</text>
+
+  <!-- Divider -->
+  <line x1="16" y1="316" x2="359" y2="316" stroke="#e0e0e0" stroke-width="1"/>
+
+  <!-- Day of Week Selector Label -->
+  <text x="24" y="348" font-family="Arial, sans-serif" font-size="13" fill="#999" font-weight="bold">SELECT DAYS</text>
+
+  <!-- Day circles - all filled (selected) -->
+  <!-- Monday -->
+  <circle cx="55" cy="388" r="24" fill="#333"/>
+  <text x="55" y="394" font-family="Arial, sans-serif" font-size="14" fill="#fff" text-anchor="middle" font-weight="bold">M</text>
+  <!-- Tuesday -->
+  <circle cx="120" cy="388" r="24" fill="#333"/>
+  <text x="120" y="394" font-family="Arial, sans-serif" font-size="14" fill="#fff" text-anchor="middle" font-weight="bold">T</text>
+  <!-- Wednesday -->
+  <circle cx="187" cy="388" r="24" fill="#333"/>
+  <text x="187" y="394" font-family="Arial, sans-serif" font-size="14" fill="#fff" text-anchor="middle" font-weight="bold">W</text>
+  <!-- Thursday -->
+  <circle cx="254" cy="388" r="24" fill="#333"/>
+  <text x="254" y="394" font-family="Arial, sans-serif" font-size="14" fill="#fff" text-anchor="middle" font-weight="bold">T</text>
+  <!-- Friday -->
+  <circle cx="320" cy="388" r="24" fill="#333"/>
+  <text x="320" y="394" font-family="Arial, sans-serif" font-size="14" fill="#fff" text-anchor="middle" font-weight="bold">F</text>
+
+  <!-- Divider -->
+  <line x1="16" y1="436" x2="359" y2="436" stroke="#e0e0e0" stroke-width="1"/>
+
+  <!-- Time Picker -->
+  <text x="24" y="468" font-family="Arial, sans-serif" font-size="13" fill="#999" font-weight="bold">PICKUP TIME</text>
+  <rect x="16" y="480" width="343" height="56" rx="12" ry="12" fill="#f5f5f5" stroke="#e0e0e0" stroke-width="1"/>
+  <!-- Clock Icon -->
+  <circle cx="46" cy="508" r="14" fill="none" stroke="#333" stroke-width="1.5"/>
+  <line x1="46" y1="500" x2="46" y2="508" stroke="#333" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="46" y1="508" x2="54" y2="508" stroke="#333" stroke-width="1.5" stroke-linecap="round"/>
+  <text x="78" y="514" font-family="Arial, sans-serif" font-size="18" fill="#333" font-weight="bold">7:30 AM</text>
+  <!-- Dropdown chevron -->
+  <path d="M330 502 L338 510 L346 502" fill="none" stroke="#999" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Divider -->
+  <line x1="16" y1="560" x2="359" y2="560" stroke="#e0e0e0" stroke-width="1"/>
+
+  <!-- Repeat Weekly Toggle -->
+  <text x="24" y="598" font-family="Arial, sans-serif" font-size="16" fill="#333">Repeat Weekly</text>
+  <!-- Toggle Switch (ON) -->
+  <rect x="290" y="582" width="52" height="30" rx="15" ry="15" fill="#333"/>
+  <circle cx="327" cy="597" r="12" fill="#fff"/>
+
+  <!-- Continue Button -->
+  <rect x="16" y="660" width="343" height="56" rx="28" ry="28" fill="#333"/>
+  <text x="187" y="694" font-family="Arial, sans-serif" font-size="18" fill="#fff" text-anchor="middle" font-weight="bold">Continue</text>
+
+  <!-- Bottom Home Indicator -->
+  <rect x="140" y="790" width="95" height="5" rx="2.5" ry="2.5" fill="#333"/>
+</svg>

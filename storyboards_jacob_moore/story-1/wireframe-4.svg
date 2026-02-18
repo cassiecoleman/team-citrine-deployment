@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 375 812" width="375" height="812">
+  <!-- Phone Frame -->
+  <rect x="0" y="0" width="375" height="812" rx="30" ry="30" fill="#fff" stroke="#333" stroke-width="2"/>
+
+  <!-- Status Bar -->
+  <rect x="0" y="0" width="375" height="44" rx="30" ry="30" fill="#f5f5f5"/>
+  <rect x="0" y="20" width="375" height="24" fill="#f5f5f5"/>
+  <text x="40" y="32" font-family="Arial, sans-serif" font-size="14" fill="#333" font-weight="bold">9:41</text>
+  <!-- Battery Icon -->
+  <rect x="315" y="20" width="24" height="12" rx="2" ry="2" fill="none" stroke="#333" stroke-width="1.5"/>
+  <rect x="339" y="24" width="3" height="5" rx="1" ry="1" fill="#333"/>
+  <rect x="317" y="22" width="18" height="8" rx="1" ry="1" fill="#333"/>
+  <!-- Signal Bars -->
+  <rect x="280" y="27" width="3" height="5" fill="#333"/>
+  <rect x="285" y="25" width="3" height="7" fill="#333"/>
+  <rect x="290" y="22" width="3" height="10" fill="#333"/>
+  <rect x="295" y="19" width="3" height="13" fill="#333"/>
+
+  <!-- Header Area -->
+  <rect x="0" y="44" width="375" height="80" fill="#fff"/>
+  <line x1="0" y1="124" x2="375" y2="124" stroke="#e0e0e0" stroke-width="1"/>
+
+  <!-- Checkmark Circle -->
+  <circle cx="187" cy="74" r="18" fill="#333"/>
+  <path d="M177 74 L184 81 L197 67" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Title -->
+  <text x="187" y="112" font-family="Arial, sans-serif" font-size="20" fill="#333" font-weight="bold" text-anchor="middle">Schedule Confirmed</text>
+
+  <!-- Weekly Calendar Header -->
+  <text x="24" y="160" font-family="Arial, sans-serif" font-size="13" fill="#999" font-weight="bold">THIS WEEK'S RIDES</text>
+
+  <!-- Monday Row -->
+  <rect x="16" y="176" width="343" height="72" rx="12" ry="12" fill="#f5f5f5"/>
+  <text x="36" y="204" font-family="Arial, sans-serif" font-size="14" fill="#999" font-weight="bold">MON</text>
+  <text x="36" y="230" font-family="Arial, sans-serif" font-size="16" fill="#333" font-weight="bold">7:30 AM</text>
+  <!-- Route -->
+  <text x="140" y="204" font-family="Arial, sans-serif" font-size="13" fill="#999">Route</text>
+  <!-- Home icon small -->
+  <rect x="140" y="214" width="10" height="10" fill="none" stroke="#333" stroke-width="1"/>
+  <path d="M138 214 L145 208 L152 214" fill="none" stroke="#333" stroke-width="1"/>
+  <text x="158" y="224" font-family="Arial, sans-serif" font-size="14" fill="#333">Home</text>
+  <text x="200" y="224" font-family="Arial, sans-serif" font-size="14" fill="#999">--&gt;</text>
+  <text x="232" y="224" font-family="Arial, sans-serif" font-size="14" fill="#333">School</text>
+
+  <!-- Tuesday Row -->
+  <rect x="16" y="260" width="343" height="72" rx="12" ry="12" fill="#fff" stroke="#e0e0e0" stroke-width="1"/>
+  <text x="36" y="288" font-family="Arial, sans-serif" font-size="14" fill="#999" font-weight="bold">TUE</text>
+  <text x="36" y="314" font-family="Arial, sans-serif" font-size="16" fill="#333" font-weight="bold">7:30 AM</text>
+  <text x="140" y="288" font-family="Arial, sans-serif" font-size="13" fill="#999">Route</text>
+  <rect x="140" y="298" width="10" height="10" fill="none" stroke="#333" stroke-width="1"/>
+  <path d="M138 298 L145 292 L152 298" fill="none" stroke="#333" stroke-width="1"/>
+  <text x="158" y="308" font-family="Arial, sans-serif" font-size="14" fill="#333">Home</text>
+  <text x="200" y="308" font-family="Arial, sans-serif" font-size="14" fill="#999">--&gt;</text>
+  <text x="232" y="308" font-family="Arial, sans-serif" font-size="14" fill="#333">School</text>
+
+  <!-- Wednesday Row -->
+  <rect x="16" y="344" width="343" height="72" rx="12" ry="12" fill="#f5f5f5"/>
+  <text x="36" y="372" font-family="Arial, sans-serif" font-size="14" fill="#999" font-weight="bold">WED</text>
+  <text x="36" y="398" font-family="Arial, sans-serif" font-size="16" fill="#333" font-weight="bold">7:30 AM</text>
+  <text x="140" y="372" font-family="Arial, sans-serif" font-size="13" fill="#999">Route</text>
+  <rect x="140" y="382" width="10" height="10" fill="none" stroke="#333" stroke-width="1"/>
+  <path d="M138 382 L145 376 L152 382" fill="none" stroke="#333" stroke-width="1"/>
+  <text x="158" y="392" font-family="Arial, sans-serif" font-size="14" fill="#333">Home</text>
+  <text x="200" y="392" font-family="Arial, sans-serif" font-size="14" fill="#999">--&gt;</text>
+  <text x="232" y="392" font-family="Arial, sans-serif" font-size="14" fill="#333">School</text>
+
+  <!-- Thursday Row -->
+  <rect x="16" y="428" width="343" height="72" rx="12" ry="12" fill="#fff" stroke="#e0e0e0" stroke-width="1"/>
+  <text x="36" y="456" font-family="Arial, sans-serif" font-size="14" fill="#999" font-weight="bold">THU</text>
+  <text x="36" y="482" font-family="Arial, sans-serif" font-size="16" fill="#333" font-weight="bold">7:30 AM</text>
+  <text x="140" y="456" font-family="Arial, sans-serif" font-size="13" fill="#999">Route</text>
+  <rect x="140" y="466" width="10" height="10" fill="none" stroke="#333" stroke-width="1"/>
+  <path d="M138 466 L145 460 L152 466" fill="none" stroke="#333" stroke-width="1"/>
+  <text x="158" y="476" font-family="Arial, sans-serif" font-size="14" fill="#333">Home</text>
+  <text x="200" y="476" font-family="Arial, sans-serif" font-size="14" fill="#999">--&gt;</text>
+  <text x="232" y="476" font-family="Arial, sans-serif" font-size="14" fill="#333">School</text>
+
+  <!-- Friday Row -->
+  <rect x="16" y="512" width="343" height="72" rx="12" ry="12" fill="#f5f5f5"/>
+  <text x="36" y="540" font-family="Arial, sans-serif" font-size="14" fill="#999" font-weight="bold">FRI</text>
+  <text x="36" y="566" font-family="Arial, sans-serif" font-size="16" fill="#333" font-weight="bold">7:30 AM</text>
+  <text x="140" y="540" font-family="Arial, sans-serif" font-size="13" fill="#999">Route</text>
+  <rect x="140" y="550" width="10" height="10" fill="none" stroke="#333" stroke-width="1"/>
+  <path d="M138 550 L145 544 L152 550" fill="none" stroke="#333" stroke-width="1"/>
+  <text x="158" y="560" font-family="Arial, sans-serif" font-size="14" fill="#333">Home</text>
+  <text x="200" y="560" font-family="Arial, sans-serif" font-size="14" fill="#999">--&gt;</text>
+  <text x="232" y="560" font-family="Arial, sans-serif" font-size="14" fill="#333">School</text>
+
+  <!-- Notification Note -->
+  <rect x="16" y="604" width="343" height="48" rx="12" ry="12" fill="#f5f5f5" stroke="#e0e0e0" stroke-width="1"/>
+  <!-- Bell icon -->
+  <circle cx="40" cy="624" r="8" fill="none" stroke="#333" stroke-width="1.5"/>
+  <line x1="40" y1="616" x2="40" y2="613" stroke="#333" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M35 630 C35 630 40 635 45 630" fill="none" stroke="#333" stroke-width="1"/>
+  <text x="58" y="630" font-family="Arial, sans-serif" font-size="13" fill="#333">You'll be notified 15 min before each ride</text>
+
+  <!-- Bottom Buttons -->
+  <!-- Edit Schedule Button -->
+  <rect x="16" y="680" width="165" height="52" rx="26" ry="26" fill="#fff" stroke="#333" stroke-width="2"/>
+  <text x="98" y="712" font-family="Arial, sans-serif" font-size="15" fill="#333" text-anchor="middle" font-weight="bold">Edit Schedule</text>
+
+  <!-- Done Button -->
+  <rect x="194" y="680" width="165" height="52" rx="26" ry="26" fill="#333"/>
+  <text x="276" y="712" font-family="Arial, sans-serif" font-size="15" fill="#fff" text-anchor="middle" font-weight="bold">Done</text>
+
+  <!-- Bottom Home Indicator -->
+  <rect x="140" y="790" width="95" height="5" rx="2.5" ry="2.5" fill="#333"/>
+</svg>
