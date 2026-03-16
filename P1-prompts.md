@@ -82,15 +82,13 @@ Use with a regular LLM (ChatGPT, Claude, etc.). One person drives, rotate every 
 > 2. Car-free commuters who depend on rides to get to work daily
 > 3. Budget-conscious riders who want predictable, affordable pricing
 >
-> Generate a feature-complete set of user stories organized under epics. Each story should follow the format: "As a [type of user], I want [goal] so that [benefit]."
+> Generate a feature-complete set of ten user stories organized under epics. Each story should follow the format: "As a [type of user], I want [goal] so that [benefit]."
 >
 > Make sure stories cover: ride booking/scheduling, safety features, pricing/payments, driver management, real-time tracking, notifications, account management, and any other essential features.
->
-> Organize under epics and ensure each story meets INVEST criteria (Independent, Negotiable, Valuable, Estimable, Small, Testable).
 
 **Follow-up prompt:**
 
-> Review these stories against INVEST criteria. Flag any that violate INVEST and suggest improvements. Also check: are we missing any essential features that a ride-sharing app needs to function?
+> Review these stories against INVEST (Independent, Negotiable, Valuable, Estimable, Small, Testable) criteria. Flag any that violate INVEST and suggest improvements. Also check: are we missing any essential features that a ride-sharing app needs to function?
 
 ---
 

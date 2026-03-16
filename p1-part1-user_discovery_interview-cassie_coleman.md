@@ -254,5 +254,3 @@
 **Participant:**
 
 > Glad I could help. If you actually build this and solve even half these problems, I’ll be your first customer.
-
----
