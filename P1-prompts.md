@@ -3,8 +3,8 @@
 ## Agreed-Upon Interview Questions (All 3 Use These)
 
 1. How do you currently get around for daily transportation?
-2. What's the most frustrating part of your current transportation situation?
-3. Have you used ride-sharing apps (Uber/Lyft)? What's been your experience?
+2. You are a regular user of taxis in a large city core (NYC, etc). Think of your common frustrations with the process of using a cab.
+3. You are a regular user of Uber and/or Lyft. What are your common frustrations with the process of using these apps?  
 4. What would make you switch to a new ride-sharing service?
 5. How important is price predictability vs. getting the lowest possible fare?
 6. How do you feel about scheduling rides in advance vs. requesting on-demand?
@@ -12,6 +12,31 @@
 8. How would you feel about being able to favorite/request specific drivers?
 9. What would a "commuter package" (e.g., 20 rides/month for a flat fee) be worth to you?
 10. If this product existed today, what would stop you from using it?
+ 
+
+    (Pre Uber, 2010)You are a person who travels a lot for work. Think of your common frustrations with the process of using a cab. 
+
+    (Pre Uber, 2010)You are a person who travels a lot for pleasure. Think of your common frustrations with the process of using a cab. 
+
+    (Pre Uber, 2010)You are a regular drinker. Think of your common frustrations with the process of using a cab. 
+
+    (Pre Uber, 2010)You are impoverished and do not own a car, you depend on the aid of others to get around your city because it is not walkable and lacks public transport. Think of your common frustrations with the process of using a cab. 
+
+    (Pre Uber, 2010) You are a regular user of Uber and/or Lyft. What are your common frustrations with the process of using these apps?  
+
+In what circumstances do you find yourself hailing a cab as opposed to driving yourself, walking, or using public transportation? 
+
+What are your common frustrations with hailing a cab? 
+
+Do you tip when you are using a cab? Do you think that tips should be built into the price of a cab?  
+
+If you tip, what percentage tip do you think is appropriate for a cab ride? 
+
+Imagine hailing a cab with a mobile app. What features would you want in this mobile app to make the process easier for you as an end user? 
+
+Have you ever had difficulties with drivers not showing up when calling a cab? What safeguards do you think would prevent this? 
+
+Do you ever feel unsafe in a cab? Why or why not? 
 
 ---
 
