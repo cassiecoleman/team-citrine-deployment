@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="375" height="812" viewBox="0 0 375 812">
+  <defs>
+    <clipPath id="screenClip1">
+      <rect x="0" y="0" width="375" height="812" rx="40" ry="40"/>
+    </clipPath>
+  </defs>
+
+  <!-- Phone Frame -->
+  <rect x="0" y="0" width="375" height="812" rx="40" ry="40" fill="#fff" stroke="#333" stroke-width="2"/>
+
+  <g clip-path="url(#screenClip1)">
+
+    <!-- Status Bar -->
+    <rect x="0" y="0" width="375" height="44" fill="#fff"/>
+    <text x="187" y="30" font-family="Arial" font-size="14" font-weight="bold" fill="#333" text-anchor="middle">9:41</text>
+    <!-- Signal bars -->
+    <rect x="20" y="20" width="3" height="6" rx="1" fill="#333"/>
+    <rect x="25" y="17" width="3" height="9" rx="1" fill="#333"/>
+    <rect x="30" y="14" width="3" height="12" rx="1" fill="#333"/>
+    <rect x="35" y="11" width="3" height="15" rx="1" fill="#333"/>
+    <!-- Battery -->
+    <rect x="330" y="17" width="22" height="11" rx="2" fill="none" stroke="#333" stroke-width="1.5"/>
+    <rect x="352" y="20" width="2" height="5" rx="1" fill="#333"/>
+    <rect x="332" y="19" width="16" height="7" rx="1" fill="#333"/>
+
+    <!-- Navigation Bar -->
+    <rect x="0" y="44" width="375" height="56" fill="#fff"/>
+    <line x1="0" y1="100" x2="375" y2="100" stroke="#e0e0e0" stroke-width="1"/>
+    <!-- Hamburger menu -->
+    <line x1="20" y1="64" x2="40" y2="64" stroke="#333" stroke-width="2" stroke-linecap="round"/>
+    <line x1="20" y1="72" x2="40" y2="72" stroke="#333" stroke-width="2" stroke-linecap="round"/>
+    <line x1="20" y1="80" x2="40" y2="80" stroke="#333" stroke-width="2" stroke-linecap="round"/>
+    <!-- Title -->
+    <text x="187" y="78" font-family="Arial" font-size="20" font-weight="bold" fill="#333" text-anchor="middle">Ultra</text>
+    <!-- Bell icon -->
+    <circle cx="348" cy="72" r="8" fill="none" stroke="#333" stroke-width="1.5"/>
+    <path d="M344 68 L348 62 L352 68" fill="none" stroke="#333" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="348" cy="80" r="1.5" fill="#333"/>
+
+    <!-- Map Area -->
+    <rect x="0" y="100" width="375" height="380" fill="#f5f5f5"/>
+    <!-- Grid lines -->
+    <line x1="0" y1="150" x2="375" y2="150" stroke="#e0e0e0" stroke-width="0.5"/>
+    <line x1="0" y1="200" x2="375" y2="200" stroke="#e0e0e0" stroke-width="0.5"/>
+    <line x1="0" y1="250" x2="375" y2="250" stroke="#e0e0e0" stroke-width="0.5"/>
+    <line x1="0" y1="300" x2="375" y2="300" stroke="#e0e0e0" stroke-width="0.5"/>
+    <line x1="0" y1="350" x2="375" y2="350" stroke="#e0e0e0" stroke-width="0.5"/>
+    <line x1="0" y1="400" x2="375" y2="400" stroke="#e0e0e0" stroke-width="0.5"/>
+    <line x1="0" y1="450" x2="375" y2="450" stroke="#e0e0e0" stroke-width="0.5"/>
+    <line x1="75" y1="100" x2="75" y2="480" stroke="#e0e0e0" stroke-width="0.5"/>
+    <line x1="150" y1="100" x2="150" y2="480" stroke="#e0e0e0" stroke-width="0.5"/>
+    <line x1="225" y1="100" x2="225" y2="480" stroke="#e0e0e0" stroke-width="0.5"/>
+    <line x1="300" y1="100" x2="300" y2="480" stroke="#e0e0e0" stroke-width="0.5"/>
+    <!-- Some road lines -->
+    <line x1="50" y1="180" x2="320" y2="180" stroke="#e0e0e0" stroke-width="3"/>
+    <line x1="120" y1="130" x2="120" y2="420" stroke="#e0e0e0" stroke-width="3"/>
+    <line x1="260" y1="140" x2="260" y2="400" stroke="#e0e0e0" stroke-width="3"/>
+    <line x1="50" y1="320" x2="330" y2="320" stroke="#e0e0e0" stroke-width="3"/>
+    <line x1="180" y1="180" x2="180" y2="320" stroke="#e0e0e0" stroke-width="2"/>
+    <!-- Location Pin -->
+    <g transform="translate(187, 260)">
+      <path d="M0,-28 C-10,-28 -18,-20 -18,-12 C-18,0 0,18 0,18 C0,18 18,0 18,-12 C18,-20 10,-28 0,-28 Z" fill="#333"/>
+      <circle cx="0" cy="-12" r="6" fill="#fff"/>
+    </g>
+    <!-- Map label -->
+    <text x="187" y="140" font-family="Arial" font-size="11" fill="#999" text-anchor="middle">MAP VIEW</text>
+
+    <!-- Ride Pass Banner -->
+    <rect x="20" y="490" width="335" height="80" rx="12" fill="#333"/>
+    <text x="36" y="518" font-family="Arial" font-size="11" font-weight="bold" fill="#f5f5f5" letter-spacing="1">NEW</text>
+    <text x="70" y="518" font-family="Arial" font-size="14" font-weight="bold" fill="#fff">Weekly Ride Pass</text>
+    <text x="36" y="540" font-family="Arial" font-size="13" fill="#e0e0e0">Save up to 30% on your commute</text>
+    <!-- Learn More button -->
+    <rect x="250" y="548" width="90" height="30" rx="15" fill="#fff"/>
+    <text x="295" y="568" font-family="Arial" font-size="12" font-weight="bold" fill="#333" text-anchor="middle">Learn More</text>
+
+    <!-- Where to? Search Bar -->
+    <rect x="20" y="586" width="335" height="50" rx="25" fill="#f5f5f5" stroke="#e0e0e0" stroke-width="1"/>
+    <circle cx="48" cy="611" r="8" fill="none" stroke="#999" stroke-width="1.5"/>
+    <line x1="54" y1="617" x2="58" y2="621" stroke="#999" stroke-width="1.5" stroke-linecap="round"/>
+    <text x="68" y="616" font-family="Arial" font-size="16" fill="#999">Where to?</text>
+
+    <!-- Quick Actions -->
+    <rect x="20" y="650" width="160" height="44" rx="10" fill="#f5f5f5"/>
+    <circle cx="42" cy="672" r="8" fill="#e0e0e0"/>
+    <text x="56" y="677" font-family="Arial" font-size="13" fill="#666">Home</text>
+    <rect x="195" y="650" width="160" height="44" rx="10" fill="#f5f5f5"/>
+    <circle cx="217" cy="672" r="8" fill="#e0e0e0"/>
+    <text x="231" y="677" font-family="Arial" font-size="13" fill="#666">Office</text>
+
+    <!-- Bottom Navigation -->
+    <rect x="0" y="730" width="375" height="82" fill="#fff"/>
+    <line x1="0" y1="730" x2="375" y2="730" stroke="#e0e0e0" stroke-width="1"/>
+
+    <!-- Ride Now -->
+    <g transform="translate(47, 748)">
+      <circle cx="0" cy="0" r="10" fill="none" stroke="#999" stroke-width="1.5"/>
+      <path d="M-4,-2 L4,-2 L2,4 L-2,4 Z" fill="#999"/>
+      <text x="0" y="24" font-family="Arial" font-size="10" fill="#999" text-anchor="middle">Ride Now</text>
+    </g>
+
+    <!-- Schedule -->
+    <g transform="translate(140, 748)">
+      <rect x="-9" y="-9" width="18" height="18" rx="2" fill="none" stroke="#999" stroke-width="1.5"/>
+      <line x1="-4" y1="-12" x2="-4" y2="-6" stroke="#999" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="4" y1="-12" x2="4" y2="-6" stroke="#999" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="-9" y1="-3" x2="9" y2="-3" stroke="#999" stroke-width="1"/>
+      <text x="0" y="24" font-family="Arial" font-size="10" fill="#999" text-anchor="middle">Schedule</text>
+    </g>
+
+    <!-- Ride Pass (highlighted) -->
+    <g transform="translate(234, 748)">
+      <rect x="-10" y="-10" width="20" height="14" rx="3" fill="#333"/>
+      <text x="0" y="0" font-family="Arial" font-size="7" fill="#fff" text-anchor="middle" font-weight="bold">PASS</text>
+      <text x="0" y="24" font-family="Arial" font-size="10" fill="#333" text-anchor="middle" font-weight="bold">Ride Pass</text>
+    </g>
+
+    <!-- History -->
+    <g transform="translate(328, 748)">
+      <circle cx="0" cy="0" r="9" fill="none" stroke="#999" stroke-width="1.5"/>
+      <polyline points="-1,-5 -1,1 4,1" fill="none" stroke="#999" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="0" y="24" font-family="Arial" font-size="10" fill="#999" text-anchor="middle">History</text>
+    </g>
+
+  </g>
+</svg>

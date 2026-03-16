@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="375" height="812" viewBox="0 0 375 812" font-family="Arial, Helvetica, sans-serif">
+  <!-- Phone Frame -->
+  <rect x="0" y="0" width="375" height="812" rx="36" ry="36" fill="#fff" stroke="#333" stroke-width="2"/>
+
+  <!-- Status Bar -->
+  <g transform="translate(0,0)">
+    <rect x="0" y="0" width="375" height="44" rx="36" ry="36" fill="#f5f5f5"/>
+    <rect x="0" y="20" width="375" height="24" fill="#f5f5f5"/>
+    <text x="187" y="30" text-anchor="middle" font-size="14" font-weight="bold" fill="#333">9:41</text>
+    <!-- Signal Bars -->
+    <rect x="30" y="20" width="3" height="6" rx="1" fill="#333"/>
+    <rect x="35" y="18" width="3" height="8" rx="1" fill="#333"/>
+    <rect x="40" y="15" width="3" height="11" rx="1" fill="#333"/>
+    <rect x="45" y="12" width="3" height="14" rx="1" fill="#333"/>
+    <!-- Battery -->
+    <rect x="325" y="16" width="22" height="12" rx="2" fill="none" stroke="#333" stroke-width="1.5"/>
+    <rect x="347" y="20" width="2" height="4" rx="1" fill="#333"/>
+    <rect x="327" y="18" width="16" height="8" rx="1" fill="#333"/>
+  </g>
+
+  <!-- Navigation Bar -->
+  <g transform="translate(0,44)">
+    <rect x="0" y="0" width="375" height="56" fill="#fff"/>
+    <line x1="0" y1="56" x2="375" y2="56" stroke="#e0e0e0" stroke-width="1"/>
+    <!-- Hamburger Menu -->
+    <line x1="20" y1="20" x2="40" y2="20" stroke="#333" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="20" y1="28" x2="40" y2="28" stroke="#333" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="20" y1="36" x2="40" y2="36" stroke="#333" stroke-width="2.5" stroke-linecap="round"/>
+    <!-- Title -->
+    <text x="187" y="35" text-anchor="middle" font-size="20" font-weight="bold" fill="#333">Ultra</text>
+    <!-- Bell Icon -->
+    <circle cx="348" cy="24" r="8" fill="none" stroke="#333" stroke-width="2"/>
+    <line x1="348" y1="16" x2="348" y2="12" stroke="#333" stroke-width="2" stroke-linecap="round"/>
+    <circle cx="348" cy="34" r="2" fill="#333"/>
+  </g>
+
+  <!-- Page Header -->
+  <g transform="translate(0,110)">
+    <text x="20" y="28" font-size="13" fill="#666">&lt;</text>
+    <text x="36" y="28" font-size="18" font-weight="bold" fill="#333">Ride Confirmed</text>
+  </g>
+
+  <!-- Map Area -->
+  <g transform="translate(20,155)">
+    <rect x="0" y="0" width="335" height="200" rx="12" fill="#f5f5f5" stroke="#e0e0e0" stroke-width="1"/>
+
+    <!-- Grid lines for map feel -->
+    <line x1="0" y1="50" x2="335" y2="50" stroke="#e0e0e0" stroke-width="0.5"/>
+    <line x1="0" y1="100" x2="335" y2="100" stroke="#e0e0e0" stroke-width="0.5"/>
+    <line x1="0" y1="150" x2="335" y2="150" stroke="#e0e0e0" stroke-width="0.5"/>
+    <line x1="80" y1="0" x2="80" y2="200" stroke="#e0e0e0" stroke-width="0.5"/>
+    <line x1="167" y1="0" x2="167" y2="200" stroke="#e0e0e0" stroke-width="0.5"/>
+    <line x1="254" y1="0" x2="254" y2="200" stroke="#e0e0e0" stroke-width="0.5"/>
+
+    <!-- Route line -->
+    <path d="M60,140 C60,140 80,130 100,110 C120,90 140,80 180,70 C220,60 260,55 290,50" fill="none" stroke="#333" stroke-width="3" stroke-linecap="round" stroke-dasharray="none"/>
+
+    <!-- Pickup pin 1 (Aisha) -->
+    <g transform="translate(60,115)">
+      <path d="M0,0 L-8,-20 A8,8 0 1,1 8,-20 Z" fill="#333"/>
+      <circle cx="0" cy="-20" r="4" fill="#fff"/>
+      <text x="12" y="-10" font-size="10" font-weight="bold" fill="#333">A</text>
+    </g>
+
+    <!-- Pickup pin 2 (Kenji) -->
+    <g transform="translate(100,85)">
+      <path d="M0,0 L-8,-20 A8,8 0 1,1 8,-20 Z" fill="#666"/>
+      <circle cx="0" cy="-20" r="4" fill="#fff"/>
+      <text x="12" y="-10" font-size="10" font-weight="bold" fill="#666">K</text>
+    </g>
+
+    <!-- Destination pin -->
+    <g transform="translate(290,25)">
+      <path d="M0,0 L-8,-20 A8,8 0 1,1 8,-20 Z" fill="#333"/>
+      <text x="0" y="-18" text-anchor="middle" font-size="8" font-weight="bold" fill="#fff">+</text>
+    </g>
+
+    <!-- Map label -->
+    <text x="167" y="190" text-anchor="middle" font-size="10" fill="#999">742 Elm St &gt; Metro General Hospital</text>
+  </g>
+
+  <!-- Rider Card: Aisha -->
+  <g transform="translate(20,374)">
+    <rect x="0" y="0" width="335" height="66" rx="12" fill="#fff" stroke="#e0e0e0" stroke-width="1.5"/>
+    <!-- Avatar -->
+    <circle cx="36" cy="33" r="20" fill="#333"/>
+    <text x="36" y="38" text-anchor="middle" font-size="14" font-weight="bold" fill="#fff">A</text>
+    <!-- Info -->
+    <text x="68" y="24" font-size="14" font-weight="bold" fill="#333">Aisha (you)</text>
+    <text x="68" y="44" font-size="13" fill="#999">742 Elm St</text>
+    <!-- Time -->
+    <text x="298" y="28" text-anchor="end" font-size="14" font-weight="bold" fill="#333">7:45 AM</text>
+    <text x="298" y="46" text-anchor="end" font-size="11" fill="#999">pickup</text>
+  </g>
+
+  <!-- Rider Card: Kenji -->
+  <g transform="translate(20,452)">
+    <rect x="0" y="0" width="335" height="66" rx="12" fill="#fff" stroke="#e0e0e0" stroke-width="1.5"/>
+    <!-- Avatar -->
+    <circle cx="36" cy="33" r="20" fill="#666"/>
+    <text x="36" y="38" text-anchor="middle" font-size="14" font-weight="bold" fill="#fff">K</text>
+    <!-- Info -->
+    <text x="68" y="24" font-size="14" font-weight="bold" fill="#333">Kenji</text>
+    <text x="68" y="44" font-size="13" fill="#999">744 Elm St</text>
+    <!-- Time -->
+    <text x="298" y="28" text-anchor="end" font-size="14" font-weight="bold" fill="#333">7:47 AM</text>
+    <text x="298" y="46" text-anchor="end" font-size="11" fill="#999">pickup</text>
+  </g>
+
+  <!-- Your Fare -->
+  <g transform="translate(20,538)">
+    <rect x="0" y="0" width="335" height="64" rx="12" fill="#f5f5f5" stroke="#e0e0e0" stroke-width="1.5"/>
+    <text x="20" y="28" font-size="14" fill="#666">Your fare</text>
+    <text x="20" y="52" font-size="26" font-weight="bold" fill="#333">$9.50</text>
+    <rect x="210" y="14" width="108" height="36" rx="18" fill="#333"/>
+    <text x="264" y="37" text-anchor="middle" font-size="12" font-weight="bold" fill="#fff">50% saved</text>
+  </g>
+
+  <!-- Driver Info -->
+  <g transform="translate(20,622)">
+    <rect x="0" y="0" width="335" height="66" rx="12" fill="#fff" stroke="#e0e0e0" stroke-width="1.5"/>
+    <!-- Driver avatar -->
+    <circle cx="36" cy="33" r="20" fill="#f5f5f5" stroke="#e0e0e0" stroke-width="1"/>
+    <circle cx="36" cy="27" r="7" fill="#999"/>
+    <path d="M22,47 Q29,37 36,37 Q43,37 50,47" fill="#999"/>
+    <!-- Driver info -->
+    <text x="68" y="24" font-size="14" font-weight="bold" fill="#333">Driver: Marcus R.</text>
+    <text x="68" y="44" font-size="13" fill="#666">Silver Honda Civic</text>
+    <!-- Star rating -->
+    <text x="258" y="26" font-size="14" fill="#333">4.9</text>
+    <polygon points="280,14 283,22 292,22 285,27 288,35 280,30 272,35 275,27 268,22 277,22" fill="#333"/>
+  </g>
+
+  <!-- Track Ride Button -->
+  <g transform="translate(20,710)">
+    <rect x="0" y="0" width="335" height="54" rx="27" fill="#333"/>
+    <text x="167" y="33" text-anchor="middle" font-size="17" font-weight="bold" fill="#fff">Track Ride</text>
+  </g>
+
+  <!-- Bottom Bar Indicator -->
+  <rect x="120" y="790" width="135" height="5" rx="3" fill="#333"/>
+</svg>

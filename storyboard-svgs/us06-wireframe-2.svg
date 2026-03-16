@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="375" height="812" viewBox="0 0 375 812" font-family="Arial, Helvetica, sans-serif">
+  <!-- Phone Frame -->
+  <rect x="0" y="0" width="375" height="812" rx="36" ry="36" fill="#fff" stroke="#333" stroke-width="2"/>
+
+  <!-- Status Bar -->
+  <g transform="translate(0,0)">
+    <rect x="0" y="0" width="375" height="44" rx="36" ry="36" fill="#f5f5f5"/>
+    <rect x="0" y="20" width="375" height="24" fill="#f5f5f5"/>
+    <text x="187" y="30" text-anchor="middle" font-size="14" font-weight="bold" fill="#333">9:41</text>
+    <!-- Signal Bars -->
+    <rect x="30" y="20" width="3" height="6" rx="1" fill="#333"/>
+    <rect x="35" y="18" width="3" height="8" rx="1" fill="#333"/>
+    <rect x="40" y="15" width="3" height="11" rx="1" fill="#333"/>
+    <rect x="45" y="12" width="3" height="14" rx="1" fill="#333"/>
+    <!-- Battery -->
+    <rect x="325" y="16" width="22" height="12" rx="2" fill="none" stroke="#333" stroke-width="1.5"/>
+    <rect x="347" y="20" width="2" height="4" rx="1" fill="#333"/>
+    <rect x="327" y="18" width="16" height="8" rx="1" fill="#333"/>
+  </g>
+
+  <!-- Navigation Bar -->
+  <g transform="translate(0,44)">
+    <rect x="0" y="0" width="375" height="56" fill="#fff"/>
+    <line x1="0" y1="56" x2="375" y2="56" stroke="#e0e0e0" stroke-width="1"/>
+    <!-- Hamburger Menu -->
+    <line x1="20" y1="20" x2="40" y2="20" stroke="#333" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="20" y1="28" x2="40" y2="28" stroke="#333" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="20" y1="36" x2="40" y2="36" stroke="#333" stroke-width="2.5" stroke-linecap="round"/>
+    <!-- Title -->
+    <text x="187" y="35" text-anchor="middle" font-size="20" font-weight="bold" fill="#333">Ultra</text>
+    <!-- Bell Icon -->
+    <circle cx="348" cy="24" r="8" fill="none" stroke="#333" stroke-width="2"/>
+    <line x1="348" y1="16" x2="348" y2="12" stroke="#333" stroke-width="2" stroke-linecap="round"/>
+    <circle cx="348" cy="34" r="2" fill="#333"/>
+  </g>
+
+  <!-- Page Header -->
+  <g transform="translate(0,110)">
+    <text x="20" y="28" font-size="13" fill="#666">&lt;</text>
+    <text x="36" y="28" font-size="18" font-weight="bold" fill="#333">Split Fare</text>
+  </g>
+
+  <!-- Cost Breakdown Card -->
+  <g transform="translate(20,158)">
+    <rect x="0" y="0" width="335" height="120" rx="12" fill="#f5f5f5" stroke="#e0e0e0" stroke-width="1.5"/>
+    <text x="20" y="28" font-size="13" font-weight="bold" fill="#999">COST BREAKDOWN</text>
+
+    <!-- Solo price (crossed out) -->
+    <text x="20" y="56" font-size="16" fill="#999">Solo:</text>
+    <text x="70" y="56" font-size="16" fill="#999" text-decoration="line-through">$19.00</text>
+    <line x1="70" y1="52" x2="130" y2="52" stroke="#999" stroke-width="1.5"/>
+
+    <!-- Split price -->
+    <text x="20" y="88" font-size="16" fill="#333">Split (2 riders):</text>
+    <text x="20" y="110" font-size="24" font-weight="bold" fill="#333">$9.50 each</text>
+
+    <!-- Savings badge -->
+    <rect x="220" y="76" width="96" height="30" rx="15" fill="#333"/>
+    <text x="268" y="96" text-anchor="middle" font-size="12" font-weight="bold" fill="#fff">Save 50%</text>
+  </g>
+
+  <!-- Invite Section Header -->
+  <g transform="translate(20,300)">
+    <text x="0" y="20" font-size="16" font-weight="bold" fill="#333">Invite a Co-Rider</text>
+  </g>
+
+  <!-- Search / Contact Field -->
+  <g transform="translate(20,332)">
+    <rect x="0" y="0" width="335" height="50" rx="12" fill="#f5f5f5" stroke="#e0e0e0" stroke-width="1"/>
+    <!-- Search icon -->
+    <circle cx="28" cy="25" r="9" fill="none" stroke="#999" stroke-width="1.5"/>
+    <line x1="35" y1="32" x2="40" y2="37" stroke="#999" stroke-width="1.5" stroke-linecap="round"/>
+    <text x="48" y="30" font-size="14" fill="#999">Search contacts...</text>
+  </g>
+
+  <!-- Suggested Contacts Label -->
+  <g transform="translate(20,400)">
+    <text x="0" y="14" font-size="12" fill="#999">SUGGESTED</text>
+  </g>
+
+  <!-- Contact: Kenji Tanaka -->
+  <g transform="translate(20,426)">
+    <rect x="0" y="0" width="335" height="72" rx="12" fill="#fff" stroke="#e0e0e0" stroke-width="1.5"/>
+    <!-- Avatar circle -->
+    <circle cx="36" cy="36" r="22" fill="#f5f5f5" stroke="#e0e0e0" stroke-width="1"/>
+    <circle cx="36" cy="30" r="8" fill="#999"/>
+    <path d="M18,52 Q27,40 36,40 Q45,40 54,52" fill="#999"/>
+    <!-- Name and address -->
+    <text x="68" y="30" font-size="15" font-weight="bold" fill="#333">Kenji Tanaka</text>
+    <text x="68" y="50" font-size="13" fill="#999">744 Elm St</text>
+    <!-- Invite button -->
+    <rect x="248" y="18" width="72" height="36" rx="18" fill="#333"/>
+    <text x="284" y="41" text-anchor="middle" font-size="13" font-weight="bold" fill="#fff">Invite</text>
+  </g>
+
+  <!-- Another contact row (dimmed) -->
+  <g transform="translate(20,510)">
+    <rect x="0" y="0" width="335" height="72" rx="12" fill="#fff" stroke="#e0e0e0" stroke-width="1"/>
+    <circle cx="36" cy="36" r="22" fill="#f5f5f5" stroke="#e0e0e0" stroke-width="1"/>
+    <circle cx="36" cy="30" r="8" fill="#e0e0e0"/>
+    <path d="M18,52 Q27,40 36,40 Q45,40 54,52" fill="#e0e0e0"/>
+    <text x="68" y="30" font-size="15" fill="#999">Sarah Chen</text>
+    <text x="68" y="50" font-size="13" fill="#e0e0e0">510 Oak Ave</text>
+    <rect x="248" y="18" width="72" height="36" rx="18" fill="#f5f5f5" stroke="#e0e0e0" stroke-width="1"/>
+    <text x="284" y="41" text-anchor="middle" font-size="13" fill="#999">Invite</text>
+  </g>
+
+  <!-- Timer Note -->
+  <g transform="translate(20,608)">
+    <rect x="0" y="0" width="335" height="44" rx="10" fill="#f5f5f5"/>
+    <!-- Clock icon -->
+    <circle cx="32" cy="22" r="10" fill="none" stroke="#999" stroke-width="1.5"/>
+    <line x1="32" y1="22" x2="32" y2="16" stroke="#999" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="32" y1="22" x2="37" y2="24" stroke="#999" stroke-width="1.5" stroke-linecap="round"/>
+    <text x="52" y="27" font-size="13" fill="#666">Co-rider has 5 min to accept</text>
+  </g>
+
+  <!-- Send Invite Button -->
+  <g transform="translate(20,700)">
+    <rect x="0" y="0" width="335" height="54" rx="27" fill="#333"/>
+    <text x="167" y="33" text-anchor="middle" font-size="17" font-weight="bold" fill="#fff">Send Invite</text>
+  </g>
+
+  <!-- Bottom Bar Indicator -->
+  <rect x="120" y="790" width="135" height="5" rx="3" fill="#333"/>
+</svg>

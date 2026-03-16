@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="375" height="812" viewBox="0 0 375 812">
+  <defs>
+    <clipPath id="screenClip4">
+      <rect x="0" y="0" width="375" height="812" rx="40" ry="40"/>
+    </clipPath>
+  </defs>
+
+  <!-- Phone Frame -->
+  <rect x="0" y="0" width="375" height="812" rx="40" ry="40" fill="#fff" stroke="#333" stroke-width="2"/>
+
+  <g clip-path="url(#screenClip4)">
+
+    <!-- Status Bar -->
+    <rect x="0" y="0" width="375" height="44" fill="#fff"/>
+    <text x="187" y="30" font-family="Arial" font-size="14" font-weight="bold" fill="#333" text-anchor="middle">9:41</text>
+    <!-- Signal bars -->
+    <rect x="20" y="20" width="3" height="6" rx="1" fill="#333"/>
+    <rect x="25" y="17" width="3" height="9" rx="1" fill="#333"/>
+    <rect x="30" y="14" width="3" height="12" rx="1" fill="#333"/>
+    <rect x="35" y="11" width="3" height="15" rx="1" fill="#333"/>
+    <!-- Battery -->
+    <rect x="330" y="17" width="22" height="11" rx="2" fill="none" stroke="#333" stroke-width="1.5"/>
+    <rect x="352" y="20" width="2" height="5" rx="1" fill="#333"/>
+    <rect x="332" y="19" width="16" height="7" rx="1" fill="#333"/>
+
+    <!-- Navigation Bar -->
+    <rect x="0" y="44" width="375" height="56" fill="#fff"/>
+    <line x1="0" y1="100" x2="375" y2="100" stroke="#e0e0e0" stroke-width="1"/>
+    <!-- Hamburger menu -->
+    <line x1="20" y1="64" x2="40" y2="64" stroke="#333" stroke-width="2" stroke-linecap="round"/>
+    <line x1="20" y1="72" x2="40" y2="72" stroke="#333" stroke-width="2" stroke-linecap="round"/>
+    <line x1="20" y1="80" x2="40" y2="80" stroke="#333" stroke-width="2" stroke-linecap="round"/>
+    <!-- Title -->
+    <text x="187" y="78" font-family="Arial" font-size="20" font-weight="bold" fill="#333" text-anchor="middle">Ultra</text>
+    <!-- Bell icon -->
+    <circle cx="348" cy="72" r="8" fill="none" stroke="#333" stroke-width="1.5"/>
+    <path d="M344 68 L348 62 L352 68" fill="none" stroke="#333" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="348" cy="80" r="1.5" fill="#333"/>
+
+    <!-- Success Header Area -->
+    <rect x="0" y="100" width="375" height="180" fill="#f5f5f5"/>
+    <!-- Large Checkmark Circle -->
+    <circle cx="187" cy="170" r="36" fill="#333"/>
+    <polyline points="170,170 182,184 206,158" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    <!-- Pass Active text -->
+    <text x="187" y="236" font-family="Arial" font-size="24" font-weight="bold" fill="#333" text-anchor="middle">Pass Active</text>
+    <text x="187" y="262" font-family="Arial" font-size="14" fill="#666" text-anchor="middle">Your weekly ride pass is ready to use</text>
+
+    <!-- Active Pass Card -->
+    <rect x="20" y="296" width="335" height="210" rx="14" fill="#333"/>
+    <!-- Card top label -->
+    <text x="40" y="328" font-family="Arial" font-size="11" fill="#999" letter-spacing="1">ACTIVE PASS</text>
+    <!-- Decorative dots -->
+    <circle cx="310" cy="320" r="3" fill="#666"/>
+    <circle cx="322" cy="320" r="3" fill="#666"/>
+    <circle cx="334" cy="320" r="3" fill="#666"/>
+
+    <!-- Pass name -->
+    <text x="40" y="362" font-family="Arial" font-size="20" font-weight="bold" fill="#fff">5-Ride Weekly Pass</text>
+    <line x1="40" y1="378" x2="320" y2="378" stroke="#666" stroke-width="0.5"/>
+
+    <!-- Route -->
+    <text x="40" y="404" font-family="Arial" font-size="12" fill="#999">Route</text>
+    <text x="320" y="404" font-family="Arial" font-size="13" fill="#fff" text-anchor="end">Home &#x2192; Office</text>
+
+    <!-- Price -->
+    <text x="40" y="432" font-family="Arial" font-size="12" fill="#999">Price</text>
+    <text x="320" y="432" font-family="Arial" font-size="13" font-weight="bold" fill="#fff" text-anchor="end">$75/week</text>
+
+    <!-- Next ride -->
+    <text x="40" y="460" font-family="Arial" font-size="12" fill="#999">Next ride</text>
+    <text x="320" y="460" font-family="Arial" font-size="13" fill="#fff" text-anchor="end">Mon 8:00 AM</text>
+
+    <!-- Rides remaining -->
+    <text x="40" y="488" font-family="Arial" font-size="12" fill="#999">Rides left this week</text>
+    <!-- Ride dots -->
+    <circle cx="260" cy="484" r="6" fill="#fff"/>
+    <circle cx="276" cy="484" r="6" fill="#fff"/>
+    <circle cx="292" cy="484" r="6" fill="#fff"/>
+    <circle cx="308" cy="484" r="6" fill="#fff"/>
+    <circle cx="324" cy="484" r="6" fill="#fff"/>
+
+    <!-- Savings Tracker -->
+    <rect x="20" y="526" width="335" height="120" rx="14" fill="#fff" stroke="#e0e0e0" stroke-width="1.5"/>
+    <text x="40" y="556" font-family="Arial" font-size="13" font-weight="bold" fill="#333">Savings Tracker</text>
+    <text x="320" y="556" font-family="Arial" font-size="12" fill="#999" text-anchor="end">This month</text>
+
+    <!-- Amount saved -->
+    <text x="40" y="586" font-family="Arial" font-size="22" font-weight="bold" fill="#333">$0 saved</text>
+    <text x="210" y="586" font-family="Arial" font-size="13" fill="#999">of ~$100 potential</text>
+
+    <!-- Progress bar background -->
+    <rect x="40" y="602" width="295" height="10" rx="5" fill="#f5f5f5"/>
+    <!-- Progress bar fill (empty at start) -->
+    <rect x="40" y="602" width="8" height="10" rx="5" fill="#333"/>
+    <!-- Labels -->
+    <text x="40" y="628" font-family="Arial" font-size="10" fill="#999">$0</text>
+    <text x="335" y="628" font-family="Arial" font-size="10" fill="#999" text-anchor="end">$100</text>
+
+    <!-- Action Buttons -->
+    <!-- View Schedule button (outline) -->
+    <rect x="20" y="666" width="160" height="50" rx="25" fill="#fff" stroke="#333" stroke-width="1.5"/>
+    <text x="100" y="696" font-family="Arial" font-size="14" font-weight="bold" fill="#333" text-anchor="middle">View Schedule</text>
+
+    <!-- Done button (filled) -->
+    <rect x="195" y="666" width="160" height="50" rx="25" fill="#333"/>
+    <text x="275" y="696" font-family="Arial" font-size="14" font-weight="bold" fill="#fff" text-anchor="middle">Done</text>
+
+    <!-- Bottom Navigation -->
+    <rect x="0" y="730" width="375" height="82" fill="#fff"/>
+    <line x1="0" y1="730" x2="375" y2="730" stroke="#e0e0e0" stroke-width="1"/>
+
+    <!-- Ride Now -->
+    <g transform="translate(47, 748)">
+      <circle cx="0" cy="0" r="10" fill="none" stroke="#999" stroke-width="1.5"/>
+      <path d="M-4,-2 L4,-2 L2,4 L-2,4 Z" fill="#999"/>
+      <text x="0" y="24" font-family="Arial" font-size="10" fill="#999" text-anchor="middle">Ride Now</text>
+    </g>
+
+    <!-- Schedule -->
+    <g transform="translate(140, 748)">
+      <rect x="-9" y="-9" width="18" height="18" rx="2" fill="none" stroke="#999" stroke-width="1.5"/>
+      <line x1="-4" y1="-12" x2="-4" y2="-6" stroke="#999" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="4" y1="-12" x2="4" y2="-6" stroke="#999" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="-9" y1="-3" x2="9" y2="-3" stroke="#999" stroke-width="1"/>
+      <text x="0" y="24" font-family="Arial" font-size="10" fill="#999" text-anchor="middle">Schedule</text>
+    </g>
+
+    <!-- Ride Pass (highlighted) -->
+    <g transform="translate(234, 748)">
+      <rect x="-10" y="-10" width="20" height="14" rx="3" fill="#333"/>
+      <text x="0" y="0" font-family="Arial" font-size="7" fill="#fff" text-anchor="middle" font-weight="bold">PASS</text>
+      <text x="0" y="24" font-family="Arial" font-size="10" fill="#333" text-anchor="middle" font-weight="bold">Ride Pass</text>
+    </g>
+
+    <!-- History -->
+    <g transform="translate(328, 748)">
+      <circle cx="0" cy="0" r="9" fill="none" stroke="#999" stroke-width="1.5"/>
+      <polyline points="-1,-5 -1,1 4,1" fill="none" stroke="#999" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="0" y="24" font-family="Arial" font-size="10" fill="#999" text-anchor="middle">History</text>
+    </g>
+
+  </g>
+</svg>
