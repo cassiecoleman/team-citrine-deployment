@@ -1,81 +1,69 @@
 "use client";
 
-import { useMemo, useState } from "react";
-
-interface RideRow {
-  id: string;
-  rider: string;
-  driver: string;
-  status: string;
-  eta: string;
-}
-
-const rides: RideRow[] = [
-  { id: "T-9201", rider: "June Park", driver: "Maria Lopez", status: "En Route", eta: "7m" },
-  { id: "T-9205", rider: "Carlos Vega", driver: "Preeti Sharma", status: "In Progress", eta: "12m" },
-];
+import { useEffect, useMemo, useState } from "react";
+import AdminPageShell from "@/features/admin-dashboard/components/AdminPageShell";
+import AdminFilterBar from "@/features/admin-dashboard/components/AdminFilterBar";
+import AdminDataTable from "@/features/admin-dashboard/components/AdminDataTable";
+import { fetchRides } from "@/features/admin-dashboard/actions";
+import type { AdminRide } from "@/features/admin-dashboard/types";
 
 export default function AdminRides() {
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("All");
+  const [status, setStatus] = useState("All");
+  const [rides, setRides] = useState<AdminRide[]>([]);
 
-  const filtered = useMemo(() => {
+  useEffect(() => {
+    void fetchRides().then(setRides);
+  }, []);
+
+  const visibleRides = useMemo(() => {
+    const searchLower = search.toLowerCase();
     return rides.filter((ride) => {
-      const matchesSearch = [ride.id, ride.rider, ride.driver].some((value) => value.toLowerCase().includes(search.toLowerCase()));
-      const matchesStatus = statusFilter === "All" || ride.status === statusFilter;
+      const matchesSearch =
+        ride.rideId.toLowerCase().includes(searchLower) ||
+        ride.riderName.toLowerCase().includes(searchLower) ||
+        ride.driverName.toLowerCase().includes(searchLower);
+      const matchesStatus = status === "All" || ride.status === status;
       return matchesSearch && matchesStatus;
     });
-  }, [search, statusFilter]);
+  }, [rides, search, status]);
+
+  const rows = visibleRides.map((ride) => ({
+    rideId: ride.rideId,
+    rider: ride.riderName,
+    driver: ride.driverName,
+    origin: ride.origin,
+    status: ride.status,
+  }));
 
   return (
-    <div>
-      <h1>Active In-Progress Rides</h1>
-      <p>US23: visualize active rides and dispatch status in real time.</p>
-
-      <div style={{ display: "flex", gap: "0.75rem", marginBottom: "1rem" }}>
-        <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search by ride ID, rider, or driver"
-          style={{ flex: 1, padding: "0.5rem" }}
-        />
-        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} style={{ padding: "0.5rem" }}>
-          <option>All</option>
-          <option>En Route</option>
-          <option>In Progress</option>
-          <option>Assigned</option>
-        </select>
-      </div>
-
-      <table style={{ width: "100%", borderCollapse: "collapse", background: "#ffffff" }}>
-        <thead>
-          <tr style={{ textAlign: "left", borderBottom: "1px solid #ddd" }}>
-            <th style={{ padding: "0.75rem" }}>Ride ID</th>
-            <th style={{ padding: "0.75rem" }}>Rider</th>
-            <th style={{ padding: "0.75rem" }}>Driver</th>
-            <th style={{ padding: "0.75rem" }}>Status</th>
-            <th style={{ padding: "0.75rem" }}>ETA</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filtered.map((ride) => (
-            <tr key={ride.id} style={{ borderBottom: "1px solid #f0f0f0" }}>
-              <td style={{ padding: "0.75rem" }}>{ride.id}</td>
-              <td style={{ padding: "0.75rem" }}>{ride.rider}</td>
-              <td style={{ padding: "0.75rem" }}>{ride.driver}</td>
-              <td style={{ padding: "0.75rem" }}>{ride.status}</td>
-              <td style={{ padding: "0.75rem" }}>{ride.eta}</td>
-            </tr>
-          ))}
-          {filtered.length === 0 && (
-            <tr>
-              <td colSpan={5} style={{ padding: "1rem", textAlign: "center" }}>
-                No results match your filters.
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
-    </div>
+    <AdminPageShell title="Active Rides" description="US23: track ongoing rides in real-time">
+      <AdminFilterBar
+        search={search}
+        onSearch={setSearch}
+        filter={{
+          label: "Ride Status",
+          value: status,
+          options: [
+            { value: "All", label: "All" },
+            { value: "In Progress", label: "In Progress" },
+            { value: "Picked Up", label: "Picked Up" },
+            { value: "Dropped Off", label: "Dropped Off" },
+          ],
+          onChange: setStatus,
+        }}
+      />
+      <AdminDataTable
+        columns={[
+          { header: "Ride ID", accessor: "rideId" },
+          { header: "Rider", accessor: "rider" },
+          { header: "Driver", accessor: "driver" },
+          { header: "Origin", accessor: "origin" },
+          { header: "Status", accessor: "status" },
+        ]}
+        data={rows}
+        noDataMessage="No active rides match your filters."
+      />
+    </AdminPageShell>
   );
 }
