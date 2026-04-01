@@ -113,6 +113,10 @@ https://claude.ai/share/61465c46-f1ff-462f-a53d-f3dcbb983437
 **I want** to see a waiting screen after requesting a ride that shows my request is being processed,
 **so that** I know the system is actively searching for an available driver.
 
+**Acceptance notes**
+- Show a distinct "matching/searching" state immediately after request submission and keep it visible until a driver accepts or the request can no longer be fulfilled.
+- Include the pickup and destination summary on the waiting screen so the rider can confirm the active request.
+
 ---
 
 ### US14 — See My Driver En Route After Acceptance
@@ -127,6 +131,10 @@ https://claude.ai/share/61465c46-f1ff-462f-a53d-f3dcbb983437
 **I want** to see a clear notification when my driver has arrived at the pickup location,
 **so that** I can head outside promptly and not keep the driver waiting.
 
+**Acceptance notes**
+- Indicate arrival using both prominent on-screen status text and the driver's vehicle details.
+- Keep the rider on the same trip-status flow rather than sending them to a separate page.
+
 ---
 
 ### US16 — Track My Ride In Progress
@@ -140,8 +148,12 @@ https://claude.ai/share/61465c46-f1ff-462f-a53d-f3dcbb983437
 
 ### US17 — View Ride Summary, Tip Driver, and Rate Ride
 **As a** rider,
-**I want** to see a ride completion screen showing the final fare amount with options to tip my driver and leave a rating,
+**I want** to see an immediate post-ride completion screen showing the final fare amount with options to tip my driver and leave a rating,
 **so that** I can review the cost and provide feedback on my experience.
+
+**Acceptance notes**
+- This screen is the first screen shown immediately after trip completion.
+- A separate receipt view may store the finalized read-only trip record for later lookup, support, or reimbursement.
 
 ---
 
@@ -151,6 +163,10 @@ https://claude.ai/share/61465c46-f1ff-462f-a53d-f3dcbb983437
 **As a** driver,
 **I want** to receive a trip assignment card showing the offered fare, estimated trip time, and mileage,
 **so that** I can make an informed decision to accept or reject the ride.
+
+**Acceptance notes**
+- The offer card must include the offered fare, estimated time to complete the trip, and estimated mileage before the driver chooses.
+- The driver must be able to explicitly accept or reject from the same assignment view.
 
 ---
 
@@ -202,6 +218,10 @@ https://claude.ai/share/61465c46-f1ff-462f-a53d-f3dcbb983437
 **As an** admin,
 **I want** to filter by column values and search across all dashboard tables,
 **so that** I can quickly find specific drivers, requests, or rides.
+
+**Acceptance notes**
+- Search and filter controls should exist on each admin table page rather than on a separate route.
+- Filtering should narrow the current table by relevant column values, and search should match key identifiers such as driver name, rider name, ride ID, or status where applicable.
 
 ---
 
