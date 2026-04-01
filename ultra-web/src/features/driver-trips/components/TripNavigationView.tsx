@@ -1,0 +1,87 @@
+import Link from "next/link";
+import { Check, MapPinned } from "lucide-react";
+import { formatCurrency } from "@/lib/utils";
+import type { ActiveDriverTrip } from "../types";
+
+export function TripNavigationView({
+  trip,
+}: {
+  trip: ActiveDriverTrip;
+}) {
+  return (
+    <div className="flex flex-col gap-4 p-4">
+      <section className="rounded-xl border border-border bg-primary-light p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-xs uppercase tracking-[0.2em] text-primary">
+              En route to rider
+            </p>
+            <h2 className="mt-1 text-xl font-semibold">{trip.routeProgressLabel}</h2>
+            <p className="mt-1 text-sm text-muted">
+              {trip.pickupEtaMin} min to pickup for {trip.riderName}
+            </p>
+          </div>
+          <span className="rounded-full bg-card px-3 py-1 text-xs font-semibold text-primary">
+            {formatCurrency(trip.offeredFare)}
+          </span>
+        </div>
+
+        <div className="mt-4 flex h-48 items-center justify-center rounded-xl border border-border bg-card">
+          <div className="text-center text-sm text-muted">
+            <MapPinned aria-hidden="true" className="mx-auto h-8 w-8 text-primary" />
+            <p className="mt-2 font-medium text-foreground">Turn-by-turn map preview</p>
+            <p className="text-xs">
+              {trip.pickupLabel} to {trip.dropoffLabel}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section className="rounded-xl border border-border bg-card p-4">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-semibold">{trip.riderName}</p>
+            <p className="text-xs text-muted">
+              Rider rating {trip.riderRating} • {trip.mileageMi} mi total
+            </p>
+          </div>
+          <span className="rounded-full bg-success-light px-3 py-1 text-xs font-semibold text-success">
+            Pickup pin ready
+          </span>
+        </div>
+
+        <div className="mt-4 grid gap-3">
+          <div className="rounded-xl border border-border px-4 py-3">
+            <p className="text-xs text-muted">Pickup</p>
+            <p className="mt-1 text-sm font-semibold">{trip.pickupLabel}</p>
+            <p className="text-xs text-muted">{trip.pickupAddress}</p>
+          </div>
+          <div className="rounded-xl border border-border px-4 py-3">
+            <p className="text-xs text-muted">Dropoff</p>
+            <p className="mt-1 text-sm font-semibold">{trip.dropoffLabel}</p>
+            <p className="text-xs text-muted">{trip.dropoffAddress}</p>
+          </div>
+        </div>
+      </section>
+
+      <section className="rounded-xl border border-border bg-card p-4">
+        <p className="text-xs uppercase tracking-[0.2em] text-muted">Before arrival</p>
+        <ul className="mt-3 space-y-2 text-sm text-foreground">
+          {trip.vehicleChecklist.map((item) => (
+            <li key={item} className="flex items-start gap-2">
+              <Check aria-hidden="true" className="mt-0.5 h-4 w-4 text-success" />
+              <span>{item}</span>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <Link
+        href={`/trip/${trip.id}/pickup`}
+        className="rounded-xl bg-primary py-3 text-center text-sm font-semibold text-white"
+      >
+        Arrived at Pickup
+      </Link>
+    </div>
+  );
+}
