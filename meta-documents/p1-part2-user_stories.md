@@ -90,4 +90,139 @@ https://claude.ai/share/61465c46-f1ff-462f-a53d-f3dcbb983437
 
 ---
 
-*Document version: 1.0 | Project: Ultra Ride-Sharing App*
+## Epic 1: Ride Booking & Scheduling (continued)
+
+### US11 — Enter a Destination and Preview on Map
+**As a** rider,
+**I want** to enter a destination address and see the requested location on a map,
+**so that** I can visually confirm where I'm heading before requesting a ride.
+
+---
+
+### US12 — Request an Immediate Ride
+**As a** rider,
+**I want** to request a ride immediately after confirming my destination,
+**so that** I can get picked up as soon as possible without needing to schedule in advance.
+
+---
+
+## Epic 5: Real-Time Tracking (continued)
+
+### US13 — View a Waiting Screen While a Driver Is Matched
+**As a** rider,
+**I want** to see a waiting screen after requesting a ride that shows my request is being processed,
+**so that** I know the system is actively searching for an available driver.
+
+**Acceptance notes**
+- Show a distinct "matching/searching" state immediately after request submission and keep it visible until a driver accepts or the request can no longer be fulfilled.
+- Include the pickup and destination summary on the waiting screen so the rider can confirm the active request.
+
+---
+
+### US14 — See My Driver En Route After Acceptance
+**As a** rider,
+**I want** to see a screen showing my assigned driver's real-time location on a map once they accept my ride,
+**so that** I know they're on their way and can estimate when they'll arrive.
+
+---
+
+### US15 — See That My Driver Has Arrived
+**As a** rider,
+**I want** to see a clear notification when my driver has arrived at the pickup location,
+**so that** I can head outside promptly and not keep the driver waiting.
+
+**Acceptance notes**
+- Indicate arrival using both prominent on-screen status text and the driver's vehicle details.
+- Keep the rider on the same trip-status flow rather than sending them to a separate page.
+
+---
+
+### US16 — Track My Ride In Progress
+**As a** rider,
+**I want** to see a live map tracking my ride while in the vehicle, showing the route and ETA to my destination,
+**so that** I can follow along and know when I'm about to arrive.
+
+---
+
+## Epic 8: Ride Completion
+
+### US17 — View Ride Summary, Tip Driver, and Rate Ride
+**As a** rider,
+**I want** to see an immediate post-ride completion screen showing the final fare amount with options to tip my driver and leave a rating,
+**so that** I can review the cost and provide feedback on my experience.
+
+**Acceptance notes**
+- This screen is the first screen shown immediately after trip completion.
+- A separate receipt view may store the finalized read-only trip record for later lookup, support, or reimbursement.
+
+---
+
+## Epic 9: Driver Trip Operations
+
+### US18 — Review and Accept or Reject a Trip Assignment
+**As a** driver,
+**I want** to receive a trip assignment card showing the offered fare, estimated trip time, and mileage,
+**so that** I can make an informed decision to accept or reject the ride.
+
+**Acceptance notes**
+- The offer card must include the offered fare, estimated time to complete the trip, and estimated mileage before the driver chooses.
+- The driver must be able to explicitly accept or reject from the same assignment view.
+
+---
+
+### US19 — Navigate to Passenger After Accepting a Ride
+**As a** driver,
+**I want** to see a map with directions to the passenger's pickup location after accepting a ride,
+**so that** I can reach them efficiently.
+
+---
+
+### US20 — Confirm Passenger Pickup
+**As a** driver,
+**I want** to see the passenger's name and a confirmation button when I arrive at the pickup pin,
+**so that** I can verify the correct rider has entered my vehicle before starting the trip.
+
+---
+
+## Epic 10: Admin Operations Dashboard
+
+### US21 — View All Drivers in the System
+**As an** admin,
+**I want** to see a table of all drivers employed in the system,
+**so that** I can monitor and manage the driver fleet.
+
+---
+
+### US22 — View Active Unfilled Ride Requests
+**As an** admin,
+**I want** to see a table of all current ride requests that have not been matched to a driver,
+**so that** I can monitor demand and identify coverage gaps.
+
+---
+
+### US23 — View Active In-Progress Rides
+**As an** admin,
+**I want** to see a table of all rides currently in progress,
+**so that** I can monitor real-time operations.
+
+---
+
+### US24 — View Completed Rides
+**As an** admin,
+**I want** to see a table of all completed rides,
+**so that** I can review historical ride data and identify trends.
+
+---
+
+### US25 — Filter and Search Admin Tables
+**As an** admin,
+**I want** to filter by column values and search across all dashboard tables,
+**so that** I can quickly find specific drivers, requests, or rides.
+
+**Acceptance notes**
+- Search and filter controls should exist on each admin table page rather than on a separate route.
+- Filtering should narrow the current table by relevant column values, and search should match key identifiers such as driver name, rider name, ride ID, or status where applicable.
+
+---
+
+*Document version: 2.0 | Project: Ultra Ride-Sharing App*
