@@ -1,81 +1,68 @@
 "use client";
 
-import { useMemo, useState } from "react";
-
-interface RequestRow {
-  id: string;
-  pickup: string;
-  dropoff: string;
-  requestedAt: string;
-  zone: string;
-}
-
-const requests: RequestRow[] = [
-  { id: "R-4401", pickup: "1401 Taylor St", dropoff: "Ward High", requestedAt: "08:03", zone: "West" },
-  { id: "R-4410", pickup: "2000 Lake Ave", dropoff: "Downtown Plaza", requestedAt: "08:08", zone: "Central" },
-];
+import { useEffect, useMemo, useState } from "react";
+import AdminPageShell from "@/features/admin-dashboard/components/AdminPageShell";
+import AdminFilterBar from "@/features/admin-dashboard/components/AdminFilterBar";
+import AdminDataTable from "@/features/admin-dashboard/components/AdminDataTable";
+import { fetchRequests } from "@/features/admin-dashboard/actions";
+import type { AdminRequest } from "@/features/admin-dashboard/types";
 
 export default function AdminRequests() {
   const [search, setSearch] = useState("");
-  const [zoneFilter, setZoneFilter] = useState("All");
+  const [status, setStatus] = useState("All");
+  const [requests, setRequests] = useState<AdminRequest[]>([]);
 
-  const filtered = useMemo(() => {
-    return requests.filter((req) => {
-      const matchesSearch = [req.id, req.pickup, req.dropoff].some((value) => value.toLowerCase().includes(search.toLowerCase()));
-      const matchesZone = zoneFilter === "All" || req.zone === zoneFilter;
-      return matchesSearch && matchesZone;
+  useEffect(() => {
+    void fetchRequests().then(setRequests);
+  }, []);
+
+  const visibleRequests = useMemo(() => {
+    const searchLower = search.toLowerCase();
+    return requests.filter((request) => {
+      const matchesSearch =
+        request.requestId.toLowerCase().includes(searchLower) ||
+        request.partnerName.toLowerCase().includes(searchLower);
+      const matchesStatus = status === "All" || request.status === status;
+      return matchesSearch && matchesStatus;
     });
-  }, [search, zoneFilter]);
+  }, [requests, search, status]);
+
+  const rows = visibleRequests.map((request) => ({
+    requestId: request.requestId,
+    rider: request.riderName,
+    partner: request.partnerName,
+    destination: request.destination,
+    status: request.status,
+  }));
 
   return (
-    <div>
-      <h1>Active Unfilled Requests</h1>
-      <p>US22: track pending rides that need driver assignment.</p>
-
-      <div style={{ display: "flex", gap: "0.75rem", marginBottom: "1rem" }}>
-        <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search by request ID, pickup, or dropoff"
-          style={{ flex: 1, padding: "0.5rem" }}
-        />
-        <select value={zoneFilter} onChange={(e) => setZoneFilter(e.target.value)} style={{ padding: "0.5rem" }}>
-          <option>All</option>
-          <option>West</option>
-          <option>Central</option>
-          <option>East</option>
-        </select>
-      </div>
-
-      <table style={{ width: "100%", borderCollapse: "collapse", background: "#ffffff" }}>
-        <thead>
-          <tr style={{ textAlign: "left", borderBottom: "1px solid #ddd" }}>
-            <th style={{ padding: "0.75rem" }}>Request ID</th>
-            <th style={{ padding: "0.75rem" }}>Pickup</th>
-            <th style={{ padding: "0.75rem" }}>Dropoff</th>
-            <th style={{ padding: "0.75rem" }}>Requested At</th>
-            <th style={{ padding: "0.75rem" }}>Zone</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filtered.map((req) => (
-            <tr key={req.id} style={{ borderBottom: "1px solid #f0f0f0" }}>
-              <td style={{ padding: "0.75rem" }}>{req.id}</td>
-              <td style={{ padding: "0.75rem" }}>{req.pickup}</td>
-              <td style={{ padding: "0.75rem" }}>{req.dropoff}</td>
-              <td style={{ padding: "0.75rem" }}>{req.requestedAt}</td>
-              <td style={{ padding: "0.75rem" }}>{req.zone}</td>
-            </tr>
-          ))}
-          {filtered.length === 0 && (
-            <tr>
-              <td colSpan={5} style={{ padding: "1rem", textAlign: "center" }}>
-                No results match your filters.
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
-    </div>
+    <AdminPageShell title="Pending Ride Requests" description="US22: oversee pending ride requests and assign the right driver.">
+      <AdminFilterBar
+        search={search}
+        onSearch={setSearch}
+        filter={{
+          label: "Request Status",
+          value: status,
+          options: [
+            { value: "All", label: "All" },
+            { value: "Pending", label: "Pending" },
+            { value: "Accepted", label: "Accepted" },
+            { value: "Cancelled", label: "Cancelled" },
+          ],
+          onChange: setStatus,
+        }}
+      />
+      <AdminDataTable
+        columns={[
+          { header: "Request ID", accessor: "requestId" },
+          { header: "Rider", accessor: "rider" },
+          { header: "Partner", accessor: "partner" },
+          { header: "Destination", accessor: "destination" },
+          { header: "Status", accessor: "status" },
+        ]}
+        data={rows}
+        noDataMessage="No pending requests match your search and filters."
+      />
+    </AdminPageShell>
   );
 }
