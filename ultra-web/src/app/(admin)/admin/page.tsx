@@ -2,10 +2,10 @@ import Link from "next/link";
 import AdminPageShell from "@/features/admin-dashboard/components/AdminPageShell";
 
 const summaryCards = [
-  { label: "Drivers", value: "312", href: "/drivers" },
-  { label: "Unfilled Requests", value: "47", href: "/requests" },
-  { label: "Active Rides", value: "23", href: "/rides" },
-  { label: "Completed Rides", value: "14,891", href: "/completed" },
+  { label: "Drivers", value: "312", href: "/admin/drivers" },
+  { label: "Unfilled Requests", value: "47", href: "/admin/requests" },
+  { label: "Active Rides", value: "23", href: "/admin/rides" },
+  { label: "Completed Rides", value: "14,891", href: "/admin/completed" },
 ];
 
 export default function AdminHome() {

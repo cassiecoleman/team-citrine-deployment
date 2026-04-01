@@ -11,18 +11,20 @@ export default function AdminPageShell({ title, description, children }: AdminPa
   return (
     <div className="md:flex min-h-screen bg-background text-foreground">
       <aside className="w-full md:w-72 bg-primary text-white p-6 border-r border-border">
-        <h1 className="text-2xl font-bold mb-4">Ultra Admin</h1>
+        <Link href="/admin" className="block text-2xl font-bold mb-4">
+          Ultra Admin
+        </Link>
         <nav className="space-y-2 text-sm">
-          <Link href="/drivers" className="block rounded-lg px-3 py-2 hover:bg-primary-light/30">
+          <Link href="/admin/drivers" className="block rounded-lg px-3 py-2 hover:bg-primary-light/30">
             Drivers
           </Link>
-          <Link href="/requests" className="block rounded-lg px-3 py-2 hover:bg-primary-light/30">
+          <Link href="/admin/requests" className="block rounded-lg px-3 py-2 hover:bg-primary-light/30">
             Requests
           </Link>
-          <Link href="/rides" className="block rounded-lg px-3 py-2 hover:bg-primary-light/30">
+          <Link href="/admin/rides" className="block rounded-lg px-3 py-2 hover:bg-primary-light/30">
             Rides
           </Link>
-          <Link href="/completed" className="block rounded-lg px-3 py-2 hover:bg-primary-light/30">
+          <Link href="/admin/completed" className="block rounded-lg px-3 py-2 hover:bg-primary-light/30">
             Completed
           </Link>
         </nav>
