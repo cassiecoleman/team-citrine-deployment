@@ -46,6 +46,9 @@ npm run dev
 - `/trip/trip-204` — navigation to passenger
 - `/trip/trip-204/pickup` — passenger pickup confirmation
 
+Filesystem note:
+The driver pages are organized under `ultra-web/src/app/(driver)/...` to match the route-group structure described in the project documentation. The `(driver)` folder does not add a URL segment, so the local routes above stay the same.
+
 ## Running tests
 
 From the `ultra-web` directory:
