@@ -26,10 +26,10 @@ export function TripAssignmentCard({
       <section className="rounded-xl border border-border bg-card p-4">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-muted">
+            <h2 className="text-xs uppercase tracking-[0.2em] text-muted">
               Incoming assignment
-            </p>
-            <h2 className="mt-1 text-xl font-semibold">{assignment.riderName}</h2>
+            </h2>
+            <p className="mt-1 text-xl font-semibold">{assignment.riderName}</p>
             <p className="mt-1 text-sm text-muted">{assignment.note}</p>
           </div>
           <span className="rounded-full bg-primary-light px-3 py-1 text-xs font-semibold text-primary">
