@@ -1,11 +1,16 @@
 "use client";
 
 import { useRouter, usePathname } from "next/navigation";
+import { Bell, Menu, ArrowLeft, CarFront } from "lucide-react";
 
 export function AppHeader() {
   const router = useRouter();
   const pathname = usePathname();
   const isHome = pathname === "/";
+  const isDriverRoute =
+    pathname === "/driver" ||
+    pathname === "/queue" ||
+    pathname.startsWith("/trip/");
 
   const titles: Record<string, string> = {
     "/": "Ultra",
@@ -17,15 +22,23 @@ export function AppHeader() {
     "/passes/active": "My Ride Pass",
     "/receipt": "Ride Receipt",
     "/profile": "Profile",
+    "/driver": "Driver Home",
+    "/queue": "Trip Queue",
   };
 
-  const title = titles[pathname] ?? "Ultra";
+  let title = titles[pathname] ?? "Ultra";
+
+  if (pathname.startsWith("/trip/") && pathname.endsWith("/pickup")) {
+    title = "Passenger Pickup";
+  } else if (pathname.startsWith("/trip/")) {
+    title = "Navigate to Rider";
+  }
 
   return (
     <header className="flex items-center justify-between px-4 py-3 border-b border-border bg-card">
       {isHome ? (
-        <button className="text-xl" aria-label="Menu">
-          &#9776;
+        <button className="text-lg" aria-label="Menu">
+          <Menu aria-hidden="true" className="h-5 w-5" />
         </button>
       ) : (
         <button
@@ -33,12 +46,17 @@ export function AppHeader() {
           className="text-lg"
           aria-label="Go back"
         >
-          &larr;
+          <ArrowLeft aria-hidden="true" className="h-5 w-5" />
         </button>
       )}
-      <h1 className="text-lg font-semibold">{title}</h1>
+      <div className="flex items-center gap-2">
+        {isDriverRoute ? (
+          <CarFront aria-hidden="true" className="h-4 w-4 text-primary" />
+        ) : null}
+        <h1 className="text-lg font-semibold">{title}</h1>
+      </div>
       <button className="text-lg" aria-label="Notifications">
-        &#128276;
+        <Bell aria-hidden="true" className="h-5 w-5" />
       </button>
     </header>
   );

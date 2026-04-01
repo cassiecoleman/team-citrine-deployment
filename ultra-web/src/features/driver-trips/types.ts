@@ -6,6 +6,9 @@ export interface DriverShiftSummary {
   completionRate: number;
   todayTrips: number;
   earningsToday: number;
+  activeTripId: string;
+  pendingQueueCount: number;
+  nextBreakLabel: string;
 }
 
 export interface TripAssignment {
@@ -20,6 +23,8 @@ export interface TripAssignment {
   mileageMi: number;
   pickupEtaMin: number;
   note: string;
+  urgencyLabel: string;
+  accessibilityNotes: string[];
 }
 
 export interface ActiveDriverTrip {
@@ -35,4 +40,9 @@ export interface ActiveDriverTrip {
   pickupEtaMin: number;
   routeProgressLabel: string;
   vehicleChecklist: string[];
+  pickupCode: string;
+  riderPhone: string;
+  accessibilityNotes: string[];
+  nextTurn: string;
+  destinationEtaMin: number;
 }

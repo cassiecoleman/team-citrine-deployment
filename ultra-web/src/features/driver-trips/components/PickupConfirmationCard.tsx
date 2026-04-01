@@ -1,5 +1,8 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
-import { CircleUserRound } from "lucide-react";
+import { BadgeCheck, CircleUserRound } from "lucide-react";
 import type { ActiveDriverTrip } from "../types";
 
 export function PickupConfirmationCard({
@@ -7,8 +10,32 @@ export function PickupConfirmationCard({
 }: {
   trip: ActiveDriverTrip;
 }) {
+  const [completedSteps, setCompletedSteps] = useState<string[]>([]);
+  const [isPickupConfirmed, setIsPickupConfirmed] = useState(false);
+  const verificationSteps = [
+    "Confirm the rider says the name on screen.",
+    "Confirm curbside pickup matches the app pin.",
+  ] as const;
+  const canConfirmPickup = completedSteps.length === verificationSteps.length;
+
+  function handleStepToggle(step: string) {
+    setCompletedSteps((current) =>
+      current.includes(step)
+        ? current.filter((value) => value !== step)
+        : [...current, step],
+    );
+  }
+
+  function handleConfirmPickup() {
+    if (!canConfirmPickup) {
+      return;
+    }
+
+    setIsPickupConfirmed(true);
+  }
+
   return (
-    <div className="flex flex-col gap-4 p-4">
+    <div className="flex flex-col gap-4">
       <section className="rounded-xl border border-border bg-success-light p-4">
         <p className="text-xs uppercase tracking-[0.2em] text-success">
           At pickup pin
@@ -30,21 +57,62 @@ export function PickupConfirmationCard({
         <p className="mt-2 text-sm text-muted">
           Pickup at {trip.pickupLabel} • Destination {trip.dropoffLabel}
         </p>
+        <p className="mt-2 text-sm font-semibold text-primary">
+          Pickup PIN {trip.pickupCode}
+        </p>
       </section>
 
       <section className="rounded-xl border border-border bg-card p-4">
         <p className="text-sm font-semibold">Identity check steps</p>
         <div className="mt-3 space-y-3 text-sm text-foreground">
-          <div className="rounded-xl border border-border px-4 py-3">
-            1. Confirm the rider says the name on screen.
-          </div>
-          <div className="rounded-xl border border-border px-4 py-3">
-            2. Confirm curbside pickup matches the app pin.
-          </div>
+          {verificationSteps.map((step, index) => (
+            <button
+              key={step}
+              type="button"
+              onClick={() => handleStepToggle(step)}
+              aria-pressed={completedSteps.includes(step)}
+              className={`w-full rounded-xl border px-4 py-3 text-left transition-colors ${
+                completedSteps.includes(step)
+                  ? "border-success bg-success-light"
+                  : "border-border"
+              }`}
+            >
+              {index + 1}. {step}
+            </button>
+          ))}
           <div className="rounded-xl border border-border px-4 py-3">
             3. Start the trip only after both checks are complete.
           </div>
         </div>
+      </section>
+
+      {isPickupConfirmed ? (
+        <section
+          aria-live="polite"
+          className="rounded-xl border border-border bg-card p-4"
+        >
+          <div className="flex items-center gap-2 text-success">
+            <BadgeCheck aria-hidden="true" className="h-5 w-5" />
+            <p className="text-sm font-semibold">Pickup confirmed</p>
+          </div>
+          <p className="mt-2 text-sm text-muted">
+            The rider check is complete. This stub keeps you in the driver flow
+            while the trip start backend is still pending.
+          </p>
+          <Link
+            href="/driver"
+            className="mt-4 block w-full rounded-xl bg-primary py-3 text-center text-sm font-semibold text-white"
+          >
+            Return to Shift Board
+          </Link>
+        </section>
+      ) : null}
+
+      <section className="rounded-xl border border-border bg-card p-4">
+        <p className="text-sm font-semibold">Driver reminder</p>
+        <p className="mt-1 text-sm text-muted">
+          Accessibility note: {trip.accessibilityNotes[0]}
+        </p>
       </section>
 
       <div className="grid grid-cols-2 gap-3">
@@ -54,7 +122,12 @@ export function PickupConfirmationCard({
         >
           Back to Map
         </Link>
-        <button className="rounded-xl bg-success py-3 text-sm font-semibold text-white">
+        <button
+          type="button"
+          onClick={handleConfirmPickup}
+          disabled={!canConfirmPickup}
+          className="rounded-xl bg-success py-3 text-sm font-semibold text-white transition-opacity disabled:opacity-60"
+        >
           Confirm Pickup
         </button>
       </div>
