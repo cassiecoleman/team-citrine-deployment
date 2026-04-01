@@ -101,3 +101,34 @@ export interface RideReceipt {
   weeklySavingsProjection: number;
   rideTime: { start: string; end: string };
 }
+
+export type DetailedRideStatus = "matching" | "en_route" | "arrived" | "in_progress" | "completed";
+
+export interface RideDetail {
+  id: string;
+  pickup: Location;
+  dropoff: Location;
+  status: DetailedRideStatus;
+  estimatedFare: number;
+  actualFare?: number;
+  driver?: Driver;
+  distanceMi: number;
+  durationMin: number;
+  progressPercent?: number;
+  distanceRemainingMi?: number;
+  etaMin?: number;
+}
+
+export interface RideCompletionData {
+  ride: RideDetail;
+  fare: number;
+  serviceFee: number;
+  total: number;
+  paymentMethod: PaymentMethod;
+  driver: Driver;
+}
+
+export interface IssueReport {
+  category: string;
+  details: string;
+}
