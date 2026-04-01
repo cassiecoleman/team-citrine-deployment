@@ -1,5 +1,5 @@
-import type { ComponentPropsWithoutRef } from "react";
-import { render, screen } from "@testing-library/react";
+import type { ComponentPropsWithoutRef, ReactElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import { DriverShiftBoard } from "./DriverShiftBoard";
 import { PickupConfirmationCard } from "./PickupConfirmationCard";
@@ -31,6 +31,9 @@ const shiftSummary: DriverShiftSummary = {
   completionRate: 99,
   todayTrips: 8,
   earningsToday: 142.5,
+  activeTripId: "trip-204",
+  pendingQueueCount: 3,
+  nextBreakLabel: "Break window opens after 2 more trips",
 };
 
 const assignment: TripAssignment = {
@@ -45,6 +48,11 @@ const assignment: TripAssignment = {
   mileageMi: 7.4,
   pickupEtaMin: 5,
   note: "Rider requested curbside pickup by the blue awning.",
+  urgencyLabel: "Medical appointment",
+  accessibilityNotes: [
+    "Rider prefers the side door nearest the blue awning",
+    "Allow extra trunk room for a folded walker",
+  ],
 };
 
 const activeTrip: ActiveDriverTrip = {
@@ -64,55 +72,56 @@ const activeTrip: ActiveDriverTrip = {
     "Back seat clear for rider belongings",
     "App PIN ready for verbal confirmation",
   ],
+  pickupCode: "4821",
+  riderPhone: "(555) 014-2048",
+  accessibilityNotes: assignment.accessibilityNotes,
+  nextTurn: "Turn right on River Pkwy in 0.4 mi",
+  destinationEtaMin: 18,
 };
 
-describe("driver wireframe components", () => {
-  it("renders the driver shift dashboard summary and actions", () => {
-    render(<DriverShiftBoard summary={shiftSummary} />);
+function renderHtml(element: ReactElement) {
+  return renderToStaticMarkup(element);
+}
 
-    expect(screen.getByText("Driver shift")).toBeInTheDocument();
-    expect(screen.getByText("Marcus W.")).toBeInTheDocument();
-    expect(screen.getByText("$142.50")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Review Queue" })).toHaveAttribute(
-      "href",
-      "/queue",
-    );
+describe("driver trip components", () => {
+  it("renders the driver shift board controls and summary cards", () => {
+    const html = renderHtml(<DriverShiftBoard summary={shiftSummary} />);
+
+    expect(html).toContain("Driver shift");
+    expect(html).toContain("Available for the next assignment");
+    expect(html).toContain("Queue waiting");
+    expect(html).toContain("Break window opens after 2 more trips");
+    expect(html).toContain('href="/queue"');
+    expect(html).toContain('href="/trip/trip-204"');
   });
 
-  it("renders the trip assignment details and accept action", () => {
-    render(<TripAssignmentCard assignment={assignment} />);
+  it("renders assignment details, accessibility notes, and accept routing", () => {
+    const html = renderHtml(<TripAssignmentCard assignment={assignment} />);
 
-    expect(screen.getByText("Incoming assignment")).toBeInTheDocument();
-    expect(screen.getByText("$24.75")).toBeInTheDocument();
-    expect(screen.getByText("26 min")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Reject" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Accept Trip" })).toHaveAttribute(
-      "href",
-      "/trip/trip-204",
-    );
+    expect(html).toContain("Incoming assignment");
+    expect(html).toContain("Medical appointment");
+    expect(html).toContain("Allow extra trunk room for a folded walker");
+    expect(html).toContain("Reject");
+    expect(html).toContain('href="/trip/trip-204"');
   });
 
-  it("renders navigation details and pickup transition CTA", () => {
-    render(<TripNavigationView trip={activeTrip} />);
+  it("renders trip navigation details and the pickup transition route", () => {
+    const html = renderHtml(<TripNavigationView trip={activeTrip} />);
 
-    expect(screen.getByText("En route to rider")).toBeInTheDocument();
-    expect(screen.getByText("Turn-by-turn map preview")).toBeInTheDocument();
-    expect(screen.getByText("Pickup pin ready")).toBeInTheDocument();
-    expect(
-      screen.getByRole("link", { name: "Arrived at Pickup" }),
-    ).toHaveAttribute("href", "/trip/trip-204/pickup");
+    expect(html).toContain("En route to rider");
+    expect(html).toContain("Turn-by-turn map preview");
+    expect(html).toContain("Turn right on River Pkwy in 0.4 mi");
+    expect(html).toContain("0 of 3 arrival checks complete");
+    expect(html).toContain('href="/trip/trip-204/pickup"');
   });
 
-  it("renders the passenger confirmation flow and back link", () => {
-    render(<PickupConfirmationCard trip={activeTrip} />);
+  it("renders pickup verification controls and the return route", () => {
+    const html = renderHtml(<PickupConfirmationCard trip={activeTrip} />);
 
-    expect(screen.getByText("At pickup pin")).toBeInTheDocument();
-    expect(screen.getByText("Passenger name")).toBeInTheDocument();
-    expect(screen.getByText("Identity check steps")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Confirm Pickup" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Back to Map" })).toHaveAttribute(
-      "href",
-      "/trip/trip-204",
-    );
+    expect(html).toContain("At pickup pin");
+    expect(html).toContain("Pickup PIN 4821");
+    expect(html).toContain("Identity check steps");
+    expect(html).toContain("Confirm Pickup");
+    expect(html).toContain('href="/trip/trip-204"');
   });
 });
