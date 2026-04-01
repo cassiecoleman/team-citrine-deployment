@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CircleUserRound } from "lucide-react";
 import type { ActiveDriverTrip } from "../types";
 
 export function PickupConfirmationCard({
@@ -8,7 +9,7 @@ export function PickupConfirmationCard({
 }) {
   return (
     <div className="flex flex-col gap-4 p-4">
-      <section className="rounded-2xl border border-border bg-success-light p-4">
+      <section className="rounded-xl border border-border bg-success-light p-4">
         <p className="text-xs uppercase tracking-[0.2em] text-success">
           At pickup pin
         </p>
@@ -18,9 +19,9 @@ export function PickupConfirmationCard({
         </p>
       </section>
 
-      <section className="rounded-2xl border border-border bg-card p-5 text-center">
+      <section className="rounded-xl border border-border bg-card p-5 text-center">
         <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-primary-light text-3xl">
-          {"\uD83D\uDC64"}
+          <CircleUserRound aria-hidden="true" className="h-10 w-10 text-primary" />
         </div>
         <p className="mt-4 text-xs uppercase tracking-[0.2em] text-muted">
           Passenger name
@@ -31,7 +32,7 @@ export function PickupConfirmationCard({
         </p>
       </section>
 
-      <section className="rounded-2xl border border-border bg-card p-4">
+      <section className="rounded-xl border border-border bg-card p-4">
         <p className="text-sm font-semibold">Identity check steps</p>
         <div className="mt-3 space-y-3 text-sm text-foreground">
           <div className="rounded-xl border border-border px-4 py-3">

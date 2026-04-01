@@ -9,7 +9,7 @@ export function TripAssignmentCard({
 }) {
   return (
     <div className="flex flex-col gap-4 p-4">
-      <section className="rounded-2xl border border-border bg-card p-4">
+      <section className="rounded-xl border border-border bg-card p-4">
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-xs uppercase tracking-[0.2em] text-muted">
@@ -43,7 +43,7 @@ export function TripAssignmentCard({
         </div>
       </section>
 
-      <section className="rounded-2xl border border-border bg-card p-4">
+      <section className="rounded-xl border border-border bg-card p-4">
         <p className="text-xs uppercase tracking-[0.2em] text-muted">Route</p>
         <div className="mt-3 space-y-3">
           <div className="flex gap-3">

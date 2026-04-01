@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CarFront } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import type { DriverShiftSummary } from "../types";
 
@@ -9,7 +10,7 @@ export function DriverShiftBoard({
 }) {
   return (
     <div className="flex flex-col gap-4 p-4">
-      <section className="rounded-2xl border border-border bg-primary px-4 py-5 text-white">
+      <section className="rounded-xl border border-border bg-primary px-4 py-5 text-white">
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-xs uppercase tracking-[0.2em] text-white/80">
@@ -48,7 +49,7 @@ export function DriverShiftBoard({
         </div>
       </section>
 
-      <section className="rounded-2xl border border-border bg-card p-4">
+      <section className="rounded-xl border border-border bg-card p-4">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm font-semibold">Ready for your next pickup</p>
@@ -56,9 +57,7 @@ export function DriverShiftBoard({
               Keep queue review and passenger confirmation within thumb reach.
             </p>
           </div>
-          <span className="text-2xl" aria-hidden="true">
-            {"\uD83D\uDE97"}
-          </span>
+          <CarFront aria-hidden="true" className="h-6 w-6 text-primary" />
         </div>
 
         <div className="mt-4 grid grid-cols-2 gap-3">

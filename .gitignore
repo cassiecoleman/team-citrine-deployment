@@ -4,3 +4,5 @@ node_modules
 .DS_Store
 .env.local
 .env*.local
+ultra-web/playwright-report/
+ultra-web/test-results/

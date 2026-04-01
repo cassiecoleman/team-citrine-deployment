@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Check, MapPinned } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import type { ActiveDriverTrip } from "../types";
 
@@ -9,7 +10,7 @@ export function TripNavigationView({
 }) {
   return (
     <div className="flex flex-col gap-4 p-4">
-      <section className="rounded-2xl border border-border bg-primary-light p-4">
+      <section className="rounded-xl border border-border bg-primary-light p-4">
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-xs uppercase tracking-[0.2em] text-primary">
@@ -25,9 +26,9 @@ export function TripNavigationView({
           </span>
         </div>
 
-        <div className="mt-4 flex h-48 items-center justify-center rounded-2xl border border-border bg-card">
+        <div className="mt-4 flex h-48 items-center justify-center rounded-xl border border-border bg-card">
           <div className="text-center text-sm text-muted">
-            <p className="text-3xl">{"\uD83D\uDEF0\uFE0F"}</p>
+            <MapPinned aria-hidden="true" className="mx-auto h-8 w-8 text-primary" />
             <p className="mt-2 font-medium text-foreground">Turn-by-turn map preview</p>
             <p className="text-xs">
               {trip.pickupLabel} to {trip.dropoffLabel}
@@ -36,7 +37,7 @@ export function TripNavigationView({
         </div>
       </section>
 
-      <section className="rounded-2xl border border-border bg-card p-4">
+      <section className="rounded-xl border border-border bg-card p-4">
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="text-sm font-semibold">{trip.riderName}</p>
@@ -63,12 +64,12 @@ export function TripNavigationView({
         </div>
       </section>
 
-      <section className="rounded-2xl border border-border bg-card p-4">
+      <section className="rounded-xl border border-border bg-card p-4">
         <p className="text-xs uppercase tracking-[0.2em] text-muted">Before arrival</p>
         <ul className="mt-3 space-y-2 text-sm text-foreground">
           {trip.vehicleChecklist.map((item) => (
             <li key={item} className="flex items-start gap-2">
-              <span className="mt-0.5 text-success">{"\u2713"}</span>
+              <Check aria-hidden="true" className="mt-0.5 h-4 w-4 text-success" />
               <span>{item}</span>
             </li>
           ))}
