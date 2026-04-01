@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { MobileShell } from "@/features/navigation/components/MobileShell";
+import { AppShell } from "@/features/navigation/components/AppShell";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,10 +28,8 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col items-center bg-background">
-        <div className="w-full max-w-[430px] min-h-screen flex flex-col shadow-lg bg-card">
-          <MobileShell>{children}</MobileShell>
-        </div>
+      <body className="min-h-full bg-background">
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );
