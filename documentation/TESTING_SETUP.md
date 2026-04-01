@@ -1,4 +1,4 @@
-# Ultra Web — Claude Code Instructions
+# Ultra — Testing Setup & TDD Workflow
 
 ## MANDATORY: TDD Red-Green-Commit Workflow
 
@@ -29,11 +29,18 @@ For each feature, write tests in this order:
 - If a refactor is needed after going green, refactor while keeping tests green, then commit the refactor separately
 - Bug fix? Write a test that reproduces the bug FIRST, confirm it fails, then fix
 
-## Next.js Compatibility
+## Test Stack
 
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
+| Layer | Tool | Config |
+|-------|------|--------|
+| Unit tests | Vitest + @testing-library/react | `ultra-web/vitest.config.ts` |
+| E2e tests | Playwright | `ultra-web/playwright.config.ts` |
+| Test environment | jsdom | Set in vitest config |
+| Assertions | @testing-library/jest-dom | Loaded in `src/test/setup.ts` |
 
 ## Test Commands
+
+Run from `ultra-web/`:
 
 ```
 npm test              # Run unit tests (vitest)
@@ -42,11 +49,26 @@ npm run test:e2e      # Run e2e tests (playwright)
 npm run test:e2e:ui   # Run e2e tests with UI
 ```
 
-## Project Structure
+## Test File Locations
 
-- `src/features/<domain>/actions.ts` — Server-side data fetching (mock data for now)
-- `src/features/<domain>/components/` — Client components ("use client")
-- `src/features/<domain>/__tests__/` — Unit tests for actions and components
-- `src/lib/` — Shared utilities (mock-data, mock-delay, utils)
-- `src/types/` — TypeScript interfaces
-- `e2e/` — Playwright end-to-end tests
+- **Unit tests:** `src/features/<domain>/__tests__/*.test.ts(x)`
+- **E2e tests:** `e2e/*.spec.ts`
+- **Test setup:** `src/test/setup.ts`
+
+## Project Structure (test-relevant)
+
+```
+ultra-web/
+  src/
+    features/<domain>/
+      actions.ts              — Server-side data fetching (mock data for now)
+      components/             — Client components ("use client")
+      __tests__/              — Unit tests for this domain
+    lib/                      — Shared utilities (mock-data, mock-delay, utils)
+    types/                    — TypeScript interfaces
+    test/
+      setup.ts                — Vitest global setup (@testing-library/jest-dom)
+  e2e/                        — Playwright end-to-end tests
+  vitest.config.ts
+  playwright.config.ts
+```
