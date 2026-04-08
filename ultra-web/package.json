@@ -10,9 +10,14 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui"
+    "test:e2e:ui": "playwright test --ui",
+    "db:types": "npx supabase gen types typescript --project-id mcxgvblnfuedzlojspba > src/types/supabase.ts",
+    "db:push": "npx supabase db push",
+    "db:migration:new": "npx supabase migration new"
   },
   "dependencies": {
+    "@supabase/ssr": "^0.10.0",
+    "@supabase/supabase-js": "^2.102.1",
     "lucide-react": "^1.7.0",
     "next": "16.2.1",
     "react": "19.2.4",
