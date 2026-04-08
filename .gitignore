@@ -2,6 +2,7 @@ storyboards_jacob_moore
 node_modules
 .next
 .DS_Store
+.codex
 .env.local
 .env*.local
 ultra-web/playwright-report/
