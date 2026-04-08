@@ -207,6 +207,10 @@ CREATE POLICY "Riders manage own child profiles"
     USING (EXISTS (
         SELECT 1 FROM public.riders
         WHERE riders.id = rider_profiles.rider_id AND riders.user_id = auth.uid()
+    ))
+    WITH CHECK (EXISTS (
+        SELECT 1 FROM public.riders
+        WHERE riders.id = rider_profiles.rider_id AND riders.user_id = auth.uid()
     ));
 ```
 
@@ -236,6 +240,12 @@ CREATE POLICY "Riders manage contacts for own profiles"
         JOIN public.riders ON riders.id = rider_profiles.rider_id
         WHERE rider_profiles.id = emergency_contacts.rider_profile_id
         AND riders.user_id = auth.uid()
+    ))
+    WITH CHECK (EXISTS (
+        SELECT 1 FROM public.rider_profiles
+        JOIN public.riders ON riders.id = rider_profiles.rider_id
+        WHERE rider_profiles.id = emergency_contacts.rider_profile_id
+        AND riders.user_id = auth.uid()
     ));
 ```
 
@@ -257,7 +267,8 @@ ALTER TABLE public.notification_preferences ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Users manage own prefs"
     ON public.notification_preferences FOR ALL
-    USING (auth.uid() = user_id);
+    USING (auth.uid() = user_id)
+    WITH CHECK (auth.uid() = user_id);
 ```
 
 ---

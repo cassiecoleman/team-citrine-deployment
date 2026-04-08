@@ -204,7 +204,8 @@ CREATE POLICY "Admins read all payments" ON public.payments FOR SELECT
     ));
 
 CREATE POLICY "Service role full access" ON public.payments FOR ALL
-    USING (auth.jwt()->>'role' = 'service_role');
+    USING (auth.jwt()->>'role' = 'service_role')
+    WITH CHECK (auth.jwt()->>'role' = 'service_role');
 ```
 
 ### `ride_passes`
@@ -239,7 +240,8 @@ CREATE INDEX idx_ride_passes_status ON public.ride_passes(status);
 ALTER TABLE public.ride_passes ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Riders manage own passes" ON public.ride_passes FOR ALL
-    USING (rider_id IN (SELECT id FROM public.riders WHERE user_id = auth.uid()));
+    USING (rider_id IN (SELECT id FROM public.riders WHERE user_id = auth.uid()))
+    WITH CHECK (rider_id IN (SELECT id FROM public.riders WHERE user_id = auth.uid()));
 
 CREATE POLICY "Admins read all passes" ON public.ride_passes FOR SELECT
     USING (EXISTS (
@@ -273,6 +275,10 @@ ALTER TABLE public.fare_splits ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Split participants manage their splits" ON public.fare_splits FOR ALL
     USING (
+        inviter_id IN (SELECT id FROM public.riders WHERE user_id = auth.uid())
+        OR invitee_id IN (SELECT id FROM public.riders WHERE user_id = auth.uid())
+    )
+    WITH CHECK (
         inviter_id IN (SELECT id FROM public.riders WHERE user_id = auth.uid())
         OR invitee_id IN (SELECT id FROM public.riders WHERE user_id = auth.uid())
     );

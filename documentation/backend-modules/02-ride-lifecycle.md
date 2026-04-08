@@ -243,7 +243,8 @@ CREATE POLICY "Drivers update assigned rides" ON public.rides FOR UPDATE
     USING (driver_id IN (SELECT id FROM public.drivers WHERE user_id = auth.uid()));
 
 CREATE POLICY "Service role full access" ON public.rides FOR ALL
-    USING (auth.jwt()->>'role' = 'service_role');
+    USING (auth.jwt()->>'role' = 'service_role')
+    WITH CHECK (auth.jwt()->>'role' = 'service_role');
 
 CREATE POLICY "Admins read all rides" ON public.rides FOR SELECT
     USING (EXISTS (
@@ -341,6 +342,13 @@ ALTER TABLE public.ride_ratings ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Ride participants manage ratings" ON public.ride_ratings FOR ALL
     USING (EXISTS (
+        SELECT 1 FROM public.rides WHERE rides.id = ride_ratings.ride_id
+        AND (
+            rides.rider_id IN (SELECT id FROM public.riders WHERE user_id = auth.uid())
+            OR rides.driver_id IN (SELECT id FROM public.drivers WHERE user_id = auth.uid())
+        )
+    ))
+    WITH CHECK (EXISTS (
         SELECT 1 FROM public.rides WHERE rides.id = ride_ratings.ride_id
         AND (
             rides.rider_id IN (SELECT id FROM public.riders WHERE user_id = auth.uid())

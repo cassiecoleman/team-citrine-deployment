@@ -30,6 +30,15 @@ The Safety & Notifications module manages Ultra's safety-critical features and a
 - In P4: integrate real SMS provider with AWS credits
 - Support notification templates with variable substitution (driver name, ETA, etc.)
 
+**Ride PIN Verification (US03):**
+- When a parent books a child ride, they set a 4-digit PIN that the driver must verify before starting the trip
+- The parent receives the PIN in the booking confirmation; the driver sees a PIN entry screen at pickup
+- `setRidePin()` — called during ride creation when `is_child_safe_required` is true; stores a hashed PIN on the ride
+- `verifyRidePin()` — called by the driver at pickup; compares the entered PIN against the stored hash
+- PIN verification must succeed before the Ride Lifecycle module allows the `arrived → in_progress` transition
+- Failed PIN attempts are logged; after 3 failures the ride is flagged for admin review
+- Corresponds to `POST /api/safety/pin/verify` from the architecture doc
+
 **Driver Flagging (US07):**
 - Allow riders to flag/report a driver after a ride (safety concern, behavior issue, vehicle condition)
 - Store the flag with a reason category, free-text details, and the related ride
@@ -53,7 +62,7 @@ The Safety & Notifications module manages Ultra's safety-critical features and a
 
 ### Text Description
 
-The Safety & Notifications module is structured around four services, each handling a distinct safety or communication concern:
+The Safety & Notifications module is structured around five services, each handling a distinct safety or communication concern:
 
 **Presentation Layer:** This module serves several existing frontend pages:
 - `/safety/trusted-drivers` — manage trusted driver list
@@ -61,17 +70,20 @@ The Safety & Notifications module is structured around four services, each handl
 - `/profile/safety` — safety preferences
 - `/profile/notifications` — notification preference toggles (writes to Auth & Identity's table)
 - The driver flagging UI is embedded in the ride completion flow (`/ride/[id]/complete`)
+- The PIN entry screen is embedded in the driver pickup flow (`/trip/[id]/pickup`)
 
-**Service Layer:** Four services:
+**Service Layer:** Five services:
 - `TrustedDriverService` — CRUD for the trusted drivers list. Simple read/write operations. The matching module calls this service's data at match time.
 - `TripShareService` — Token generation, share link lifecycle, view tracking. Generates cryptographically secure tokens using `crypto.randomUUID()`. Manages expiration based on ride status.
 - `NotificationService` — Sends SMS messages via a provider adapter. Uses a strategy pattern: `SmsStub` in P3 (logs to console), `AwsSnsAdapter` or `TwilioAdapter` in P4. Checks notification preferences before sending.
 - `DriverFlagService` — Creates flag records, manages admin review workflow (pending → under_review → resolved/dismissed).
+- `RideVerificationService` — Manages the PIN verification flow for child rides (US03). When a parent books a child-safe ride, `setRidePin()` hashes and stores a 4-digit PIN on the `rides` table (via a `pin_hash` column). At pickup, the driver calls `verifyRidePin()` which compares the entered PIN against the stored hash. The Ride Lifecycle module gates the `arrived → in_progress` transition on successful verification. Failed attempts are counted; 3 failures auto-flag the ride for admin review. Corresponds to `POST /api/safety/pin/verify` in the architecture doc.
 
-**Data Layer:** Three tables:
+**Data Layer:** Three tables owned, plus one column on a cross-module table:
 - `trusted_drivers` (Layer 2) — simple junction table between riders and drivers
 - `trip_shares` (Layer 4) — share tokens with expiration and view tracking
 - `driver_flags` (Layer 4) — incident reports with admin review workflow
+- `rides.pin_hash` and `rides.pin_attempts` columns (owned by Ride Lifecycle, written by this module via service role)
 
 The module also reads `notification_preferences` (owned by Auth & Identity) to check whether a rider has SMS enabled before sending.
 
@@ -217,7 +229,8 @@ CREATE INDEX idx_trusted_drivers_rider_id ON public.trusted_drivers(rider_id);
 ALTER TABLE public.trusted_drivers ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Riders manage own trusted drivers" ON public.trusted_drivers FOR ALL
-    USING (rider_id IN (SELECT id FROM public.riders WHERE user_id = auth.uid()));
+    USING (rider_id IN (SELECT id FROM public.riders WHERE user_id = auth.uid()))
+    WITH CHECK (rider_id IN (SELECT id FROM public.riders WHERE user_id = auth.uid()));
 
 CREATE POLICY "Service role read for matching" ON public.trusted_drivers FOR SELECT
     USING (auth.jwt()->>'role' = 'service_role');
@@ -253,13 +266,19 @@ CREATE POLICY "Riders manage own trip shares" ON public.trip_shares FOR ALL
         SELECT 1 FROM public.rides
         JOIN public.riders ON riders.id = rides.rider_id
         WHERE rides.id = trip_shares.ride_id AND riders.user_id = auth.uid()
+    ))
+    WITH CHECK (EXISTS (
+        SELECT 1 FROM public.rides
+        JOIN public.riders ON riders.id = rides.rider_id
+        WHERE rides.id = trip_shares.ride_id AND riders.user_id = auth.uid()
     ));
 
 -- Public read access via share token (for the /share/[token] page)
 -- This is handled by the service role client in the server action,
 -- not by RLS, since the viewer is unauthenticated.
 CREATE POLICY "Service role full access" ON public.trip_shares FOR ALL
-    USING (auth.jwt()->>'role' = 'service_role');
+    USING (auth.jwt()->>'role' = 'service_role')
+    WITH CHECK (auth.jwt()->>'role' = 'service_role');
 ```
 
 ### `driver_flags`
@@ -298,6 +317,9 @@ CREATE POLICY "Riders read own flags" ON public.driver_flags FOR SELECT
 CREATE POLICY "Admins manage all flags" ON public.driver_flags FOR ALL
     USING (EXISTS (
         SELECT 1 FROM public.user_roles WHERE user_id = auth.uid() AND role = 'admin'
+    ))
+    WITH CHECK (EXISTS (
+        SELECT 1 FROM public.user_roles WHERE user_id = auth.uid() AND role = 'admin'
     ));
 ```
 
@@ -330,6 +352,19 @@ CREATE POLICY "Admins manage all flags" ON public.driver_flags FOR ALL
 | `sendDriverEnRoute(riderId, driverName, eta)` | `{ rider_id, driver_name, eta_minutes }` | `void` | |
 | `sendDriverArrived(riderId, driverName, vehicle)` | `{ rider_id, driver_name, vehicle_description }` | `void` | |
 | `sendTripCompleted(riderId, fareAmount)` | `{ rider_id, fare_amount }` | `void` | |
+
+### Ride PIN Verification Actions (US03)
+
+| Action | Input | Output | Auth |
+|--------|-------|--------|------|
+| `setRidePin(data)` | `{ ride_id: string, pin: string (4 digits) }` | `ActionResult<void>` | Rider |
+| `verifyRidePin(data)` | `{ ride_id: string, pin: string }` | `ActionResult<{ verified: boolean, attempts_remaining: number }>` | Driver |
+
+**REST Route Handler (corresponds to architecture doc):**
+
+| Endpoint | Method | Purpose | Auth |
+|----------|--------|---------|------|
+| `/api/safety/pin/verify` | POST | Verify driver-entered PIN against stored hash for child ride | Driver |
 
 ### Driver Flag Actions
 
@@ -394,6 +429,16 @@ classDiagram
     class TwilioAdapter {
         -twilioClient : TwilioClient
         +sendSms(to, body) Promise
+    }
+
+    class RideVerificationService {
+        -supabase : SupabaseClient
+        +setRidePin(rideId, pin) ActionResult
+        +verifyRidePin(rideId, pin) ActionResult
+        -hashPin(pin) string
+        -comparePin(pin, hash) boolean
+        -incrementAttempts(rideId) number
+        -flagRideForReview(rideId) void
     }
 
     class DriverFlagService {
@@ -474,6 +519,7 @@ classDiagram
     TrustedDriverService --> SafetyValidator : validates
     TripShareService --> SafetyValidator : validates
     DriverFlagService --> SafetyValidator : validates
+    RideVerificationService --> SafetyValidator : validates
 
     TrustedDriverService --> TrustedDriver : manages
     TrustedDriverService --> TrustedDriverWithDetails : returns
@@ -518,13 +564,23 @@ src/features/
 │   ├── types.ts                      # NotificationEvent types
 │   └── __tests__/
 │       └── notifications.test.ts
+├── ride-verification/
+│   ├── actions.ts                    # setRidePin, verifyRidePin
+│   ├── types.ts                      # PinVerificationResult
+│   └── __tests__/
+│       └── ride-verification.test.ts
 ├── driver-flags/
 │   ├── actions.ts                    # createFlag, getFlags, reviewFlag, resolveFlag
 │   ├── types.ts                      # DriverFlag, FlagReason, FlagStatus
 │   └── __tests__/
 │       └── driver-flags.test.ts
 └── app/
-    └── share/
-        └── [token]/
-            └── page.tsx              # Public trip share view (server component, no auth)
+    ├── share/
+    │   └── [token]/
+    │       └── page.tsx              # Public trip share view (server component, no auth)
+    └── api/
+        └── safety/
+            └── pin/
+                └── verify/
+                    └── route.ts      # POST /api/safety/pin/verify (REST endpoint)
 ```

@@ -192,10 +192,14 @@ CREATE POLICY "Riders read driver profiles" ON public.drivers FOR SELECT
 CREATE POLICY "Admins full access" ON public.drivers FOR ALL
     USING (EXISTS (
         SELECT 1 FROM public.user_roles WHERE user_id = auth.uid() AND role = 'admin'
+    ))
+    WITH CHECK (EXISTS (
+        SELECT 1 FROM public.user_roles WHERE user_id = auth.uid() AND role = 'admin'
     ));
 
 CREATE POLICY "Service role full access" ON public.drivers FOR ALL
-    USING (auth.jwt()->>'role' = 'service_role');
+    USING (auth.jwt()->>'role' = 'service_role')
+    WITH CHECK (auth.jwt()->>'role' = 'service_role');
 ```
 
 ### `driver_safety_certs`
@@ -229,6 +233,9 @@ CREATE POLICY "Drivers read own certs" ON public.driver_safety_certs FOR SELECT
 CREATE POLICY "Admins manage certs" ON public.driver_safety_certs FOR ALL
     USING (EXISTS (
         SELECT 1 FROM public.user_roles WHERE user_id = auth.uid() AND role = 'admin'
+    ))
+    WITH CHECK (EXISTS (
+        SELECT 1 FROM public.user_roles WHERE user_id = auth.uid() AND role = 'admin'
     ));
 ```
 
@@ -253,6 +260,9 @@ ALTER TABLE public.driver_locations ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Drivers upsert own location" ON public.driver_locations FOR ALL
     USING (EXISTS (
         SELECT 1 FROM public.drivers WHERE drivers.id = driver_locations.driver_id AND drivers.user_id = auth.uid()
+    ))
+    WITH CHECK (EXISTS (
+        SELECT 1 FROM public.drivers WHERE drivers.id = driver_locations.driver_id AND drivers.user_id = auth.uid()
     ));
 
 CREATE POLICY "Riders read driver locations" ON public.driver_locations FOR SELECT
@@ -261,7 +271,8 @@ CREATE POLICY "Riders read driver locations" ON public.driver_locations FOR SELE
     ));
 
 CREATE POLICY "Service role full access" ON public.driver_locations FOR ALL
-    USING (auth.jwt()->>'role' = 'service_role');
+    USING (auth.jwt()->>'role' = 'service_role')
+    WITH CHECK (auth.jwt()->>'role' = 'service_role');
 ```
 
 ---
