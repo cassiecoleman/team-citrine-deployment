@@ -170,6 +170,8 @@ erDiagram
         text recurrence_rule "iCal RRULE format"
         boolean is_child_safe_required "NOT NULL DEFAULT false"
         boolean prefer_trusted_driver "NOT NULL DEFAULT false"
+        text pin_hash "bcrypt/argon2 hash for child-ride pickup PIN"
+        int pin_attempts "NOT NULL DEFAULT 0"
         timestamptz requested_at "NOT NULL DEFAULT now()"
         timestamptz matched_at
         timestamptz driver_arrived_at

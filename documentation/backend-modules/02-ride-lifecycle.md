@@ -209,6 +209,8 @@ CREATE TABLE public.rides (
     recurrence_rule         TEXT,
     is_child_safe_required  BOOLEAN NOT NULL DEFAULT false,
     prefer_trusted_driver   BOOLEAN NOT NULL DEFAULT false,
+    pin_hash                TEXT,
+    pin_attempts            INT NOT NULL DEFAULT 0,
     requested_at            TIMESTAMPTZ NOT NULL DEFAULT now(),
     matched_at              TIMESTAMPTZ,
     driver_arrived_at       TIMESTAMPTZ,
@@ -365,7 +367,7 @@ CREATE POLICY "Ride participants manage ratings" ON public.ride_ratings FOR ALL
 
 | Action | Input | Output | Auth |
 |--------|-------|--------|------|
-| `createRide(data)` | `{ pickup_lat, pickup_lng, pickup_address, dropoff_lat, dropoff_lng, dropoff_address, is_child_safe_required?, rider_profile_id?, prefer_trusted_driver?, stops?: Stop[] }` | `ActionResult<Ride>` | Rider |
+| `createRide(data)` | `{ pickup_lat, pickup_lng, pickup_address, dropoff_lat, dropoff_lng, dropoff_address, is_child_safe_required?, rider_profile_id?, prefer_trusted_driver?, ride_pin?: string (required when is_child_safe_required = true), stops?: Stop[] }` | `ActionResult<Ride>` | Rider |
 | `scheduleRide(data)` | Same + `{ scheduled_for: string (ISO 8601) }` | `ActionResult<Ride>` | Rider |
 | `createRecurringRide(data)` | Same + `{ recurrence_rule: string (iCal RRULE) }` | `ActionResult<Ride>` | Rider |
 | `cancelRide(rideId)` | `{ rideId: string, reason?: string }` | `ActionResult<Ride>` | Rider |
