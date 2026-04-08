@@ -172,6 +172,8 @@ useEffect IS appropriate for: WebSocket subscriptions (e.g., Supabase Realtime),
 - Create a shared Supabase client utility in `src/lib/supabase.ts` (browser client) and `src/lib/supabase-server.ts` (server client with service role).
 - Use Row Level Security (RLS) policies — don't rely solely on application-level auth checks.
 - Use Supabase migrations (`supabase migration new`) for all schema changes.
+- After any schema change, regenerate TypeScript types with `npm run db:types`. This overwrites `src/types/supabase.ts` with auto-generated types matching the remote schema. Always commit the regenerated file.
+- Import the `Database` type from `@/types/supabase` when creating typed Supabase clients.
 - Use Supabase Realtime channels for live features (ride tracking, driver location updates).
 - Seed the database with test data: 30 rider accounts, 15 driver accounts, 3 admin accounts.
 
