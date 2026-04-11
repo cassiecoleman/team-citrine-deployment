@@ -123,6 +123,20 @@ export async function acceptTrip(input: {
     return { success: false, error: "Driver account was not found." };
   }
 
+  const currentRideResult = await supabase
+    .from("rides")
+    .select("id,status")
+    .eq("id", parsed.data.rideId)
+    .single();
+
+  if (currentRideResult.error || !currentRideResult.data) {
+    return { success: false, error: "Unable to find the trip to accept." };
+  }
+
+  if (currentRideResult.data.status !== "matching") {
+    return { success: false, error: "Trip is not available to accept." };
+  }
+
   const rideResult = await supabase
     .from("rides")
     .update({
