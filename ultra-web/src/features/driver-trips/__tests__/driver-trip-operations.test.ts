@@ -5,6 +5,7 @@ import {
   acceptTrip,
   completeTrip,
   confirmPickup,
+  getAssignedTrips,
   getDriverStatus,
   rejectTrip,
   toggleDriverAvailability,
@@ -20,7 +21,12 @@ const mockRideUpdateEq = vi.fn(() => ({ select: mockRideUpdateSelect }));
 const mockRideUpdate = vi.fn(() => ({ eq: mockRideUpdateEq }));
 const mockRideMaybeSingle = vi.fn();
 const mockRideIn = vi.fn(() => ({ maybeSingle: mockRideMaybeSingle }));
-const mockRideSelectEq = vi.fn(() => ({ in: mockRideIn, maybeSingle: mockRideMaybeSingle }));
+const mockRideOrder = vi.fn();
+const mockRideSelectEq = vi.fn(() => ({
+  in: mockRideIn,
+  maybeSingle: mockRideMaybeSingle,
+  order: mockRideOrder,
+}));
 const mockRideSelect = vi.fn(() => ({ eq: mockRideSelectEq }));
 const mockDriverUpdateEq = vi.fn();
 const mockDriverUpdate = vi.fn(() => ({ eq: mockDriverUpdateEq }));
@@ -228,5 +234,37 @@ describe("driver trip operations", () => {
       }),
     );
     expect(mockDriverUpdateEq).toHaveBeenCalledWith("id", "driver-1");
+  });
+
+  it("fetches pending assigned trips from matching rides", async () => {
+    mockSingle.mockResolvedValueOnce({
+      data: { id: "driver-1" },
+      error: null,
+    });
+    mockRideOrder.mockResolvedValueOnce({
+      data: [
+        {
+          id: "ride-1",
+          pickup_address: "1150 West End Ave",
+          dropoff_address: "245 River Pkwy",
+          fare_estimate: 24.75,
+          estimated_duration_min: 26,
+          distance_miles: 7.4,
+          riders: { name: "Aisha R." },
+        },
+      ],
+      error: null,
+    });
+
+    const result = await getAssignedTrips("auth-user-1");
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data).toHaveLength(1);
+      expect(result.data[0]?.id).toBe("ride-1");
+      expect(result.data[0]?.riderName).toBe("Aisha R.");
+    }
+    expect(mockFrom).toHaveBeenCalledWith("drivers");
+    expect(mockFrom).toHaveBeenCalledWith("rides");
   });
 });

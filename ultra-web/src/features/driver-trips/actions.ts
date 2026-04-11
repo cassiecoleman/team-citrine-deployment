@@ -7,6 +7,10 @@ import type {
   TripAssignment,
 } from "./types";
 
+type RideActionResult<T> =
+  | { success: true; data: T }
+  | { success: false; error: string };
+
 const shiftSummary: DriverShiftSummary = {
   driverName: "Marcus W.",
   status: "online",
@@ -376,5 +380,64 @@ export async function toggleDriverAvailability(input: {
       driverId: driverResult.data.id,
       status: parsed.data.nextStatus,
     },
+  };
+}
+
+export async function getAssignedTrips(
+  driverUserId: string,
+): Promise<RideActionResult<TripAssignment[]>> {
+  if (!driverUserId) {
+    return { success: false, error: "Driver user id is required." };
+  }
+
+  const supabase = createServiceRoleClient();
+  const driverResult = await supabase
+    .from("drivers")
+    .select("id")
+    .eq("user_id", driverUserId)
+    .single();
+
+  if (driverResult.error || !driverResult.data) {
+    return { success: false, error: "Driver account was not found." };
+  }
+
+  const ridesResult = await supabase
+    .from("rides")
+    .select(
+      "id,pickup_address,dropoff_address,fare_estimate,estimated_duration_min,distance_miles,riders(name)",
+    )
+    .eq("status", "matching")
+    .order("requested_at", { ascending: true });
+
+  if (ridesResult.error || !ridesResult.data) {
+    return { success: false, error: "Unable to load assigned trips right now." };
+  }
+
+  return {
+    success: true,
+    data: ridesResult.data.map((ride) => {
+      const riderName =
+        Array.isArray(ride.riders) && ride.riders[0]?.name
+          ? ride.riders[0].name
+          : !Array.isArray(ride.riders) && ride.riders?.name
+            ? ride.riders.name
+            : "Rider";
+
+      return {
+        id: ride.id,
+        riderName,
+        pickupLabel: "Pickup",
+        pickupAddress: ride.pickup_address,
+        dropoffLabel: "Dropoff",
+        dropoffAddress: ride.dropoff_address,
+        offeredFare: ride.fare_estimate ?? 0,
+        estimatedTripTimeMin: ride.estimated_duration_min ?? 0,
+        mileageMi: ride.distance_miles ?? 0,
+        pickupEtaMin: 5,
+        note: "Driver assignment pending confirmation.",
+        urgencyLabel: "Standard ride",
+        accessibilityNotes: ["No additional accessibility notes."],
+      };
+    }),
   };
 }
