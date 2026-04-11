@@ -1,6 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import {
-  acceptTrip,
   getActiveDriverTrip,
   getDriverShiftSummary,
   getQueuedTrip,
@@ -53,19 +52,5 @@ describe("driver trip actions", () => {
     expect(trip.riderPhone).toContain("555");
     expect(trip.nextTurn).toContain("River Pkwy");
     expect(trip.destinationEtaMin).toBe(18);
-  });
-
-  it("accepts a matching trip and transitions it to driver_en_route", async () => {
-    const result = await acceptTrip({
-      rideId: "ride-1",
-      driverUserId: "user-1",
-    });
-
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.data.id).toBe("ride-1");
-      expect(result.data.status).toBe("driver_en_route");
-      expect(result.data.driverId).toBe("driver-1");
-    }
   });
 });

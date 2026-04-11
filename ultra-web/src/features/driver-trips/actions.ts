@@ -1,4 +1,6 @@
 import { mockDelay } from "@/lib/mock-delay";
+import { createServiceRoleClient } from "@/lib/supabase-server";
+import { z } from "zod";
 import type {
   ActiveDriverTrip,
   DriverShiftSummary,
@@ -76,6 +78,11 @@ export async function getActiveDriverTrip(id: string): Promise<ActiveDriverTrip>
   return { ...activeTrip, id };
 }
 
+const acceptTripSchema = z.object({
+  rideId: z.string().min(1),
+  driverUserId: z.string().min(1),
+});
+
 export async function acceptTrip(input: {
   rideId: string;
   driverUserId: string;
@@ -83,13 +90,43 @@ export async function acceptTrip(input: {
   | { success: true; data: { id: string; status: "driver_en_route"; driverId: string } }
   | { success: false; error: string }
 > {
-  await mockDelay();
+  const parsed = acceptTripSchema.safeParse(input);
+  if (!parsed.success) {
+    return { success: false, error: "Invalid trip acceptance request." };
+  }
+
+  const supabase = createServiceRoleClient();
+  const driverResult = await supabase
+    .from("drivers")
+    .select("id")
+    .eq("user_id", parsed.data.driverUserId)
+    .single();
+
+  if (driverResult.error || !driverResult.data) {
+    return { success: false, error: "Driver account was not found." };
+  }
+
+  const rideResult = await supabase
+    .from("rides")
+    .update({
+      status: "driver_en_route",
+      driver_id: driverResult.data.id,
+      matched_at: new Date().toISOString(),
+    })
+    .eq("id", parsed.data.rideId)
+    .select("id,status,driver_id")
+    .single();
+
+  if (rideResult.error || !rideResult.data) {
+    return { success: false, error: "Unable to accept this trip right now." };
+  }
+
   return {
     success: true,
     data: {
-      id: input.rideId,
+      id: rideResult.data.id,
       status: "driver_en_route",
-      driverId: "driver-1",
+      driverId: rideResult.data.driver_id ?? driverResult.data.id,
     },
   };
 }
