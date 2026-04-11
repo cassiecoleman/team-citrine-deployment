@@ -1,7 +1,7 @@
 // @vitest-environment node
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { acceptTrip } from "../actions";
+import { acceptTrip, rejectTrip } from "../actions";
 
 const mockSingle = vi.fn();
 const mockEq = vi.fn(() => ({ single: mockSingle }));
@@ -66,5 +66,36 @@ describe("driver trip operations", () => {
       }),
     );
     expect(mockRideUpdateEq).toHaveBeenCalledWith("id", "ride-22");
+  });
+
+  it("rejects a trip by returning it to matching and clearing the assigned driver", async () => {
+    mockSingle.mockResolvedValueOnce({
+      data: { id: "driver-1" },
+      error: null,
+    });
+    mockRideUpdateSingle.mockResolvedValueOnce({
+      data: { id: "ride-22", status: "matching", driver_id: null },
+      error: null,
+    });
+
+    const result = await rejectTrip({
+      rideId: "ride-22",
+      driverUserId: "auth-user-1",
+      reason: "Driver cannot make pickup ETA",
+    });
+
+    expect(result).toEqual({
+      success: true,
+      data: {
+        id: "ride-22",
+        status: "matching",
+      },
+    });
+    expect(mockRideUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: "matching",
+        driver_id: null,
+      }),
+    );
   });
 });

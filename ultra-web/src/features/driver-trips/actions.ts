@@ -83,6 +83,10 @@ const acceptTripSchema = z.object({
   driverUserId: z.string().min(1),
 });
 
+const rejectTripSchema = acceptTripSchema.extend({
+  reason: z.string().min(1).optional(),
+});
+
 export async function acceptTrip(input: {
   rideId: string;
   driverUserId: string;
@@ -127,6 +131,53 @@ export async function acceptTrip(input: {
       id: rideResult.data.id,
       status: "driver_en_route",
       driverId: rideResult.data.driver_id ?? driverResult.data.id,
+    },
+  };
+}
+
+export async function rejectTrip(input: {
+  rideId: string;
+  driverUserId: string;
+  reason?: string;
+}): Promise<
+  | { success: true; data: { id: string; status: "matching" } }
+  | { success: false; error: string }
+> {
+  const parsed = rejectTripSchema.safeParse(input);
+  if (!parsed.success) {
+    return { success: false, error: "Invalid trip rejection request." };
+  }
+
+  const supabase = createServiceRoleClient();
+  const driverResult = await supabase
+    .from("drivers")
+    .select("id")
+    .eq("user_id", parsed.data.driverUserId)
+    .single();
+
+  if (driverResult.error || !driverResult.data) {
+    return { success: false, error: "Driver account was not found." };
+  }
+
+  const rideResult = await supabase
+    .from("rides")
+    .update({
+      status: "matching",
+      driver_id: null,
+    })
+    .eq("id", parsed.data.rideId)
+    .select("id,status")
+    .single();
+
+  if (rideResult.error || !rideResult.data) {
+    return { success: false, error: "Unable to reject this trip right now." };
+  }
+
+  return {
+    success: true,
+    data: {
+      id: rideResult.data.id,
+      status: "matching",
     },
   };
 }
