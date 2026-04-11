@@ -67,19 +67,104 @@ const activeTrip: ActiveDriverTrip = {
   destinationEtaMin: 18,
 };
 
-export async function getDriverShiftSummary(): Promise<DriverShiftSummary> {
-  await mockDelay();
-  return shiftSummary;
+function resolveDriverUserId(driverUserId?: string): string | undefined {
+  return (
+    driverUserId ??
+    process.env.ULTRA_DEFAULT_DRIVER_USER_ID ??
+    process.env.ULTRA_DEFAULT_USER_ID
+  );
 }
 
-export async function getQueuedTrip(): Promise<TripAssignment> {
-  await mockDelay();
-  return queuedTrip;
+export async function getDriverShiftSummary(
+  driverUserId?: string,
+): Promise<DriverShiftSummary> {
+  const resolvedUserId = resolveDriverUserId(driverUserId);
+  if (!resolvedUserId) {
+    await mockDelay();
+    return shiftSummary;
+  }
+
+  const statusResult = await getDriverStatus(resolvedUserId);
+  if (!statusResult.success) {
+    await mockDelay();
+    return shiftSummary;
+  }
+
+  const assignedTripsResult = await getAssignedTrips(resolvedUserId);
+  const pendingQueueCount = assignedTripsResult.success ? assignedTripsResult.data.length : 0;
+
+  return {
+    ...shiftSummary,
+    driverName: statusResult.data.driverName,
+    status: statusResult.data.status === "offline" ? "offline" : "online",
+    activeTripId: statusResult.data.activeTripId ?? shiftSummary.activeTripId,
+    pendingQueueCount,
+  };
 }
 
-export async function getActiveDriverTrip(id: string): Promise<ActiveDriverTrip> {
-  await mockDelay();
-  return { ...activeTrip, id };
+export async function getQueuedTrip(driverUserId?: string): Promise<TripAssignment> {
+  const resolvedUserId = resolveDriverUserId(driverUserId);
+  if (!resolvedUserId) {
+    await mockDelay();
+    return queuedTrip;
+  }
+
+  const assignedTripsResult = await getAssignedTrips(resolvedUserId);
+  if (!assignedTripsResult.success || assignedTripsResult.data.length === 0) {
+    await mockDelay();
+    return queuedTrip;
+  }
+
+  return assignedTripsResult.data[0] ?? queuedTrip;
+}
+
+export async function getActiveDriverTrip(
+  id: string,
+  driverUserId?: string,
+): Promise<ActiveDriverTrip> {
+  const resolvedUserId = resolveDriverUserId(driverUserId);
+  if (!resolvedUserId) {
+    await mockDelay();
+    return { ...activeTrip, id };
+  }
+
+  const supabase = createServiceRoleClient();
+  const rideResult = await supabase
+    .from("rides")
+    .select(
+      "id,pickup_address,dropoff_address,fare_estimate,distance_miles,riders(name,phone)",
+    )
+    .eq("id", id)
+    .maybeSingle();
+
+  if (rideResult.error || !rideResult.data) {
+    await mockDelay();
+    return { ...activeTrip, id };
+  }
+
+  const riderName =
+    Array.isArray(rideResult.data.riders) && rideResult.data.riders[0]?.name
+      ? rideResult.data.riders[0].name
+      : !Array.isArray(rideResult.data.riders) && rideResult.data.riders?.name
+        ? rideResult.data.riders.name
+        : activeTrip.riderName;
+  const riderPhone =
+    Array.isArray(rideResult.data.riders) && rideResult.data.riders[0]?.phone
+      ? rideResult.data.riders[0].phone
+      : !Array.isArray(rideResult.data.riders) && rideResult.data.riders?.phone
+        ? rideResult.data.riders.phone
+        : activeTrip.riderPhone;
+
+  return {
+    ...activeTrip,
+    id: rideResult.data.id,
+    riderName,
+    pickupAddress: rideResult.data.pickup_address,
+    dropoffAddress: rideResult.data.dropoff_address,
+    offeredFare: rideResult.data.fare_estimate ?? activeTrip.offeredFare,
+    mileageMi: rideResult.data.distance_miles ?? activeTrip.mileageMi,
+    riderPhone: riderPhone ?? activeTrip.riderPhone,
+  };
 }
 
 const acceptTripSchema = z.object({

@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { CarFront, PauseCircle, RadioTower } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
@@ -11,14 +10,10 @@ export function DriverShiftBoard({
 }: {
   summary: DriverShiftSummary;
 }) {
-  const [isOnline, setIsOnline] = useState(summary.status === "online");
+  const isOnline = summary.status === "online";
   const activeStatusLabel = isOnline
     ? "Available for the next assignment"
     : "Offline until the next dispatch window";
-
-  function handleAvailabilityToggle() {
-    setIsOnline((current) => !current);
-  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -98,14 +93,20 @@ export function DriverShiftBoard({
         </div>
 
         <div className="mt-4 grid grid-cols-2 gap-3">
-          <button
-            type="button"
-            onClick={handleAvailabilityToggle}
-            aria-pressed={isOnline}
-            className="rounded-xl border border-border px-4 py-3 text-center text-sm font-semibold transition-colors hover:bg-primary-light"
-          >
-            {isOnline ? "Go Offline" : "Go Online"}
-          </button>
+          <form action="/driver">
+            <input
+              type="hidden"
+              name="availability"
+              value={isOnline ? "offline" : "available"}
+            />
+            <button
+              type="submit"
+              aria-pressed={isOnline}
+              className="w-full rounded-xl border border-border px-4 py-3 text-center text-sm font-semibold transition-colors hover:bg-primary-light"
+            >
+              {isOnline ? "Go Offline" : "Go Online"}
+            </button>
+          </form>
           <Link
             href="/queue"
             className="rounded-xl bg-primary px-4 py-3 text-center text-sm font-semibold text-white"
