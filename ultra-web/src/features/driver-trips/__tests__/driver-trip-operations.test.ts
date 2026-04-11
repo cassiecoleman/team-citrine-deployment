@@ -1,7 +1,7 @@
 // @vitest-environment node
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { acceptTrip, confirmPickup, rejectTrip } from "../actions";
+import { acceptTrip, completeTrip, confirmPickup, rejectTrip } from "../actions";
 
 const mockSingle = vi.fn();
 const mockEq = vi.fn(() => ({ single: mockSingle }));
@@ -11,10 +11,12 @@ const mockRideUpdateSingle = vi.fn();
 const mockRideUpdateSelect = vi.fn(() => ({ single: mockRideUpdateSingle }));
 const mockRideUpdateEq = vi.fn(() => ({ select: mockRideUpdateSelect }));
 const mockRideUpdate = vi.fn(() => ({ eq: mockRideUpdateEq }));
+const mockDriverUpdateEq = vi.fn();
+const mockDriverUpdate = vi.fn(() => ({ eq: mockDriverUpdateEq }));
 
 const mockFrom = vi.fn((table: string) => {
   if (table === "drivers") {
-    return { select: mockSelect };
+    return { select: mockSelect, update: mockDriverUpdate };
   }
 
   if (table === "rides") {
@@ -126,5 +128,43 @@ describe("driver trip operations", () => {
         status: "in_progress",
       }),
     );
+  });
+
+  it("completes a trip with fare_final and sets the driver availability back to available", async () => {
+    mockSingle.mockResolvedValueOnce({
+      data: { id: "driver-1" },
+      error: null,
+    });
+    mockRideUpdateSingle.mockResolvedValueOnce({
+      data: { id: "ride-22", status: "completed", fare_final: 27.5 },
+      error: null,
+    });
+
+    const result = await completeTrip({
+      rideId: "ride-22",
+      driverUserId: "auth-user-1",
+      fareFinal: 27.5,
+    });
+
+    expect(result).toEqual({
+      success: true,
+      data: {
+        id: "ride-22",
+        status: "completed",
+        fareFinal: 27.5,
+      },
+    });
+    expect(mockRideUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: "completed",
+        fare_final: 27.5,
+      }),
+    );
+    expect(mockDriverUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: "available",
+      }),
+    );
+    expect(mockDriverUpdateEq).toHaveBeenCalledWith("id", "driver-1");
   });
 });

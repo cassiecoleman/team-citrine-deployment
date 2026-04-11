@@ -87,6 +87,10 @@ const rejectTripSchema = acceptTripSchema.extend({
   reason: z.string().min(1).optional(),
 });
 
+const completeTripSchema = acceptTripSchema.extend({
+  fareFinal: z.number().nonnegative(),
+});
+
 export async function acceptTrip(input: {
   rideId: string;
   driverUserId: string;
@@ -224,6 +228,62 @@ export async function confirmPickup(input: {
     data: {
       id: rideResult.data.id,
       status: "in_progress",
+    },
+  };
+}
+
+export async function completeTrip(input: {
+  rideId: string;
+  driverUserId: string;
+  fareFinal: number;
+}): Promise<
+  | { success: true; data: { id: string; status: "completed"; fareFinal: number } }
+  | { success: false; error: string }
+> {
+  const parsed = completeTripSchema.safeParse(input);
+  if (!parsed.success) {
+    return { success: false, error: "Invalid trip completion request." };
+  }
+
+  const supabase = createServiceRoleClient();
+  const driverResult = await supabase
+    .from("drivers")
+    .select("id")
+    .eq("user_id", parsed.data.driverUserId)
+    .single();
+
+  if (driverResult.error || !driverResult.data) {
+    return { success: false, error: "Driver account was not found." };
+  }
+
+  const rideResult = await supabase
+    .from("rides")
+    .update({
+      status: "completed",
+      fare_final: parsed.data.fareFinal,
+      completed_at: new Date().toISOString(),
+    })
+    .eq("id", parsed.data.rideId)
+    .select("id,status,fare_final")
+    .single();
+
+  if (rideResult.error || !rideResult.data) {
+    return { success: false, error: "Unable to complete this trip right now." };
+  }
+
+  await supabase
+    .from("drivers")
+    .update({
+      status: "available",
+    })
+    .eq("id", driverResult.data.id);
+
+  return {
+    success: true,
+    data: {
+      id: rideResult.data.id,
+      status: "completed",
+      fareFinal: rideResult.data.fare_final ?? parsed.data.fareFinal,
     },
   };
 }
