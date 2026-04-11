@@ -20,6 +20,10 @@ export interface ScheduleRideInput extends CreateRideInput {
   scheduledFor: string;
 }
 
+export interface RecurringRideInput extends ScheduleRideInput {
+  recurrenceRule: string;
+}
+
 export type RideActionResult<T> =
   | { success: true; data: T }
   | { success: false; error: string };
@@ -42,6 +46,10 @@ const createRideSchema = z.object({
 
 const scheduleRideSchema = createRideSchema.extend({
   scheduledFor: z.iso.datetime(),
+});
+
+const recurringRideSchema = scheduleRideSchema.extend({
+  recurrenceRule: z.string().min(1),
 });
 
 export async function getScheduleDefaults(): Promise<{
@@ -186,6 +194,67 @@ export async function scheduleRide(
     return {
       success: false,
       error: "Unable to schedule a ride right now.",
+    };
+  }
+
+  return {
+    success: true,
+    data: {
+      id: rideResult.data.id,
+      status: rideResult.data.status,
+    },
+  };
+}
+
+export async function createRecurringRide(
+  input: RecurringRideInput,
+  userId?: string,
+): Promise<RideActionResult<RideActionResponse>> {
+  if (!userId) {
+    return { success: false, error: "You must be signed in to request a ride." };
+  }
+
+  const parsed = recurringRideSchema.safeParse(input);
+  if (!parsed.success) {
+    return { success: false, error: "Invalid ride request details." };
+  }
+
+  const supabase = createServiceRoleClient();
+  const riderResult = await supabase
+    .from("riders")
+    .select("id")
+    .eq("user_id", userId)
+    .single();
+
+  if (riderResult.error || !riderResult.data) {
+    return {
+      success: false,
+      error: "No rider profile found for this account.",
+    };
+  }
+
+  const rideResult = await supabase
+    .from("rides")
+    .insert({
+      rider_id: riderResult.data.id,
+      pickup_lat: parsed.data.pickup.lat,
+      pickup_lng: parsed.data.pickup.lng,
+      pickup_address: parsed.data.pickup.address,
+      dropoff_lat: parsed.data.dropoff.lat,
+      dropoff_lng: parsed.data.dropoff.lng,
+      dropoff_address: parsed.data.dropoff.address,
+      status: "requested",
+      scheduled_for: parsed.data.scheduledFor,
+      is_recurring: true,
+      recurrence_rule: parsed.data.recurrenceRule,
+    })
+    .select("id,status")
+    .single();
+
+  if (rideResult.error || !rideResult.data) {
+    return {
+      success: false,
+      error: "Unable to schedule a recurring ride right now.",
     };
   }
 

@@ -1,7 +1,7 @@
 // @vitest-environment node
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createRide, scheduleRide } from "../actions";
+import { createRecurringRide, createRide, scheduleRide } from "../actions";
 
 const mockSingle = vi.fn();
 const mockEq = vi.fn(() => ({ single: mockSingle }));
@@ -98,5 +98,39 @@ describe("ride scheduling actions", () => {
       success: false,
       error: "Scheduled rides must be within the next 7 days.",
     });
+  });
+
+  it("creates a recurring ride with recurrence metadata", async () => {
+    mockSingle
+      .mockResolvedValueOnce({ data: { id: "rider-1" }, error: null })
+      .mockResolvedValueOnce({
+        data: { id: "ride-recurring-1", status: "requested", is_recurring: true },
+        error: null,
+      });
+
+    const result = await createRecurringRide(
+      {
+        pickup: { lat: 35.1495, lng: -90.049, address: "123 Beale St, Memphis, TN" },
+        dropoff: {
+          lat: 35.1174,
+          lng: -89.9711,
+          address: "456 Elvis Presley Blvd, Memphis, TN",
+        },
+        scheduledFor: new Date().toISOString(),
+        recurrenceRule: "FREQ=WEEKLY;BYDAY=MO,WE,FR",
+      },
+      "user-1",
+    );
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.id).toBe("ride-recurring-1");
+    }
+    expect(mockInsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        is_recurring: true,
+        recurrence_rule: "FREQ=WEEKLY;BYDAY=MO,WE,FR",
+      }),
+    );
   });
 });
