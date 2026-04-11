@@ -2,6 +2,7 @@ import { homeLocation, hospitalLocation } from "@/lib/mock-data";
 import { mockDelay } from "@/lib/mock-delay";
 import type { Location } from "@/types";
 import { createServiceRoleClient } from "@/lib/supabase-server";
+import { z } from "zod";
 import type { RiderProfile, ScheduledRide } from "./types";
 
 export interface RideLocationInput {
@@ -15,6 +16,10 @@ export interface CreateRideInput {
   dropoff: RideLocationInput;
 }
 
+export interface ScheduleRideInput extends CreateRideInput {
+  scheduledFor: string;
+}
+
 export type RideActionResult<T> =
   | { success: true; data: T }
   | { success: false; error: string };
@@ -23,6 +28,21 @@ interface RideActionResponse {
   id: string;
   status: string;
 }
+
+const locationSchema = z.object({
+  lat: z.number(),
+  lng: z.number(),
+  address: z.string().min(1),
+});
+
+const createRideSchema = z.object({
+  pickup: locationSchema,
+  dropoff: locationSchema,
+});
+
+const scheduleRideSchema = createRideSchema.extend({
+  scheduledFor: z.iso.datetime(),
+});
 
 export async function getScheduleDefaults(): Promise<{
   pickup: Location;
@@ -60,6 +80,11 @@ export async function createRide(
     return { success: false, error: "You must be signed in to request a ride." };
   }
 
+  const parsed = createRideSchema.safeParse(input);
+  if (!parsed.success) {
+    return { success: false, error: "Invalid ride request details." };
+  }
+
   const supabase = createServiceRoleClient();
 
   const riderResult = await supabase
@@ -82,9 +107,9 @@ export async function createRide(
       pickup_lat: input.pickup.lat,
       pickup_lng: input.pickup.lng,
       pickup_address: input.pickup.address,
-      dropoff_lat: input.dropoff.lat,
-      dropoff_lng: input.dropoff.lng,
-      dropoff_address: input.dropoff.address,
+      dropoff_lat: parsed.data.dropoff.lat,
+      dropoff_lng: parsed.data.dropoff.lng,
+      dropoff_address: parsed.data.dropoff.address,
       status: "requested",
     })
     .select("id,status")
@@ -94,6 +119,73 @@ export async function createRide(
     return {
       success: false,
       error: "Unable to request a ride right now.",
+    };
+  }
+
+  return {
+    success: true,
+    data: {
+      id: rideResult.data.id,
+      status: rideResult.data.status,
+    },
+  };
+}
+
+export async function scheduleRide(
+  input: ScheduleRideInput,
+  userId?: string,
+): Promise<RideActionResult<RideActionResponse>> {
+  if (!userId) {
+    return { success: false, error: "You must be signed in to request a ride." };
+  }
+
+  const parsed = scheduleRideSchema.safeParse(input);
+  if (!parsed.success) {
+    return { success: false, error: "Invalid ride request details." };
+  }
+
+  const scheduledFor = new Date(parsed.data.scheduledFor);
+  const maxDate = new Date();
+  maxDate.setDate(maxDate.getDate() + 7);
+
+  if (scheduledFor > maxDate) {
+    return { success: false, error: "Scheduled rides must be within the next 7 days." };
+  }
+
+  const supabase = createServiceRoleClient();
+  const riderResult = await supabase
+    .from("riders")
+    .select("id")
+    .eq("user_id", userId)
+    .single();
+
+  if (riderResult.error || !riderResult.data) {
+    return {
+      success: false,
+      error: "No rider profile found for this account.",
+    };
+  }
+
+  const rideResult = await supabase
+    .from("rides")
+    .insert({
+      rider_id: riderResult.data.id,
+      pickup_lat: parsed.data.pickup.lat,
+      pickup_lng: parsed.data.pickup.lng,
+      pickup_address: parsed.data.pickup.address,
+      dropoff_lat: parsed.data.dropoff.lat,
+      dropoff_lng: parsed.data.dropoff.lng,
+      dropoff_address: parsed.data.dropoff.address,
+      status: "requested",
+      scheduled_for: scheduledFor.toISOString(),
+    })
+    .select("id,status")
+    .single();
+
+  if (rideResult.error || !rideResult.data) {
+    return {
+      success: false,
+      error: "Unable to schedule a ride right now.",
     };
   }
 
