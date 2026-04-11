@@ -181,3 +181,49 @@ export async function rejectTrip(input: {
     },
   };
 }
+
+export async function confirmPickup(input: {
+  rideId: string;
+  driverUserId: string;
+}): Promise<
+  | { success: true; data: { id: string; status: "in_progress" } }
+  | { success: false; error: string }
+> {
+  const parsed = acceptTripSchema.safeParse(input);
+  if (!parsed.success) {
+    return { success: false, error: "Invalid pickup confirmation request." };
+  }
+
+  const supabase = createServiceRoleClient();
+  const driverResult = await supabase
+    .from("drivers")
+    .select("id")
+    .eq("user_id", parsed.data.driverUserId)
+    .single();
+
+  if (driverResult.error || !driverResult.data) {
+    return { success: false, error: "Driver account was not found." };
+  }
+
+  const rideResult = await supabase
+    .from("rides")
+    .update({
+      status: "in_progress",
+      pickup_at: new Date().toISOString(),
+    })
+    .eq("id", parsed.data.rideId)
+    .select("id,status")
+    .single();
+
+  if (rideResult.error || !rideResult.data) {
+    return { success: false, error: "Unable to confirm pickup right now." };
+  }
+
+  return {
+    success: true,
+    data: {
+      id: rideResult.data.id,
+      status: "in_progress",
+    },
+  };
+}
