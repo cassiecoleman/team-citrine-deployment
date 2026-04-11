@@ -3,6 +3,21 @@ import { mockDelay } from "@/lib/mock-delay";
 import type { Location } from "@/types";
 import type { RiderProfile, ScheduledRide } from "./types";
 
+export interface RideLocationInput {
+  lat: number;
+  lng: number;
+  address: string;
+}
+
+export interface CreateRideInput {
+  pickup: RideLocationInput;
+  dropoff: RideLocationInput;
+}
+
+export type RideActionResult<T> =
+  | { success: true; data: T }
+  | { success: false; error: string };
+
 export async function getScheduleDefaults(): Promise<{
   pickup: Location;
   dropoff: Location;
@@ -29,4 +44,15 @@ export async function submitSchedule(
 ): Promise<{ success: boolean }> {
   await mockDelay(500, 1000);
   return { success: true };
+}
+
+export async function createRide(
+  _: CreateRideInput,
+  userId?: string,
+): Promise<RideActionResult<null>> {
+  if (!userId) {
+    return { success: false, error: "You must be signed in to request a ride." };
+  }
+
+  return { success: true, data: null };
 }
