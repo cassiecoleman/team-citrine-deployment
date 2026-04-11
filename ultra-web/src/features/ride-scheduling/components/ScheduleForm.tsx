@@ -22,9 +22,16 @@ interface ScheduleFormProps {
   dropoff: Location;
   fare: number;
   profiles: RiderProfile[];
+  submitScheduleAction: (formData: FormData) => void | Promise<void>;
 }
 
-export function ScheduleForm({ pickup, dropoff, fare, profiles }: ScheduleFormProps) {
+export function ScheduleForm({
+  pickup,
+  dropoff,
+  fare,
+  profiles,
+  submitScheduleAction,
+}: ScheduleFormProps) {
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [isRecurring, setIsRecurring] = useState(false);
@@ -45,7 +52,16 @@ export function ScheduleForm({ pickup, dropoff, fare, profiles }: ScheduleFormPr
   }
 
   return (
-    <div className="flex flex-col gap-4 p-4">
+    <form action={submitScheduleAction} className="flex flex-col gap-4 p-4">
+      <input type="hidden" name="isRecurring" value={isRecurring ? "true" : "false"} />
+      <input type="hidden" name="recurringDays" value={Array.from(selectedDays).join(",")} />
+      <input type="hidden" name="pickupAddress" value={pickup.address} />
+      <input type="hidden" name="pickupLat" value={pickup.lat} />
+      <input type="hidden" name="pickupLng" value={pickup.lng} />
+      <input type="hidden" name="dropoffAddress" value={dropoff.address} />
+      <input type="hidden" name="dropoffLat" value={dropoff.lat} />
+      <input type="hidden" name="dropoffLng" value={dropoff.lng} />
+
       {/* Pickup */}
       <div className="rounded-lg border border-border px-4 py-2.5 text-sm">
         <div className="flex items-center gap-2">
@@ -70,6 +86,7 @@ export function ScheduleForm({ pickup, dropoff, fare, profiles }: ScheduleFormPr
         </label>
         <input
           type="date"
+          name="date"
           value={date}
           onChange={(e) => setDate(e.target.value)}
           min={getTodayDate()}
@@ -86,6 +103,7 @@ export function ScheduleForm({ pickup, dropoff, fare, profiles }: ScheduleFormPr
         </label>
         <input
           type="time"
+          name="time"
           value={time}
           onChange={(e) => setTime(e.target.value)}
           className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm outline-none focus:border-primary"
@@ -142,6 +160,7 @@ export function ScheduleForm({ pickup, dropoff, fare, profiles }: ScheduleFormPr
             </label>
             <div className="relative">
               <select
+                name="riderProfileId"
                 value={selectedProfile}
                 onChange={(e) => setSelectedProfile(e.target.value)}
                 className="w-full appearance-none rounded-lg border border-border bg-card px-3 py-2 text-sm outline-none focus:border-primary"
@@ -165,6 +184,7 @@ export function ScheduleForm({ pickup, dropoff, fare, profiles }: ScheduleFormPr
             </label>
             <input
               type="date"
+              name="endDate"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
               min={getTodayDate()}
@@ -183,11 +203,11 @@ export function ScheduleForm({ pickup, dropoff, fare, profiles }: ScheduleFormPr
 
       {/* Confirm button */}
       <button
-        type="button"
+        type="submit"
         className="w-full rounded-xl bg-primary py-4 text-white font-semibold"
       >
         Confirm Schedule
       </button>
-    </div>
+    </form>
   );
 }

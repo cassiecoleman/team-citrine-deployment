@@ -5,7 +5,12 @@ import { MapPin, CreditCard, Users, Calendar } from "lucide-react";
 import type { FareEstimate } from "@/features/fare-split/types";
 import { formatCurrency } from "@/lib/utils";
 
-export function BookingClient({ estimate }: { estimate: FareEstimate }) {
+interface BookingClientProps {
+  estimate: FareEstimate;
+  requestRideAction: (formData: FormData) => void | Promise<void>;
+}
+
+export function BookingClient({ estimate, requestRideAction }: BookingClientProps) {
   return (
     <div className="flex flex-col gap-4 p-4">
       {/* Map placeholder */}
@@ -74,12 +79,14 @@ export function BookingClient({ estimate }: { estimate: FareEstimate }) {
       </Link>
 
       {/* Request Ride CTA */}
-      <Link
-        href="/ride/new-ride"
-        className="w-full rounded-xl bg-primary py-4 text-center text-white font-semibold"
-      >
-        Request Ride {formatCurrency(estimate.totalFare)}
-      </Link>
+      <form action={requestRideAction}>
+        <button
+          type="submit"
+          className="w-full rounded-xl bg-primary py-4 text-center text-white font-semibold"
+        >
+          Request Ride {formatCurrency(estimate.totalFare)}
+        </button>
+      </form>
     </div>
   );
 }

@@ -35,6 +35,7 @@ const defaultProps = {
   dropoff: mockDropoff,
   fare: 12,
   profiles: mockProfiles,
+  submitScheduleAction: async () => {},
 };
 
 describe("ScheduleForm", () => {

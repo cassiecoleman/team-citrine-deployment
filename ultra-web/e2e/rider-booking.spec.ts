@@ -15,4 +15,13 @@ test.describe("US12 — request a ride", () => {
     await page.getByText("Split Fare").click();
     await expect(page).toHaveURL("/book/split");
   });
+
+  test("request ride submits booking and transitions to an active ride route", async ({
+    page,
+  }) => {
+    await page.goto("/book");
+
+    await page.getByRole("button", { name: /request ride/i }).click();
+    await expect(page).toHaveURL(/\/ride\/.+/);
+  });
 });
