@@ -5,11 +5,15 @@ import {
   cancelRide,
   createRecurringRide,
   createRide,
+  getRideById,
+  getRidesForRider,
   scheduleRide,
 } from "../actions";
 
 const mockSingle = vi.fn();
-const mockEq = vi.fn(() => ({ single: mockSingle }));
+const mockRange = vi.fn();
+const mockOrder = vi.fn(() => ({ range: mockRange }));
+const mockEq = vi.fn(() => ({ single: mockSingle, order: mockOrder }));
 const mockSelect = vi.fn(() => ({ eq: mockEq }));
 const mockInsert = vi.fn(() => ({ select: () => ({ single: mockSingle }) }));
 const mockUpdate = vi.fn(() => ({ eq: () => ({ select: () => ({ single: mockSingle }) }) }));
@@ -159,5 +163,45 @@ describe("ride scheduling actions", () => {
         cancel_reason: "Rider requested cancellation",
       }),
     );
+  });
+
+  it("fetches a ride by id with driver details", async () => {
+    mockSingle.mockResolvedValueOnce({
+      data: {
+        id: "ride-1",
+        status: "requested",
+        driver_id: "driver-1",
+        drivers: { id: "driver-1", name: "Sam Driver", status: "available" },
+      },
+      error: null,
+    });
+
+    const result = await getRideById("ride-1");
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.id).toBe("ride-1");
+      expect(result.data.drivers?.name).toBe("Sam Driver");
+    }
+  });
+
+  it("lists rider rides with pagination", async () => {
+    mockSingle.mockResolvedValueOnce({ data: { id: "rider-1" }, error: null });
+    mockRange.mockResolvedValueOnce({
+      data: [
+        { id: "ride-1", status: "requested", requested_at: "2026-04-11T00:00:00.000Z" },
+        { id: "ride-2", status: "cancelled", requested_at: "2026-04-10T00:00:00.000Z" },
+      ],
+      error: null,
+    });
+
+    const result = await getRidesForRider("user-1", { page: 1, pageSize: 2 });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.items).toHaveLength(2);
+      expect(result.data.page).toBe(1);
+      expect(result.data.pageSize).toBe(2);
+    }
   });
 });

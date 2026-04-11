@@ -57,6 +57,11 @@ const cancelRideSchema = z.object({
   reason: z.string().min(1),
 });
 
+const paginationSchema = z.object({
+  page: z.number().int().min(1).default(1),
+  pageSize: z.number().int().min(1).max(50).default(10),
+});
+
 export async function getScheduleDefaults(): Promise<{
   pickup: Location;
   dropoff: Location;
@@ -303,6 +308,84 @@ export async function cancelRide(
       id: cancelResult.data.id,
       status: cancelResult.data.status,
       refundStatus: "pending",
+    },
+  };
+}
+
+type RideWithDriver = {
+  id: string;
+  status: string;
+  driver_id: string | null;
+  drivers?: { id: string; name: string; status: string } | null;
+};
+
+export async function getRideById(rideId: string): Promise<RideActionResult<RideWithDriver>> {
+  const supabase = createServiceRoleClient();
+  const rideResult = await supabase
+    .from("rides")
+    .select("id,status,driver_id,drivers(id,name,status)")
+    .eq("id", rideId)
+    .single();
+
+  if (rideResult.error || !rideResult.data) {
+    return { success: false, error: "Ride not found." };
+  }
+
+  return {
+    success: true,
+    data: rideResult.data as RideWithDriver,
+  };
+}
+
+export async function getRidesForRider(
+  userId: string,
+  pagination: { page?: number; pageSize?: number } = {},
+): Promise<RideActionResult<{ items: { id: string; status: string; requested_at: string }[]; page: number; pageSize: number }>> {
+  if (!userId) {
+    return { success: false, error: "You must be signed in to view rides." };
+  }
+
+  const parsedPagination = paginationSchema.safeParse(pagination);
+  if (!parsedPagination.success) {
+    return { success: false, error: "Invalid pagination options." };
+  }
+
+  const page = parsedPagination.data.page;
+  const pageSize = parsedPagination.data.pageSize;
+  const start = (page - 1) * pageSize;
+  const end = start + pageSize - 1;
+
+  const supabase = createServiceRoleClient();
+  const riderResult = await supabase
+    .from("riders")
+    .select("id")
+    .eq("user_id", userId)
+    .single();
+
+  if (riderResult.error || !riderResult.data) {
+    return {
+      success: false,
+      error: "No rider profile found for this account.",
+    };
+  }
+
+  const ridesResult = await supabase
+    .from("rides")
+    .select("id,status,requested_at")
+    .eq("rider_id", riderResult.data.id)
+    .order("requested_at", { ascending: false })
+    .range(start, end);
+
+  if (ridesResult.error || !ridesResult.data) {
+    return { success: false, error: "Unable to load rides right now." };
+  }
+
+  return {
+    success: true,
+    data: {
+      items: ridesResult.data as { id: string; status: string; requested_at: string }[],
+      page,
+      pageSize,
     },
   };
 }
