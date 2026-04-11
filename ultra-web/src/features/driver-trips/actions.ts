@@ -287,3 +287,50 @@ export async function completeTrip(input: {
     },
   };
 }
+
+export async function getDriverStatus(
+  driverUserId: string,
+): Promise<
+  | {
+      success: true;
+      data: {
+        driverId: string;
+        driverName: string;
+        status: string;
+        activeTripId: string | null;
+      };
+    }
+  | { success: false; error: string }
+> {
+  if (!driverUserId) {
+    return { success: false, error: "Driver user id is required." };
+  }
+
+  const supabase = createServiceRoleClient();
+  const driverResult = await supabase
+    .from("drivers")
+    .select("id,name,status")
+    .eq("user_id", driverUserId)
+    .single();
+
+  if (driverResult.error || !driverResult.data) {
+    return { success: false, error: "Driver account was not found." };
+  }
+
+  const activeTripResult = await supabase
+    .from("rides")
+    .select("id,status")
+    .eq("driver_id", driverResult.data.id)
+    .in("status", ["driver_en_route", "arrived", "in_progress"])
+    .maybeSingle();
+
+  return {
+    success: true,
+    data: {
+      driverId: driverResult.data.id,
+      driverName: driverResult.data.name,
+      status: driverResult.data.status,
+      activeTripId: activeTripResult.data?.id ?? null,
+    },
+  };
+}

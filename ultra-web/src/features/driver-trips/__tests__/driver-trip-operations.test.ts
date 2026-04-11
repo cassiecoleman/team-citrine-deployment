@@ -1,7 +1,13 @@
 // @vitest-environment node
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { acceptTrip, completeTrip, confirmPickup, rejectTrip } from "../actions";
+import {
+  acceptTrip,
+  completeTrip,
+  confirmPickup,
+  getDriverStatus,
+  rejectTrip,
+} from "../actions";
 
 const mockSingle = vi.fn();
 const mockEq = vi.fn(() => ({ single: mockSingle }));
@@ -11,6 +17,10 @@ const mockRideUpdateSingle = vi.fn();
 const mockRideUpdateSelect = vi.fn(() => ({ single: mockRideUpdateSingle }));
 const mockRideUpdateEq = vi.fn(() => ({ select: mockRideUpdateSelect }));
 const mockRideUpdate = vi.fn(() => ({ eq: mockRideUpdateEq }));
+const mockRideMaybeSingle = vi.fn();
+const mockRideIn = vi.fn(() => ({ maybeSingle: mockRideMaybeSingle }));
+const mockRideSelectEq = vi.fn(() => ({ in: mockRideIn, maybeSingle: mockRideMaybeSingle }));
+const mockRideSelect = vi.fn(() => ({ eq: mockRideSelectEq }));
 const mockDriverUpdateEq = vi.fn();
 const mockDriverUpdate = vi.fn(() => ({ eq: mockDriverUpdateEq }));
 
@@ -20,7 +30,7 @@ const mockFrom = vi.fn((table: string) => {
   }
 
   if (table === "rides") {
-    return { update: mockRideUpdate };
+    return { update: mockRideUpdate, select: mockRideSelect };
   }
 
   return {};
@@ -166,5 +176,30 @@ describe("driver trip operations", () => {
       }),
     );
     expect(mockDriverUpdateEq).toHaveBeenCalledWith("id", "driver-1");
+  });
+
+  it("returns current driver status with active trip id when one exists", async () => {
+    mockSingle.mockResolvedValueOnce({
+      data: { id: "driver-1", status: "on_trip", name: "Marcus W." },
+      error: null,
+    });
+    mockRideMaybeSingle.mockResolvedValueOnce({
+      data: { id: "ride-99", status: "in_progress" },
+      error: null,
+    });
+
+    const result = await getDriverStatus("auth-user-1");
+
+    expect(result).toEqual({
+      success: true,
+      data: {
+        driverId: "driver-1",
+        driverName: "Marcus W.",
+        status: "on_trip",
+        activeTripId: "ride-99",
+      },
+    });
+    expect(mockFrom).toHaveBeenCalledWith("drivers");
+    expect(mockFrom).toHaveBeenCalledWith("rides");
   });
 });
