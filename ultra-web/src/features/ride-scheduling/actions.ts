@@ -52,6 +52,11 @@ const recurringRideSchema = scheduleRideSchema.extend({
   recurrenceRule: z.string().min(1),
 });
 
+const cancelRideSchema = z.object({
+  rideId: z.string().uuid().or(z.string().min(1)),
+  reason: z.string().min(1),
+});
+
 export async function getScheduleDefaults(): Promise<{
   pickup: Location;
   dropoff: Location;
@@ -263,6 +268,41 @@ export async function createRecurringRide(
     data: {
       id: rideResult.data.id,
       status: rideResult.data.status,
+    },
+  };
+}
+
+export async function cancelRide(
+  rideId: string,
+  reason: string,
+): Promise<RideActionResult<{ id: string; status: string; refundStatus: "pending" }>> {
+  const parsed = cancelRideSchema.safeParse({ rideId, reason });
+  if (!parsed.success) {
+    return { success: false, error: "Invalid cancellation request." };
+  }
+
+  const supabase = createServiceRoleClient();
+  const cancelResult = await supabase
+    .from("rides")
+    .update({
+      status: "cancelled",
+      cancel_reason: parsed.data.reason,
+      cancelled_at: new Date().toISOString(),
+    })
+    .eq("id", parsed.data.rideId)
+    .select("id,status")
+    .single();
+
+  if (cancelResult.error || !cancelResult.data) {
+    return { success: false, error: "Unable to cancel this ride right now." };
+  }
+
+  return {
+    success: true,
+    data: {
+      id: cancelResult.data.id,
+      status: cancelResult.data.status,
+      refundStatus: "pending",
     },
   };
 }

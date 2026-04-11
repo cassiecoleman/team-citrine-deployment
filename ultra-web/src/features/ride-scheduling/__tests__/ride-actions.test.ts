@@ -1,18 +1,24 @@
 // @vitest-environment node
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createRecurringRide, createRide, scheduleRide } from "../actions";
+import {
+  cancelRide,
+  createRecurringRide,
+  createRide,
+  scheduleRide,
+} from "../actions";
 
 const mockSingle = vi.fn();
 const mockEq = vi.fn(() => ({ single: mockSingle }));
 const mockSelect = vi.fn(() => ({ eq: mockEq }));
 const mockInsert = vi.fn(() => ({ select: () => ({ single: mockSingle }) }));
+const mockUpdate = vi.fn(() => ({ eq: () => ({ select: () => ({ single: mockSingle }) }) }));
 const mockFrom = vi.fn((table: string) => {
   if (table === "riders") {
     return { select: mockSelect };
   }
   if (table === "rides") {
-    return { insert: mockInsert };
+    return { insert: mockInsert, update: mockUpdate, select: mockSelect };
   }
   return {};
 });
@@ -130,6 +136,27 @@ describe("ride scheduling actions", () => {
       expect.objectContaining({
         is_recurring: true,
         recurrence_rule: "FREQ=WEEKLY;BYDAY=MO,WE,FR",
+      }),
+    );
+  });
+
+  it("cancels a ride and marks refund handling as pending", async () => {
+    mockSingle.mockResolvedValueOnce({
+      data: { id: "ride-1", status: "cancelled" },
+      error: null,
+    });
+
+    const result = await cancelRide("ride-1", "Rider requested cancellation");
+
+    expect(result).toEqual({
+      success: true,
+      data: { id: "ride-1", status: "cancelled", refundStatus: "pending" },
+    });
+    expect(mockFrom).toHaveBeenCalledWith("rides");
+    expect(mockUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: "cancelled",
+        cancel_reason: "Rider requested cancellation",
       }),
     );
   });
