@@ -129,6 +129,10 @@ describe("driver trip operations", () => {
       data: { id: "driver-1" },
       error: null,
     });
+    mockRideSelectSingle.mockResolvedValueOnce({
+      data: { id: "ride-22", status: "driver_en_route", driver_id: "driver-1" },
+      error: null,
+    });
     mockRideUpdateSingle.mockResolvedValueOnce({
       data: { id: "ride-22", status: "in_progress" },
       error: null,
@@ -292,6 +296,27 @@ describe("driver trip operations", () => {
     expect(result).toEqual({
       success: false,
       error: "Trip is not available to accept.",
+    });
+  });
+
+  it("rejects confirmPickup when the ride is assigned to a different driver", async () => {
+    mockSingle.mockResolvedValueOnce({
+      data: { id: "driver-1" },
+      error: null,
+    });
+    mockRideSelectSingle.mockResolvedValueOnce({
+      data: { id: "ride-22", status: "driver_en_route", driver_id: "driver-2" },
+      error: null,
+    });
+
+    const result = await confirmPickup({
+      rideId: "ride-22",
+      driverUserId: "auth-user-1",
+    });
+
+    expect(result).toEqual({
+      success: false,
+      error: "Trip is not assigned to this driver.",
     });
   });
 });
