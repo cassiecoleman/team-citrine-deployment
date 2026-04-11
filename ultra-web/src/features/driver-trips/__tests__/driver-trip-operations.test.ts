@@ -7,6 +7,7 @@ import {
   confirmPickup,
   getDriverStatus,
   rejectTrip,
+  toggleDriverAvailability,
 } from "../actions";
 
 const mockSingle = vi.fn();
@@ -201,5 +202,31 @@ describe("driver trip operations", () => {
     });
     expect(mockFrom).toHaveBeenCalledWith("drivers");
     expect(mockFrom).toHaveBeenCalledWith("rides");
+  });
+
+  it("toggles a driver from available to offline", async () => {
+    mockSingle.mockResolvedValueOnce({
+      data: { id: "driver-1", status: "available" },
+      error: null,
+    });
+
+    const result = await toggleDriverAvailability({
+      driverUserId: "auth-user-1",
+      nextStatus: "offline",
+    });
+
+    expect(result).toEqual({
+      success: true,
+      data: {
+        driverId: "driver-1",
+        status: "offline",
+      },
+    });
+    expect(mockDriverUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: "offline",
+      }),
+    );
+    expect(mockDriverUpdateEq).toHaveBeenCalledWith("id", "driver-1");
   });
 });

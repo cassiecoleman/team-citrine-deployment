@@ -91,6 +91,11 @@ const completeTripSchema = acceptTripSchema.extend({
   fareFinal: z.number().nonnegative(),
 });
 
+const toggleAvailabilitySchema = z.object({
+  driverUserId: z.string().min(1),
+  nextStatus: z.enum(["available", "offline"]),
+});
+
 export async function acceptTrip(input: {
   rideId: string;
   driverUserId: string;
@@ -331,6 +336,45 @@ export async function getDriverStatus(
       driverName: driverResult.data.name,
       status: driverResult.data.status,
       activeTripId: activeTripResult.data?.id ?? null,
+    },
+  };
+}
+
+export async function toggleDriverAvailability(input: {
+  driverUserId: string;
+  nextStatus: "available" | "offline";
+}): Promise<
+  | { success: true; data: { driverId: string; status: "available" | "offline" } }
+  | { success: false; error: string }
+> {
+  const parsed = toggleAvailabilitySchema.safeParse(input);
+  if (!parsed.success) {
+    return { success: false, error: "Invalid availability request." };
+  }
+
+  const supabase = createServiceRoleClient();
+  const driverResult = await supabase
+    .from("drivers")
+    .select("id,status")
+    .eq("user_id", parsed.data.driverUserId)
+    .single();
+
+  if (driverResult.error || !driverResult.data) {
+    return { success: false, error: "Driver account was not found." };
+  }
+
+  await supabase
+    .from("drivers")
+    .update({
+      status: parsed.data.nextStatus,
+    })
+    .eq("id", driverResult.data.id);
+
+  return {
+    success: true,
+    data: {
+      driverId: driverResult.data.id,
+      status: parsed.data.nextStatus,
     },
   };
 }
