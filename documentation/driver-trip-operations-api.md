@@ -29,11 +29,14 @@ This feature implements Supabase-backed server actions for US18, US19, and US20.
 
 - `confirmPickup({ rideId, driverUserId })`
   - Resolves `drivers.id` from `drivers.user_id`
+  - Verifies the ride is assigned to the requesting driver when `rides.driver_id` is set
   - Updates `rides.status` to `in_progress`
   - Sets `rides.pickup_at`
 
 - `completeTrip({ rideId, driverUserId, fareFinal })`
   - Resolves `drivers.id` from `drivers.user_id`
+  - Verifies the ride is assigned to the requesting driver when `rides.driver_id` is set
+  - Enforces that the ride is currently `in_progress` before completing
   - Updates `rides.status` to `completed`
   - Sets `rides.fare_final` and `rides.completed_at`
   - Sets `drivers.status` back to `available`
