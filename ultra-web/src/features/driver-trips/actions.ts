@@ -75,3 +75,21 @@ export async function getActiveDriverTrip(id: string): Promise<ActiveDriverTrip>
   await mockDelay();
   return { ...activeTrip, id };
 }
+
+export async function acceptTrip(input: {
+  rideId: string;
+  driverUserId: string;
+}): Promise<
+  | { success: true; data: { id: string; status: "driver_en_route"; driverId: string } }
+  | { success: false; error: string }
+> {
+  await mockDelay();
+  return {
+    success: true,
+    data: {
+      id: input.rideId,
+      status: "driver_en_route",
+      driverId: "driver-1",
+    },
+  };
+}
