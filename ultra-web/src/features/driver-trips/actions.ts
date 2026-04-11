@@ -398,6 +398,10 @@ export async function completeTrip(input: {
     return { success: false, error: "Trip is not assigned to this driver." };
   }
 
+  if (currentRideResult.data.status !== "in_progress") {
+    return { success: false, error: "Trip is not in progress." };
+  }
+
   const rideResult = await supabase
     .from("rides")
     .update({

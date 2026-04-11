@@ -345,4 +345,26 @@ describe("driver trip operations", () => {
       error: "Trip is not assigned to this driver.",
     });
   });
+
+  it("rejects completeTrip when the ride is not currently in progress", async () => {
+    mockSingle.mockResolvedValueOnce({
+      data: { id: "driver-1" },
+      error: null,
+    });
+    mockRideSelectSingle.mockResolvedValueOnce({
+      data: { id: "ride-22", status: "driver_en_route", driver_id: "driver-1" },
+      error: null,
+    });
+
+    const result = await completeTrip({
+      rideId: "ride-22",
+      driverUserId: "auth-user-1",
+      fareFinal: 19.5,
+    });
+
+    expect(result).toEqual({
+      success: false,
+      error: "Trip is not in progress.",
+    });
+  });
 });
