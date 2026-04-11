@@ -1,6 +1,7 @@
 import { homeLocation, hospitalLocation } from "@/lib/mock-data";
 import { mockDelay } from "@/lib/mock-delay";
 import type { Location } from "@/types";
+import { createServiceRoleClient } from "@/lib/supabase-server";
 import type { RiderProfile, ScheduledRide } from "./types";
 
 export interface RideLocationInput {
@@ -17,6 +18,11 @@ export interface CreateRideInput {
 export type RideActionResult<T> =
   | { success: true; data: T }
   | { success: false; error: string };
+
+interface RideActionResponse {
+  id: string;
+  status: string;
+}
 
 export async function getScheduleDefaults(): Promise<{
   pickup: Location;
@@ -47,12 +53,55 @@ export async function submitSchedule(
 }
 
 export async function createRide(
-  _: CreateRideInput,
+  input: CreateRideInput,
   userId?: string,
-): Promise<RideActionResult<null>> {
+): Promise<RideActionResult<RideActionResponse>> {
   if (!userId) {
     return { success: false, error: "You must be signed in to request a ride." };
   }
 
-  return { success: true, data: null };
+  const supabase = createServiceRoleClient();
+
+  const riderResult = await supabase
+    .from("riders")
+    .select("id")
+    .eq("user_id", userId)
+    .single();
+
+  if (riderResult.error || !riderResult.data) {
+    return {
+      success: false,
+      error: "No rider profile found for this account.",
+    };
+  }
+
+  const rideResult = await supabase
+    .from("rides")
+    .insert({
+      rider_id: riderResult.data.id,
+      pickup_lat: input.pickup.lat,
+      pickup_lng: input.pickup.lng,
+      pickup_address: input.pickup.address,
+      dropoff_lat: input.dropoff.lat,
+      dropoff_lng: input.dropoff.lng,
+      dropoff_address: input.dropoff.address,
+      status: "requested",
+    })
+    .select("id,status")
+    .single();
+
+  if (rideResult.error || !rideResult.data) {
+    return {
+      success: false,
+      error: "Unable to request a ride right now.",
+    };
+  }
+
+  return {
+    success: true,
+    data: {
+      id: rideResult.data.id,
+      status: rideResult.data.status,
+    },
+  };
 }
