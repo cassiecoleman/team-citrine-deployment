@@ -188,6 +188,7 @@ describe("ride completion actions", () => {
       expect.objectContaining({
         ride_id: "ride-1",
         change_source: "rider",
+        change_reason: expect.stringContaining("\"category\":\"Unsafe driving\""),
       }),
     );
   });

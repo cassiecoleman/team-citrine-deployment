@@ -280,13 +280,20 @@ export async function flagDriver(
     return { success: false, error: rideResult.error };
   }
 
+  // TODO(#42): move issue report persistence to a dedicated driver_flags table.
+  const issueReportPayload = JSON.stringify({
+    category: parsed.data.category,
+    details: parsed.data.details,
+    reported_by: riderUserId,
+  });
+
   const supabase = createServiceRoleClient();
   const historyInsert = await supabase.from("ride_status_history").insert({
     ride_id: parsed.data.rideId,
     from_status: rideResult.data.status,
     to_status: rideResult.data.status,
     change_source: "rider",
-    change_reason: `ISSUE_REPORT:${parsed.data.category}:${parsed.data.details}`,
+    change_reason: issueReportPayload,
   });
 
   if (historyInsert.error) {
