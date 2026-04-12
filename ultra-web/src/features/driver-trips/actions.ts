@@ -327,10 +327,7 @@ export async function confirmPickup(input: {
     return { success: false, error: "Unable to find the trip to confirm pickup." };
   }
 
-  if (
-    currentRideResult.data.driver_id &&
-    currentRideResult.data.driver_id !== driverResult.data.id
-  ) {
+  if (currentRideResult.data.driver_id !== driverResult.data.id) {
     return { success: false, error: "Trip is not assigned to this driver." };
   }
 
@@ -391,10 +388,7 @@ export async function completeTrip(input: {
     return { success: false, error: "Unable to find the trip to complete." };
   }
 
-  if (
-    currentRideResult.data.driver_id &&
-    currentRideResult.data.driver_id !== driverResult.data.id
-  ) {
+  if (currentRideResult.data.driver_id !== driverResult.data.id) {
     return { success: false, error: "Trip is not assigned to this driver." };
   }
 
