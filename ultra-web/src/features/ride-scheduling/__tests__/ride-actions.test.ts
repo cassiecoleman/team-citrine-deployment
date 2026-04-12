@@ -17,12 +17,16 @@ const mockEq = vi.fn(() => ({ single: mockSingle, order: mockOrder }));
 const mockSelect = vi.fn(() => ({ eq: mockEq }));
 const mockInsert = vi.fn(() => ({ select: () => ({ single: mockSingle }) }));
 const mockUpdate = vi.fn(() => ({ eq: () => ({ select: () => ({ single: mockSingle }) }) }));
+const mockHistoryInsert = vi.fn();
 const mockFrom = vi.fn((table: string) => {
   if (table === "riders") {
     return { select: mockSelect };
   }
   if (table === "rides") {
     return { insert: mockInsert, update: mockUpdate, select: mockSelect };
+  }
+  if (table === "ride_status_history") {
+    return { insert: mockHistoryInsert };
   }
   return {};
 });
@@ -41,6 +45,8 @@ describe("ride scheduling actions", () => {
     mockSelect.mockClear();
     mockInsert.mockClear();
     mockUpdate.mockClear();
+    mockHistoryInsert.mockReset();
+    mockHistoryInsert.mockResolvedValue({ error: null });
     mockFrom.mockClear();
   });
 
@@ -182,6 +188,7 @@ describe("ride scheduling actions", () => {
         cancelled_by: "user-1",
       }),
     );
+    expect(mockFrom).toHaveBeenCalledWith("ride_status_history");
   });
 
   it("rejects cancellation when the ride is already completed", async () => {

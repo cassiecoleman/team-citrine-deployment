@@ -244,6 +244,19 @@ export async function acceptTrip(input: {
     return { success: false, error: "Trip was already taken." };
   }
 
+  const historyResult = await supabase.from("ride_status_history").insert({
+    ride_id: parsed.data.rideId,
+    from_status: currentRideResult.data.status,
+    to_status: "driver_en_route",
+    changed_by: parsed.data.driverUserId,
+    change_source: "driver",
+    change_reason: "Trip accepted by driver",
+  });
+
+  if (historyResult.error) {
+    return { success: false, error: "Unable to record trip status history." };
+  }
+
   return {
     success: true,
     data: {
@@ -316,6 +329,19 @@ export async function rejectTrip(input: {
     return { success: false, error: "Unable to reject this trip right now." };
   }
 
+  const historyResult = await supabase.from("ride_status_history").insert({
+    ride_id: parsed.data.rideId,
+    from_status: currentRideResult.data.status,
+    to_status: "matching",
+    changed_by: parsed.data.driverUserId,
+    change_source: "driver",
+    change_reason: parsed.data.reason ?? "Trip rejected by driver",
+  });
+
+  if (historyResult.error) {
+    return { success: false, error: "Unable to record trip status history." };
+  }
+
   return {
     success: true,
     data: {
@@ -383,6 +409,19 @@ export async function confirmPickup(input: {
     return { success: false, error: "Unable to confirm pickup right now." };
   }
 
+  const historyResult = await supabase.from("ride_status_history").insert({
+    ride_id: parsed.data.rideId,
+    from_status: currentRideResult.data.status,
+    to_status: "in_progress",
+    changed_by: parsed.data.driverUserId,
+    change_source: "driver",
+    change_reason: "Pickup confirmed by driver",
+  });
+
+  if (historyResult.error) {
+    return { success: false, error: "Unable to record trip status history." };
+  }
+
   return {
     success: true,
     data: {
@@ -447,6 +486,19 @@ export async function completeTrip(input: {
 
   if (rideResult.error || !rideResult.data) {
     return { success: false, error: "Unable to complete this trip right now." };
+  }
+
+  const historyResult = await supabase.from("ride_status_history").insert({
+    ride_id: parsed.data.rideId,
+    from_status: currentRideResult.data.status,
+    to_status: "completed",
+    changed_by: parsed.data.driverUserId,
+    change_source: "driver",
+    change_reason: "Trip completed by driver",
+  });
+
+  if (historyResult.error) {
+    return { success: false, error: "Unable to record trip status history." };
   }
 
   await supabase

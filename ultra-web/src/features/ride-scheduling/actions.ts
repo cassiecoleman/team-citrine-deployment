@@ -336,6 +336,19 @@ export async function cancelRide(
     return { success: false, error: "Unable to cancel this ride right now." };
   }
 
+  const historyResult = await supabase.from("ride_status_history").insert({
+    ride_id: parsed.data.rideId,
+    from_status: rideResult.data.status,
+    to_status: "cancelled",
+    changed_by: userId,
+    change_source: "rider",
+    change_reason: parsed.data.reason,
+  });
+
+  if (historyResult.error) {
+    return { success: false, error: "Unable to record ride cancellation history." };
+  }
+
   return {
     success: true,
     data: {

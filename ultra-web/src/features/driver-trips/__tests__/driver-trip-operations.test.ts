@@ -36,6 +36,7 @@ const mockRideSelectEq = vi.fn(() => ({
 const mockRideSelect = vi.fn(() => ({ eq: mockRideSelectEq }));
 const mockDriverUpdateEq = vi.fn();
 const mockDriverUpdate = vi.fn(() => ({ eq: mockDriverUpdateEq }));
+const mockHistoryInsert = vi.fn();
 
 const mockFrom = vi.fn((table: string) => {
   if (table === "drivers") {
@@ -44,6 +45,10 @@ const mockFrom = vi.fn((table: string) => {
 
   if (table === "rides") {
     return { update: mockRideUpdate, select: mockRideSelect };
+  }
+
+  if (table === "ride_status_history") {
+    return { insert: mockHistoryInsert };
   }
 
   return {};
@@ -63,6 +68,8 @@ describe("driver trip operations", () => {
     mockRideSelectSingle.mockReset();
     mockRideOrder.mockReset();
     mockDriverUpdateEq.mockReset();
+    mockHistoryInsert.mockReset();
+    mockHistoryInsert.mockResolvedValue({ error: null });
     mockEq.mockClear();
     mockSelect.mockClear();
     mockRideUpdateEq.mockClear();
@@ -111,6 +118,15 @@ describe("driver trip operations", () => {
     expect(mockRideUpdateEq).toHaveBeenCalledWith("id", "ride-22");
     expect(mockRideUpdateEq).toHaveBeenCalledWith("version", 3);
     expect(mockRideUpdateEq).toHaveBeenCalledWith("status", "matching");
+    expect(mockFrom).toHaveBeenCalledWith("ride_status_history");
+    expect(mockHistoryInsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        ride_id: "ride-22",
+        from_status: "matching",
+        to_status: "driver_en_route",
+        change_source: "driver",
+      }),
+    );
   });
 
   it("rejects a trip by returning it to matching and clearing the assigned driver", async () => {
@@ -144,6 +160,14 @@ describe("driver trip operations", () => {
       expect.objectContaining({
         status: "matching",
         driver_id: null,
+      }),
+    );
+    expect(mockHistoryInsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        ride_id: "ride-22",
+        from_status: "driver_en_route",
+        to_status: "matching",
+        change_source: "driver",
       }),
     );
   });
@@ -223,6 +247,14 @@ describe("driver trip operations", () => {
         status: "in_progress",
       }),
     );
+    expect(mockHistoryInsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        ride_id: "ride-22",
+        from_status: "driver_en_route",
+        to_status: "in_progress",
+        change_source: "driver",
+      }),
+    );
   });
 
   it("completes a trip with fare_final and sets the driver availability back to available", async () => {
@@ -265,6 +297,14 @@ describe("driver trip operations", () => {
       }),
     );
     expect(mockDriverUpdateEq).toHaveBeenCalledWith("id", "driver-1");
+    expect(mockHistoryInsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        ride_id: "ride-22",
+        from_status: "in_progress",
+        to_status: "completed",
+        change_source: "driver",
+      }),
+    );
   });
 
   it("returns current driver status with active trip id when one exists", async () => {
