@@ -56,6 +56,20 @@ vi.mock("@/lib/supabase-server", () => ({
 describe("driver trip operations", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockSingle.mockReset();
+    mockRideUpdateSingle.mockReset();
+    mockRideUpdateMaybeSingle.mockReset();
+    mockRideMaybeSingle.mockReset();
+    mockRideSelectSingle.mockReset();
+    mockRideOrder.mockReset();
+    mockDriverUpdateEq.mockReset();
+    mockEq.mockClear();
+    mockSelect.mockClear();
+    mockRideUpdateEq.mockClear();
+    mockRideUpdate.mockClear();
+    mockRideSelectEq.mockClear();
+    mockRideSelect.mockClear();
+    mockFrom.mockClear();
   });
 
   it("accepts a matching trip, assigns the driver, and moves status to driver_en_route", async () => {
@@ -104,6 +118,10 @@ describe("driver trip operations", () => {
       data: { id: "driver-1" },
       error: null,
     });
+    mockRideSelectSingle.mockResolvedValueOnce({
+      data: { id: "ride-22", status: "driver_en_route", driver_id: "driver-1" },
+      error: null,
+    });
     mockRideUpdateSingle.mockResolvedValueOnce({
       data: { id: "ride-22", status: "matching", driver_id: null },
       error: null,
@@ -128,6 +146,50 @@ describe("driver trip operations", () => {
         driver_id: null,
       }),
     );
+  });
+
+  it("rejects rejectTrip when assigned to a different driver", async () => {
+    mockSingle.mockResolvedValueOnce({
+      data: { id: "driver-1" },
+      error: null,
+    });
+    mockRideSelectSingle.mockResolvedValueOnce({
+      data: { id: "ride-22", status: "driver_en_route", driver_id: "driver-2" },
+      error: null,
+    });
+
+    const result = await rejectTrip({
+      rideId: "ride-22",
+      driverUserId: "auth-user-1",
+      reason: "Driver cannot make pickup ETA",
+    });
+
+    expect(result).toEqual({
+      success: false,
+      error: "Trip is not assigned to this driver.",
+    });
+  });
+
+  it("rejects rejectTrip when trip is not in a rejectable status", async () => {
+    mockSingle.mockResolvedValueOnce({
+      data: { id: "driver-1" },
+      error: null,
+    });
+    mockRideSelectSingle.mockResolvedValueOnce({
+      data: { id: "ride-22", status: "completed", driver_id: "driver-1" },
+      error: null,
+    });
+
+    const result = await rejectTrip({
+      rideId: "ride-22",
+      driverUserId: "auth-user-1",
+      reason: "Driver cannot make pickup ETA",
+    });
+
+    expect(result).toEqual({
+      success: false,
+      error: "Trip cannot be rejected from its current status.",
+    });
   });
 
   it("confirms pickup and transitions the trip to in_progress", async () => {

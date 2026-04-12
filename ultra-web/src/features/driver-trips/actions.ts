@@ -278,6 +278,30 @@ export async function rejectTrip(input: {
     return { success: false, error: "Driver account was not found." };
   }
 
+  const currentRideResult = await supabase
+    .from("rides")
+    .select("id,status,driver_id")
+    .eq("id", parsed.data.rideId)
+    .single();
+
+  if (currentRideResult.error || !currentRideResult.data) {
+    return { success: false, error: "Unable to find the trip to reject." };
+  }
+
+  if (currentRideResult.data.driver_id !== driverResult.data.id) {
+    return { success: false, error: "Trip is not assigned to this driver." };
+  }
+
+  if (
+    currentRideResult.data.status !== "driver_en_route" &&
+    currentRideResult.data.status !== "matching"
+  ) {
+    return {
+      success: false,
+      error: "Trip cannot be rejected from its current status.",
+    };
+  }
+
   const rideResult = await supabase
     .from("rides")
     .update({
