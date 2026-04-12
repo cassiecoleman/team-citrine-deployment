@@ -178,6 +178,11 @@ const rejectTripSchema = acceptTripSchema.extend({
   reason: z.string().min(1).optional(),
 });
 
+const confirmPickupSchema = z.object({
+  rideId: z.string().min(1),
+  driverUserId: z.string().min(1),
+});
+
 const completeTripSchema = acceptTripSchema.extend({
   fareFinal: z.number().nonnegative(),
 });
@@ -360,7 +365,7 @@ export async function confirmPickup(input: {
   | { success: true; data: { id: string; status: "in_progress" } }
   | { success: false; error: string }
 > {
-  const parsed = acceptTripSchema.safeParse(input);
+  const parsed = confirmPickupSchema.safeParse(input);
   if (!parsed.success) {
     return { success: false, error: "Invalid pickup confirmation request." };
   }
