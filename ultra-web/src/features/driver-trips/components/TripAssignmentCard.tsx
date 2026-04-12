@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { CircleAlert, CircleCheckBig, Route } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
@@ -8,19 +7,11 @@ import type { TripAssignment } from "../types";
 
 export function TripAssignmentCard({
   assignment,
+  showRejectedNotice = false,
 }: {
   assignment: TripAssignment;
+  showRejectedNotice?: boolean;
 }) {
-  const [isRejected, setIsRejected] = useState(false);
-
-  function handleRejectTrip() {
-    setIsRejected(true);
-  }
-
-  function handleReviewNextRequest() {
-    setIsRejected(false);
-  }
-
   return (
     <div className="flex flex-col gap-4">
       <section className="rounded-xl border border-border bg-card p-4">
@@ -98,7 +89,7 @@ export function TripAssignmentCard({
         </ul>
       </section>
 
-      {isRejected ? (
+      {showRejectedNotice ? (
         <section
           aria-live="polite"
           className="rounded-xl border border-border bg-card p-4"
@@ -108,23 +99,26 @@ export function TripAssignmentCard({
             This is a front-end stub, so the same assignment stays available for
             review until the next mock dispatch refresh.
           </p>
-          <button
-            type="button"
-            onClick={handleReviewNextRequest}
-            className="mt-4 w-full rounded-xl border border-border py-3 text-sm font-semibold"
-          >
-            Review Next Request
-          </button>
+          <form action="/queue">
+            <button
+              type="submit"
+              className="mt-4 w-full rounded-xl border border-border py-3 text-sm font-semibold"
+            >
+              Review Next Request
+            </button>
+          </form>
         </section>
       ) : (
         <div className="grid grid-cols-2 gap-3">
-          <button
-            type="button"
-            onClick={handleRejectTrip}
-            className="rounded-xl border border-border py-3 text-sm font-semibold text-muted"
-          >
-            Reject
-          </button>
+          <form action="/queue">
+            <input type="hidden" name="rejected" value={assignment.id} />
+            <button
+              type="submit"
+              className="w-full rounded-xl border border-border py-3 text-sm font-semibold text-muted"
+            >
+              Reject
+            </button>
+          </form>
           <Link
             href={`/trip/${assignment.id}`}
             className="rounded-xl bg-primary py-3 text-center text-sm font-semibold text-white"

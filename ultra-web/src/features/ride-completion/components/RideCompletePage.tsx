@@ -9,19 +9,25 @@ import { TipSelector } from "./TipSelector";
 import { IssueReportForm } from "./IssueReportForm";
 import { submitRating, submitTip, submitIssueReport } from "../actions";
 
-export function RideCompletePage({ data }: { data: RideCompletionData }) {
+export function RideCompletePage({
+  data,
+  riderUserId,
+}: {
+  data: RideCompletionData;
+  riderUserId?: string;
+}) {
   const [showIssueForm, setShowIssueForm] = useState(false);
 
   function handleRate(stars: number) {
-    submitRating(data.ride.id, stars);
+    submitRating(data.ride.id, stars, riderUserId);
   }
 
   function handleTip(amount: number) {
-    submitTip(data.ride.id, amount);
+    submitTip(data.ride.id, amount, riderUserId);
   }
 
   function handleIssueSubmit(category: string, details: string) {
-    submitIssueReport(data.ride.id, { category, details });
+    submitIssueReport(data.ride.id, { category, details }, riderUserId);
     setShowIssueForm(false);
   }
 

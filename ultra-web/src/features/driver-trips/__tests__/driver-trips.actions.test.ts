@@ -1,5 +1,9 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { getActiveDriverTrip, getDriverShiftSummary, getQueuedTrip } from "../actions";
+import {
+  getActiveDriverTrip,
+  getDriverShiftSummary,
+  getQueuedTrip,
+} from "../actions";
 
 vi.mock("@/lib/mock-delay", () => ({
   mockDelay: vi.fn().mockResolvedValue(undefined),

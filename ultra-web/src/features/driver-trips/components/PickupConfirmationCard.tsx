@@ -7,11 +7,12 @@ import type { ActiveDriverTrip } from "../types";
 
 export function PickupConfirmationCard({
   trip,
+  isPickupConfirmed = false,
 }: {
   trip: ActiveDriverTrip;
+  isPickupConfirmed?: boolean;
 }) {
   const [completedSteps, setCompletedSteps] = useState<string[]>([]);
-  const [isPickupConfirmed, setIsPickupConfirmed] = useState(false);
   const verificationSteps = [
     "Confirm the rider says the name on screen.",
     "Confirm curbside pickup matches the app pin.",
@@ -24,14 +25,6 @@ export function PickupConfirmationCard({
         ? current.filter((value) => value !== step)
         : [...current, step],
     );
-  }
-
-  function handleConfirmPickup() {
-    if (!canConfirmPickup) {
-      return;
-    }
-
-    setIsPickupConfirmed(true);
   }
 
   return (
@@ -122,14 +115,16 @@ export function PickupConfirmationCard({
         >
           Back to Map
         </Link>
-        <button
-          type="button"
-          onClick={handleConfirmPickup}
-          disabled={!canConfirmPickup}
-          className="rounded-xl bg-success py-3 text-sm font-semibold text-white transition-opacity disabled:opacity-60"
-        >
-          Confirm Pickup
-        </button>
+        <form action={`/trip/${trip.id}/pickup`} className="w-full">
+          <input type="hidden" name="confirmed" value="1" />
+          <button
+            type="submit"
+            disabled={!canConfirmPickup}
+            className="w-full rounded-xl bg-success py-3 text-sm font-semibold text-white transition-opacity disabled:opacity-60"
+          >
+            Confirm Pickup
+          </button>
+        </form>
       </div>
     </div>
   );
