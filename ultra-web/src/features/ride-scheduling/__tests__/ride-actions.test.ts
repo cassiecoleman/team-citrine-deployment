@@ -34,6 +34,14 @@ vi.mock("@/lib/supabase-server", () => ({
 describe("ride scheduling actions", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockSingle.mockReset();
+    mockRange.mockReset();
+    mockOrder.mockReset();
+    mockEq.mockClear();
+    mockSelect.mockClear();
+    mockInsert.mockClear();
+    mockUpdate.mockClear();
+    mockFrom.mockClear();
   });
 
   it("returns an auth error when creating an immediate ride without a user context", async () => {
@@ -144,13 +152,23 @@ describe("ride scheduling actions", () => {
     );
   });
 
-  it("cancels a ride and marks refund handling as pending", async () => {
-    mockSingle.mockResolvedValueOnce({
-      data: { id: "ride-1", status: "cancelled" },
-      error: null,
-    });
+  it("cancels a rider-owned pending ride and marks refund handling as pending", async () => {
+    mockSingle
+      .mockResolvedValueOnce({ data: { id: "rider-1" }, error: null })
+      .mockResolvedValueOnce({
+        data: { id: "ride-1", status: "requested", rider_id: "rider-1" },
+        error: null,
+      })
+      .mockResolvedValueOnce({
+        data: { id: "ride-1", status: "cancelled" },
+        error: null,
+      });
 
-    const result = await cancelRide("ride-1", "Rider requested cancellation");
+    const result = await cancelRide(
+      "ride-1",
+      "Rider requested cancellation",
+      "user-1",
+    );
 
     expect(result).toEqual({
       success: true,
@@ -161,8 +179,29 @@ describe("ride scheduling actions", () => {
       expect.objectContaining({
         status: "cancelled",
         cancel_reason: "Rider requested cancellation",
+        cancelled_by: "user-1",
       }),
     );
+  });
+
+  it("rejects cancellation when the ride is already completed", async () => {
+    mockSingle
+      .mockResolvedValueOnce({ data: { id: "rider-1" }, error: null })
+      .mockResolvedValueOnce({
+        data: { id: "ride-1", status: "completed", rider_id: "rider-1" },
+        error: null,
+      });
+
+    const result = await cancelRide(
+      "ride-1",
+      "Rider requested cancellation",
+      "user-1",
+    );
+
+    expect(result).toEqual({
+      success: false,
+      error: "Completed or cancelled rides cannot be cancelled.",
+    });
   });
 
   it("fetches a ride by id with driver details", async () => {

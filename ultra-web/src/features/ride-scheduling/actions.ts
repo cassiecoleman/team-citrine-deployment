@@ -280,19 +280,53 @@ export async function createRecurringRide(
 export async function cancelRide(
   rideId: string,
   reason: string,
+  userId?: string,
 ): Promise<RideActionResult<{ id: string; status: string; refundStatus: "pending" }>> {
+  if (!userId) {
+    return { success: false, error: "You must be signed in to cancel a ride." };
+  }
+
   const parsed = cancelRideSchema.safeParse({ rideId, reason });
   if (!parsed.success) {
     return { success: false, error: "Invalid cancellation request." };
   }
 
   const supabase = createServiceRoleClient();
+  const riderResult = await supabase
+    .from("riders")
+    .select("id")
+    .eq("user_id", userId)
+    .single();
+
+  if (riderResult.error || !riderResult.data) {
+    return { success: false, error: "Rider account was not found." };
+  }
+
+  const rideResult = await supabase
+    .from("rides")
+    .select("id,status,rider_id")
+    .eq("id", parsed.data.rideId)
+    .single();
+
+  if (rideResult.error || !rideResult.data) {
+    return { success: false, error: "Ride was not found." };
+  }
+
+  if (rideResult.data.rider_id !== riderResult.data.id) {
+    return { success: false, error: "You can only cancel your own rides." };
+  }
+
+  if (rideResult.data.status === "completed" || rideResult.data.status === "cancelled") {
+    return { success: false, error: "Completed or cancelled rides cannot be cancelled." };
+  }
+
   const cancelResult = await supabase
     .from("rides")
     .update({
       status: "cancelled",
       cancel_reason: parsed.data.reason,
       cancelled_at: new Date().toISOString(),
+      cancelled_by: userId,
     })
     .eq("id", parsed.data.rideId)
     .select("id,status")
