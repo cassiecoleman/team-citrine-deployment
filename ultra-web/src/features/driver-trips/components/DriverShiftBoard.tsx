@@ -113,13 +113,13 @@ export function DriverShiftBoard({
           >
             Review Queue
           </Link>
-          <Link
+          <a
             href="/trip/trip-204"
             aria-label="Open active trip details"
             className="rounded-xl border border-border px-4 py-3 text-center text-sm font-semibold"
           >
             Open Active Trip
-          </Link>
+          </a>
         </div>
       </section>
 

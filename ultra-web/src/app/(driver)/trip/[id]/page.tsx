@@ -11,10 +11,13 @@ export default async function DriverTripPage({
     process.env.ULTRA_DEFAULT_DRIVER_USER_ID ?? process.env.ULTRA_DEFAULT_USER_ID;
 
   if (driverUserId) {
-    await acceptTrip({
-      rideId: id,
-      driverUserId,
-    });
+    await Promise.race([
+      acceptTrip({
+        rideId: id,
+        driverUserId,
+      }),
+      new Promise((resolve) => setTimeout(resolve, 1500)),
+    ]);
   }
 
   const trip = await getActiveDriverTrip(id, driverUserId);

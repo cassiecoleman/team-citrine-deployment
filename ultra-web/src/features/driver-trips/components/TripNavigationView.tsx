@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { Check, MapPinned, Phone, Route } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import type { ActiveDriverTrip } from "../types";
@@ -149,13 +148,13 @@ export function TripNavigationView({
         </ul>
       </section>
 
-      <Link
+      <a
         href={`/trip/${trip.id}/pickup`}
         aria-label="Advance to pickup confirmation"
         className="rounded-xl bg-primary py-3 text-center text-sm font-semibold text-white"
       >
         Arrived at Pickup
-      </Link>
+      </a>
     </div>
   );
 }

@@ -11,13 +11,33 @@ export default async function BookingPage() {
   async function requestRideAction() {
     "use server";
 
-    const result = await createRide(
-      {
-        pickup: homeLocation,
-        dropoff: hospitalLocation,
-      },
-      defaultUserId,
-    );
+    let result: Awaited<ReturnType<typeof createRide>>;
+    try {
+      result = await Promise.race([
+        createRide(
+          {
+            pickup: homeLocation,
+            dropoff: hospitalLocation,
+          },
+          defaultUserId,
+        ),
+        new Promise<Awaited<ReturnType<typeof createRide>>>((resolve) =>
+          setTimeout(
+            () =>
+              resolve({
+                success: false,
+                error: "Ride request timed out.",
+              }),
+            1500,
+          ),
+        ),
+      ]);
+    } catch {
+      result = {
+        success: false,
+        error: "Unable to request ride right now.",
+      };
+    }
 
     if (!result.success) {
       redirect("/ride/new-ride");
