@@ -349,20 +349,45 @@ export async function cancelRide(
 type RideWithDriver = {
   id: string;
   status: string;
+  rider_id: string;
   driver_id: string | null;
   drivers?: { id: string; name: string; status: string } | null;
 };
 
-export async function getRideById(rideId: string): Promise<RideActionResult<RideWithDriver>> {
+export async function getRideById(
+  rideId: string,
+  userId?: string,
+): Promise<RideActionResult<RideWithDriver>> {
+  if (!userId) {
+    return { success: false, error: "You must be signed in to view rides." };
+  }
+
   const supabase = createServiceRoleClient();
+  const riderResult = await supabase
+    .from("riders")
+    .select("id")
+    .eq("user_id", userId)
+    .single();
+
+  if (riderResult.error || !riderResult.data) {
+    return {
+      success: false,
+      error: "Rider account was not found.",
+    };
+  }
+
   const rideResult = await supabase
     .from("rides")
-    .select("id,status,driver_id,drivers(id,name,status)")
+    .select("id,status,rider_id,driver_id,drivers(id,name,status)")
     .eq("id", rideId)
     .single();
 
   if (rideResult.error || !rideResult.data) {
     return { success: false, error: "Ride not found." };
+  }
+
+  if (rideResult.data.rider_id !== riderResult.data.id) {
+    return { success: false, error: "You can only access your own rides." };
   }
 
   return {

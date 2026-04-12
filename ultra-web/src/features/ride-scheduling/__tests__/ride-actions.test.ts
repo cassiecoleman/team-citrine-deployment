@@ -205,23 +205,47 @@ describe("ride scheduling actions", () => {
   });
 
   it("fetches a ride by id with driver details", async () => {
-    mockSingle.mockResolvedValueOnce({
-      data: {
-        id: "ride-1",
-        status: "requested",
-        driver_id: "driver-1",
-        drivers: { id: "driver-1", name: "Sam Driver", status: "available" },
-      },
-      error: null,
-    });
+    mockSingle
+      .mockResolvedValueOnce({ data: { id: "rider-1" }, error: null })
+      .mockResolvedValueOnce({
+        data: {
+          id: "ride-1",
+          status: "requested",
+          rider_id: "rider-1",
+          driver_id: "driver-1",
+          drivers: { id: "driver-1", name: "Sam Driver", status: "available" },
+        },
+        error: null,
+      });
 
-    const result = await getRideById("ride-1");
+    const result = await getRideById("ride-1", "user-1");
 
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.id).toBe("ride-1");
       expect(result.data.drivers?.name).toBe("Sam Driver");
     }
+  });
+
+  it("rejects getRideById when the ride belongs to a different rider", async () => {
+    mockSingle
+      .mockResolvedValueOnce({ data: { id: "rider-1" }, error: null })
+      .mockResolvedValueOnce({
+        data: {
+          id: "ride-1",
+          status: "requested",
+          rider_id: "rider-2",
+          driver_id: "driver-1",
+        },
+        error: null,
+      });
+
+    const result = await getRideById("ride-1", "user-1");
+
+    expect(result).toEqual({
+      success: false,
+      error: "You can only access your own rides.",
+    });
   });
 
   it("lists rider rides with pagination", async () => {
