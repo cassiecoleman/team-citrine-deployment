@@ -1,5 +1,4 @@
-import { homeLocation, hospitalLocation, mockDriver, aishaPayment } from "@/lib/mock-data";
-import { mockDelay } from "@/lib/mock-delay";
+import { mockDriver, aishaPayment } from "@/lib/mock-data";
 import { createServiceRoleClient } from "@/lib/supabase-server";
 import { z } from "zod";
 import type { RideCompletionData, IssueReport } from "./types";
@@ -25,7 +24,7 @@ const issueSchema = z.object({
 });
 
 function resolveRiderUserId(riderUserId?: string): string | undefined {
-  return riderUserId ?? process.env.ULTRA_DEFAULT_USER_ID;
+  return riderUserId;
 }
 
 type RideSummaryRow = {
@@ -309,43 +308,30 @@ export async function flagDriver(
   };
 }
 
-export async function getRideCompletion(id: string): Promise<RideCompletionData> {
-  const riderUserId = resolveRiderUserId();
-  if (riderUserId) {
-    const summaryResult = await getRideSummary(id, riderUserId);
-    if (summaryResult.success) {
-      return summaryResult.data;
-    }
+export async function getRideCompletion(
+  id: string,
+  riderUserId?: string,
+): Promise<RideCompletionData> {
+  const resolvedUserId = resolveRiderUserId(riderUserId);
+  if (!resolvedUserId) {
+    throw new Error("Rider user id is required to load ride completion.");
   }
 
-  await mockDelay();
-  return {
-    ride: {
-      id,
-      pickup: homeLocation,
-      dropoff: hospitalLocation,
-      status: "completed",
-      estimatedFare: 19.0,
-      actualFare: 18.5,
-      driver: mockDriver,
-      distanceMi: 5.1,
-      durationMin: 18,
-    },
-    fare: 18.5,
-    serviceFee: 2.5,
-    total: 21.0,
-    paymentMethod: aishaPayment,
-    driver: mockDriver,
-  };
+  const summaryResult = await getRideSummary(id, resolvedUserId);
+  if (!summaryResult.success) {
+    throw new Error(summaryResult.error);
+  }
+
+  return summaryResult.data;
 }
 
 export async function submitRating(
   rideId: string,
   stars: number,
+  riderUserId?: string,
 ): Promise<CompletionActionResult<{ rideId: string; rating: number }>> {
-  const riderUserId = resolveRiderUserId();
-  if (!riderUserId) {
-    await mockDelay();
+  const resolvedUserId = resolveRiderUserId(riderUserId);
+  if (!resolvedUserId) {
     return { success: false, error: "Rider user id is required." };
   }
 
@@ -354,17 +340,17 @@ export async function submitRating(
       rideId,
       rating: stars,
     },
-    riderUserId,
+    resolvedUserId,
   );
 }
 
 export async function submitTip(
   rideId: string,
   amount: number,
+  riderUserId?: string,
 ): Promise<CompletionActionResult<{ rideId: string; amount: number }>> {
-  const riderUserId = resolveRiderUserId();
-  if (!riderUserId) {
-    await mockDelay();
+  const resolvedUserId = resolveRiderUserId(riderUserId);
+  if (!resolvedUserId) {
     return { success: false, error: "Rider user id is required." };
   }
 
@@ -373,17 +359,17 @@ export async function submitTip(
       rideId,
       amount,
     },
-    riderUserId,
+    resolvedUserId,
   );
 }
 
 export async function submitIssueReport(
   rideId: string,
   report: IssueReport,
+  riderUserId?: string,
 ): Promise<CompletionActionResult<{ rideId: string; category: string }>> {
-  const riderUserId = resolveRiderUserId();
-  if (!riderUserId) {
-    await mockDelay();
+  const resolvedUserId = resolveRiderUserId(riderUserId);
+  if (!resolvedUserId) {
     return { success: false, error: "Rider user id is required." };
   }
 
@@ -393,6 +379,6 @@ export async function submitIssueReport(
       category: report.category,
       details: report.details,
     },
-    riderUserId,
+    resolvedUserId,
   );
 }

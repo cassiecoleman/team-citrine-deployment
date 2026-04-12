@@ -3,6 +3,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   flagDriver,
+  getRideCompletion,
   getReceipt,
   getRideSummary,
   submitRatingAction,
@@ -225,5 +226,11 @@ describe("ride completion actions", () => {
       expect(result.data.ride.id).toBe("ride-1");
       expect(result.data.total).toBe(22.5);
     }
+  });
+
+  it("throws when getRideCompletion is called without rider user context", async () => {
+    await expect(getRideCompletion("ride-1")).rejects.toThrow(
+      "Rider user id is required to load ride completion.",
+    );
   });
 });
