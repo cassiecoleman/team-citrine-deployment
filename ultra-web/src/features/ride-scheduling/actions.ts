@@ -1,3 +1,5 @@
+"use server";
+
 import { homeLocation, hospitalLocation } from "@/lib/mock-data";
 import { mockDelay } from "@/lib/mock-delay";
 import type { Location } from "@/types";

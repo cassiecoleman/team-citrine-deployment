@@ -1,3 +1,5 @@
+"use server";
+
 import { mockDelay } from "@/lib/mock-delay";
 import { createServiceRoleClient } from "@/lib/supabase-server";
 import { z } from "zod";
