@@ -5,6 +5,8 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
 const uid = Date.now()
 const authUserIds: string[] = []
@@ -23,18 +25,28 @@ async function createTestUser(prefix: string) {
   })
   if (error) throw new Error(`Failed to create test user: ${error.message}`)
   authUserIds.push(data.user!.id)
-  return data.user!.id
+  return { userId: data.user!.id, email }
 }
 
 async function createTestRider(prefix: string) {
-  const userId = await createTestUser(prefix)
+  const { userId, email } = await createTestUser(prefix)
   const { data } = await supabase
     .from('riders')
     .insert({ user_id: userId, name: `${prefix} rider` })
     .select()
     .single()
   createdIds.push({ table: 'riders', id: data!.id })
-  return { userId, riderId: data!.id }
+  return { userId, riderId: data!.id, email }
+}
+
+async function createAuthenticatedRiderClient(email: string) {
+  const riderClient = createClient(supabaseUrl, supabaseAnonKey)
+  const { error } = await riderClient.auth.signInWithPassword({
+    email,
+    password: 'test-password-123',
+  })
+  if (error) throw new Error(`Failed to sign in test rider: ${error.message}`)
+  return riderClient
 }
 
 async function createTestRide(riderId: string) {
@@ -203,5 +215,41 @@ describe('Payments schema — Issue #14', () => {
       })
 
     expect(error).toBeTruthy()
+  })
+
+  it('fare_splits blocks invitees from changing split amounts', async () => {
+    const { riderId: inviterId } = await createTestRider('split-guard-a')
+    const { riderId: inviteeId, email: inviteeEmail } = await createTestRider('split-guard-b')
+    const rideId = await createTestRide(inviterId)
+
+    const { data: split, error: insertError } = await supabase
+      .from('fare_splits')
+      .insert({
+        ride_id: rideId,
+        inviter_id: inviterId,
+        invitee_id: inviteeId,
+        inviter_amount: 12.00,
+        invitee_amount: 8.00,
+        status: 'pending',
+        expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+      })
+      .select()
+      .single()
+
+    expect(insertError).toBeNull()
+    createdIds.push({ table: 'fare_splits', id: split!.id })
+
+    const inviteeClient = await createAuthenticatedRiderClient(inviteeEmail)
+    const { error: updateError } = await inviteeClient
+      .from('fare_splits')
+      .update({
+        inviter_amount: 1.00,
+        invitee_amount: 19.00,
+        status: 'accepted',
+        responded_at: new Date().toISOString(),
+      })
+      .eq('id', split!.id)
+
+    expect(updateError).toBeTruthy()
   })
 })
