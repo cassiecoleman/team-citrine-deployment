@@ -29,6 +29,22 @@ For each feature, write tests in this order:
 - If a refactor is needed after going green, refactor while keeping tests green, then commit the refactor separately
 - Bug fix? Write a test that reproduces the bug FIRST, confirm it fails, then fix
 
+## RLS Policy Rules — Avoid FOR ALL
+
+**Never use `FOR ALL` for end-user (rider/driver) RLS policies.** This has caused blockers on PRs #39, #41, and #43. `FOR ALL` grants INSERT + SELECT + UPDATE + DELETE, which lets browser clients mutate rows the application layer intends to be read-only or service-only.
+
+Instead, always write granular per-operation policies:
+- `FOR SELECT` — who can read
+- `FOR INSERT WITH CHECK (...)` — who can create, with what constraints
+- `FOR UPDATE USING (...) WITH CHECK (...)` — who can modify, and what they can change
+- `FOR DELETE USING (...)` — who can remove (rarely needed)
+
+`FOR ALL` is acceptable ONLY for:
+- **Service role** policies (server-side only, never exposed to browser)
+- **Admin** policies (if admins genuinely need full CRUD)
+
+When writing INSERT policies, verify relational integrity — don't just check "is this my row." Check that referenced FKs (ride_id, driver_id) are consistent with the caller's identity. Example: a rider flagging a driver must have actually ridden with that driver on that ride.
+
 ## Next.js Compatibility
 
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
