@@ -122,9 +122,9 @@ export async function createRide(
     .from("rides")
     .insert({
       rider_id: riderResult.data.id,
-      pickup_lat: input.pickup.lat,
-      pickup_lng: input.pickup.lng,
-      pickup_address: input.pickup.address,
+      pickup_lat: parsed.data.pickup.lat,
+      pickup_lng: parsed.data.pickup.lng,
+      pickup_address: parsed.data.pickup.address,
       dropoff_lat: parsed.data.dropoff.lat,
       dropoff_lng: parsed.data.dropoff.lng,
       dropoff_address: parsed.data.dropoff.address,
