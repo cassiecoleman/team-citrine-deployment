@@ -331,6 +331,13 @@ export async function confirmPickup(input: {
     return { success: false, error: "Trip is not assigned to this driver." };
   }
 
+  if (
+    currentRideResult.data.status !== "driver_en_route" &&
+    currentRideResult.data.status !== "arrived"
+  ) {
+    return { success: false, error: "Trip must be en route or arrived." };
+  }
+
   const rideResult = await supabase
     .from("rides")
     .update({

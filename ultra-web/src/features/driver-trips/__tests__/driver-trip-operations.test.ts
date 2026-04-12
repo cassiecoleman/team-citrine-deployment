@@ -345,6 +345,27 @@ describe("driver trip operations", () => {
     });
   });
 
+  it("rejects confirmPickup when ride is not en route or arrived", async () => {
+    mockSingle.mockResolvedValueOnce({
+      data: { id: "driver-1" },
+      error: null,
+    });
+    mockRideSelectSingle.mockResolvedValueOnce({
+      data: { id: "ride-22", status: "matching", driver_id: "driver-1" },
+      error: null,
+    });
+
+    const result = await confirmPickup({
+      rideId: "ride-22",
+      driverUserId: "auth-user-1",
+    });
+
+    expect(result).toEqual({
+      success: false,
+      error: "Trip must be en route or arrived.",
+    });
+  });
+
   it("rejects completeTrip when the ride is assigned to a different driver", async () => {
     mockSingle.mockResolvedValueOnce({
       data: { id: "driver-1" },
