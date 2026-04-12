@@ -370,30 +370,30 @@ CREATE POLICY "Ride participants manage ratings" ON public.ride_ratings FOR ALL
 | `createRide(data)` | `{ pickup_lat, pickup_lng, pickup_address, dropoff_lat, dropoff_lng, dropoff_address, is_child_safe_required?, rider_profile_id?, prefer_trusted_driver?, ride_pin?: string (required when is_child_safe_required = true), stops?: Stop[] }` | `ActionResult<Ride>` | Rider |
 | `scheduleRide(data)` | Same + `{ scheduled_for: string (ISO 8601) }` | `ActionResult<Ride>` | Rider |
 | `createRecurringRide(data)` | Same + `{ recurrence_rule: string (iCal RRULE) }` | `ActionResult<Ride>` | Rider |
-| `cancelRide(rideId)` | `{ rideId: string, reason?: string }` | `ActionResult<Ride>` | Rider |
-| `getRide(rideId)` | `{ rideId: string }` | `ActionResult<RideWithDriver>` | Rider or Driver |
+| `cancelRide(rideId, reason, userId)` | `{ rideId: string, reason: string, userId: string }` | `ActionResult<Ride>` | Rider |
+| `getRideById(rideId, userId)` | `{ rideId: string, userId: string }` | `ActionResult<RideWithDriver>` | Rider |
 | `getRidesForRider(params)` | `{ page, pageSize, status? }` | `ActionResult<PaginatedResult<Ride>>` | Rider |
 
 ### Driver Trip Actions
 
 | Action | Input | Output | Auth |
 |--------|-------|--------|------|
-| `getAssignedTrips()` | — | `ActionResult<Ride[]>` | Driver |
-| `acceptTrip(rideId)` | `{ rideId: string }` | `ActionResult<Ride>` | Driver |
-| `rejectTrip(rideId)` | `{ rideId: string }` | `ActionResult<void>` | Driver |
-| `confirmPickup(rideId)` | `{ rideId: string }` | `ActionResult<Ride>` | Driver |
-| `completeTrip(rideId, fareFinal)` | `{ rideId: string, fare_final: number }` | `ActionResult<Ride>` | Driver |
-| `toggleDriverAvailability()` | — | `ActionResult<{ status: string }>` | Driver |
-| `getDriverStatus()` | — | `ActionResult<{ status: string, activeTrip?: Ride }>` | Driver |
+| `getAssignedTrips(driverUserId)` | `{ driverUserId: string }` | `ActionResult<Ride[]>` | Driver |
+| `acceptTrip(input)` | `{ rideId: string, driverUserId: string }` | `ActionResult<Ride>` | Driver |
+| `rejectTrip(input)` | `{ rideId: string, driverUserId: string, reason?: string }` | `ActionResult<void>` | Driver |
+| `confirmPickup(input)` | `{ rideId: string, driverUserId: string }` | `ActionResult<Ride>` | Driver |
+| `completeTrip(input)` | `{ rideId: string, driverUserId: string, fareFinal: number }` | `ActionResult<Ride>` | Driver |
+| `toggleDriverAvailability(input)` | `{ driverUserId: string, nextStatus: \"available\"|\"offline\" }` | `ActionResult<{ status: string }>` | Driver |
+| `getDriverStatus(driverUserId)` | `{ driverUserId: string }` | `ActionResult<{ status: string, activeTrip?: Ride }>` | Driver |
 
 ### Ride Completion Actions
 
 | Action | Input | Output | Auth |
 |--------|-------|--------|------|
-| `getRideSummary(rideId)` | `{ rideId: string }` | `ActionResult<RideSummary>` | Rider |
-| `submitRating(data)` | `{ rideId: string, rating: number (1-5), comment?: string }` | `ActionResult<void>` | Rider or Driver |
-| `submitTip(data)` | `{ rideId: string, amount: number }` | `ActionResult<void>` | Rider |
-| `getReceipt(rideId)` | `{ rideId: string }` | `ActionResult<Receipt>` | Rider |
+| `getRideSummary(rideId, riderUserId)` | `{ rideId: string, riderUserId: string }` | `ActionResult<RideSummary>` | Rider |
+| `submitRatingAction(data, riderUserId)` | `{ rideId: string, rating: number (1-5), comment?: string, riderUserId: string }` | `ActionResult<void>` | Rider |
+| `submitTipAction(data, riderUserId)` | `{ rideId: string, amount: number, riderUserId: string }` | `ActionResult<void>` | Rider |
+| `getReceipt(rideId, riderUserId)` | `{ rideId: string, riderUserId: string }` | `ActionResult<Receipt>` | Rider |
 
 ---
 

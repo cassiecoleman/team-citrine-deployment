@@ -2,11 +2,20 @@
 
 ## Scope
 
-Implements issue #21 for US01, US02, US11, US12 using Supabase-backed server actions in:
+Implements backend API wiring for:
+
+- Issue #21 (US01, US02, US11, US12)
+- Issue #22 (US18, US19, US20)
+- Issue #23 (partial: ride summary/rating/tip/flag flows)
+
+Primary files:
 
 - `ultra-web/src/features/ride-scheduling/actions.ts`
+- `ultra-web/src/features/driver-trips/actions.ts`
+- `ultra-web/src/features/ride-completion/actions.ts`
 - `ultra-web/src/app/(rider)/book/page.tsx`
 - `ultra-web/src/app/(rider)/book/schedule/page.tsx`
+- `ultra-web/src/app/(rider)/ride/[id]/complete/page.tsx`
 
 ## Implemented Actions
 
@@ -16,6 +25,24 @@ Implements issue #21 for US01, US02, US11, US12 using Supabase-backed server act
 - `cancelRide(rideId, reason)`
 - `getRideById(rideId)`
 - `getRidesForRider(userId, pagination)`
+
+Driver trip operations:
+
+- `getAssignedTrips(driverUserId)`
+- `acceptTrip({ rideId, driverUserId })`
+- `rejectTrip({ rideId, driverUserId, reason? })`
+- `confirmPickup({ rideId, driverUserId })`
+- `completeTrip({ rideId, driverUserId, fareFinal })`
+- `getDriverStatus(driverUserId)`
+- `toggleDriverAvailability({ driverUserId, nextStatus })`
+
+Ride completion:
+
+- `getRideSummary(rideId, riderUserId)`
+- `getReceipt(rideId, riderUserId)`
+- `submitRatingAction({ rideId, rating, comment? }, riderUserId)`
+- `submitTipAction({ rideId, amount }, riderUserId)`
+- `flagDriver({ rideId, category, details? }, riderUserId)`
 
 All actions return a consistent shape:
 
@@ -33,6 +60,9 @@ All actions return a consistent shape:
 - Auth guard behavior:
 - Rider-initiated create/schedule/list actions require `userId`
 - Rider profile lookup is enforced via `riders.user_id -> riders.id`
+- Driver ownership checks are enforced for pickup/completion/rejection transitions
+- Ride status transitions enforce allowed current states
+- State-changing actions write audit rows to `ride_status_history`
 
 ## Data Model + Migration Dependency
 
@@ -64,6 +94,11 @@ Current auth fallback for local dev without full session wiring:
 - Uses `ULTRA_DEFAULT_USER_ID` when present.
 - If action fails, user is redirected back to a safe route.
 
+Driver and completion wiring:
+
+- Driver pages call real trip operations actions.
+- Completion page wrappers require explicit rider user context; mock fallback has been removed.
+
 ## Environment Variables
 
 Required (already used elsewhere in repo):
@@ -79,4 +114,12 @@ Optional for local booking flow:
 ## Verification
 
 - Unit (targeted): `npm test -- src/features/ride-scheduling/__tests__/ride-actions.test.ts`
+- Unit (targeted): `npx vitest run --config vitest.backend.config.mts src/features/driver-trips/__tests__/driver-trip-operations.test.ts`
+- Unit (targeted): `npx vitest run --config vitest.backend.config.mts src/features/ride-completion/__tests__/ride-completion-actions.test.ts`
 - E2E (targeted): `npm run test:e2e -- e2e/rider-booking.spec.ts`
+- E2E (targeted): `npm run test:e2e -- e2e/driver-flows.spec.ts`
+
+Integration coverage:
+
+- `src/features/ride-booking/__tests__/ride-core-api.integration.test.ts`
+- Runs against hosted Supabase only when `RUN_SUPABASE_INTEGRATION=true`.
