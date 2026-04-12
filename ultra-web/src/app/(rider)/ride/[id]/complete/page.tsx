@@ -34,6 +34,10 @@ export default async function CompleteRidePage({ params }: { params: Promise<{ i
   let data: RideCompletionData;
 
   if (!riderUserId) {
+    if (!id.startsWith("test-ride-")) {
+      throw new Error("Rider user id is required to load ride completion.");
+    }
+
     data = getFallbackRideCompletionData(id);
   } else {
     try {
