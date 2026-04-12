@@ -92,7 +92,7 @@ export async function getDriverShiftSummary(
     return shiftSummary;
   }
 
-  const assignedTripsResult = await getAssignedTrips(resolvedUserId);
+  const assignedTripsResult = await getMatchingQueue(resolvedUserId);
   const pendingQueueCount = assignedTripsResult.success ? assignedTripsResult.data.length : 0;
 
   return {
@@ -111,7 +111,7 @@ export async function getQueuedTrip(driverUserId?: string): Promise<TripAssignme
     return queuedTrip;
   }
 
-  const assignedTripsResult = await getAssignedTrips(resolvedUserId);
+  const assignedTripsResult = await getMatchingQueue(resolvedUserId);
   if (!assignedTripsResult.success || assignedTripsResult.data.length === 0) {
     await mockDelay();
     return queuedTrip;
@@ -611,7 +611,7 @@ export async function toggleDriverAvailability(input: {
   };
 }
 
-export async function getAssignedTrips(
+export async function getMatchingQueue(
   driverUserId: string,
 ): Promise<RideActionResult<TripAssignment[]>> {
   if (!driverUserId) {
@@ -668,4 +668,10 @@ export async function getAssignedTrips(
       };
     }),
   };
+}
+
+export async function getAssignedTrips(
+  driverUserId: string,
+): Promise<RideActionResult<TripAssignment[]>> {
+  return getMatchingQueue(driverUserId);
 }
