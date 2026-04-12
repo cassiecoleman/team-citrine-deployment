@@ -16,8 +16,12 @@ const mockEq = vi.fn(() => ({ single: mockSingle }));
 const mockSelect = vi.fn(() => ({ eq: mockEq }));
 
 const mockRideUpdateSingle = vi.fn();
-const mockRideUpdateSelect = vi.fn(() => ({ single: mockRideUpdateSingle }));
-const mockRideUpdateEq = vi.fn(() => ({ select: mockRideUpdateSelect }));
+const mockRideUpdateMaybeSingle = vi.fn();
+const mockRideUpdateSelect = vi.fn(() => ({
+  single: mockRideUpdateSingle,
+  maybeSingle: mockRideUpdateMaybeSingle,
+}));
+const mockRideUpdateEq = vi.fn(() => ({ eq: mockRideUpdateEq, select: mockRideUpdateSelect }));
 const mockRideUpdate = vi.fn(() => ({ eq: mockRideUpdateEq }));
 const mockRideMaybeSingle = vi.fn();
 const mockRideIn = vi.fn(() => ({ maybeSingle: mockRideMaybeSingle }));
@@ -60,10 +64,10 @@ describe("driver trip operations", () => {
       error: null,
     });
     mockRideSelectSingle.mockResolvedValueOnce({
-      data: { id: "ride-22", status: "matching" },
+      data: { id: "ride-22", status: "matching", version: 3 },
       error: null,
     });
-    mockRideUpdateSingle.mockResolvedValueOnce({
+    mockRideUpdateMaybeSingle.mockResolvedValueOnce({
       data: { id: "ride-22", status: "driver_en_route", driver_id: "driver-1" },
       error: null,
     });
@@ -91,6 +95,8 @@ describe("driver trip operations", () => {
       }),
     );
     expect(mockRideUpdateEq).toHaveBeenCalledWith("id", "ride-22");
+    expect(mockRideUpdateEq).toHaveBeenCalledWith("version", 3);
+    expect(mockRideUpdateEq).toHaveBeenCalledWith("status", "matching");
   });
 
   it("rejects a trip by returning it to matching and clearing the assigned driver", async () => {
@@ -288,7 +294,7 @@ describe("driver trip operations", () => {
       error: null,
     });
     mockRideSelectSingle.mockResolvedValueOnce({
-      data: { id: "ride-22", status: "in_progress" },
+      data: { id: "ride-22", status: "in_progress", version: 2 },
       error: null,
     });
 
@@ -300,6 +306,31 @@ describe("driver trip operations", () => {
     expect(result).toEqual({
       success: false,
       error: "Trip is not available to accept.",
+    });
+  });
+
+  it("returns already taken when matching status changes before conditional update", async () => {
+    mockSingle.mockResolvedValueOnce({
+      data: { id: "driver-1" },
+      error: null,
+    });
+    mockRideSelectSingle.mockResolvedValueOnce({
+      data: { id: "ride-22", status: "matching", version: 4 },
+      error: null,
+    });
+    mockRideUpdateMaybeSingle.mockResolvedValueOnce({
+      data: null,
+      error: null,
+    });
+
+    const result = await acceptTrip({
+      rideId: "ride-22",
+      driverUserId: "auth-user-1",
+    });
+
+    expect(result).toEqual({
+      success: false,
+      error: "Trip was already taken.",
     });
   });
 

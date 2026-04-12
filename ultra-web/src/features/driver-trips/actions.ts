@@ -210,7 +210,7 @@ export async function acceptTrip(input: {
 
   const currentRideResult = await supabase
     .from("rides")
-    .select("id,status")
+    .select("id,status,version")
     .eq("id", parsed.data.rideId)
     .single();
 
@@ -228,13 +228,20 @@ export async function acceptTrip(input: {
       status: "driver_en_route",
       driver_id: driverResult.data.id,
       matched_at: new Date().toISOString(),
+      version: currentRideResult.data.version + 1,
     })
     .eq("id", parsed.data.rideId)
+    .eq("version", currentRideResult.data.version)
+    .eq("status", "matching")
     .select("id,status,driver_id")
-    .single();
+    .maybeSingle();
 
-  if (rideResult.error || !rideResult.data) {
+  if (rideResult.error) {
     return { success: false, error: "Unable to accept this trip right now." };
+  }
+
+  if (!rideResult.data) {
+    return { success: false, error: "Trip was already taken." };
   }
 
   return {
