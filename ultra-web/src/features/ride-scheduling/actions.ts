@@ -62,6 +62,15 @@ const paginationSchema = z.object({
   pageSize: z.number().int().min(1).max(50).default(10),
 });
 
+function assertAuthenticatedUserId(userId: string): RideActionResult<never> | null {
+  // Trust boundary: caller must pass an auth-derived user id (never client-provided raw input).
+  if (!userId) {
+    return { success: false, error: "You must be signed in to view rides." };
+  }
+
+  return null;
+}
+
 export async function getScheduleDefaults(): Promise<{
   pickup: Location;
   dropoff: Location;
@@ -413,8 +422,9 @@ export async function getRidesForRider(
   userId: string,
   pagination: { page?: number; pageSize?: number } = {},
 ): Promise<RideActionResult<{ items: { id: string; status: string; requested_at: string }[]; page: number; pageSize: number }>> {
-  if (!userId) {
-    return { success: false, error: "You must be signed in to view rides." };
+  const authCheck = assertAuthenticatedUserId(userId);
+  if (authCheck) {
+    return authCheck;
   }
 
   const parsedPagination = paginationSchema.safeParse(pagination);
