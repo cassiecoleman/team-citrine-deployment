@@ -158,6 +158,27 @@ describe("ride scheduling actions", () => {
     );
   });
 
+  it("rejects recurring rides with invalid recurrence rules", async () => {
+    const result = await createRecurringRide(
+      {
+        pickup: { lat: 35.1495, lng: -90.049, address: "123 Beale St, Memphis, TN" },
+        dropoff: {
+          lat: 35.1174,
+          lng: -89.9711,
+          address: "456 Elvis Presley Blvd, Memphis, TN",
+        },
+        scheduledFor: new Date().toISOString(),
+        recurrenceRule: "weekly,mwf",
+      },
+      "user-1",
+    );
+
+    expect(result).toEqual({
+      success: false,
+      error: "Invalid ride request details.",
+    });
+  });
+
   it("cancels a rider-owned pending ride and marks refund handling as pending", async () => {
     mockSingle
       .mockResolvedValueOnce({ data: { id: "rider-1" }, error: null })

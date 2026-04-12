@@ -51,7 +51,12 @@ const scheduleRideSchema = createRideSchema.extend({
 });
 
 const recurringRideSchema = scheduleRideSchema.extend({
-  recurrenceRule: z.string().min(1),
+  recurrenceRule: z
+    .string()
+    .min(1)
+    .refine((value) => /^FREQ=[A-Z]+/.test(value), {
+      message: "Invalid recurrence rule.",
+    }),
 });
 
 const cancelRideSchema = z.object({
