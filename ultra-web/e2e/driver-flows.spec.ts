@@ -21,7 +21,7 @@ test.describe("driver flows", () => {
 
     await page.getByRole("link", { name: "Open active trip details" }).click();
 
-    await expect(page).toHaveURL(/\/trip\/trip-204$/);
+    await expect(page).toHaveURL(/\/trip\/new-ride$/);
     await expect(page.getByText("En route to rider")).toBeVisible();
     await expect(page.getByText("Turn-by-turn map preview")).toBeVisible();
     await expect(
@@ -47,7 +47,7 @@ test.describe("driver flows", () => {
     await page.getByRole("button", { name: "Review Next Request" }).click();
     await page.getByRole("link", { name: "Accept Trip" }).click();
 
-    await expect(page).toHaveURL(/\/trip\/trip-204$/);
+    await expect(page).toHaveURL(/\/trip\/new-ride$/);
     await expect(page.getByText("Pickup pin ready")).toBeVisible();
 
     await page
@@ -61,7 +61,7 @@ test.describe("driver flows", () => {
       .getByRole("link", { name: "Advance to pickup confirmation" })
       .click();
 
-    await expect(page).toHaveURL(/\/trip\/trip-204\/pickup$/);
+    await expect(page).toHaveURL(/\/trip\/new-ride\/pickup$/);
     await expect(page.getByText("At pickup pin")).toBeVisible();
 
     const confirmPickupButton = page.getByRole("button", {

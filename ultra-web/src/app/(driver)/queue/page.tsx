@@ -1,4 +1,8 @@
-import { getQueuedTrip, rejectTrip } from "@/features/driver-trips/actions";
+import {
+  getQueuedTrip,
+  getRuntimeDriverUserId,
+  rejectTrip,
+} from "@/features/driver-trips/actions";
 import { TripAssignmentCard } from "@/features/driver-trips/components/TripAssignmentCard";
 
 export default async function DriverQueuePage({
@@ -6,8 +10,7 @@ export default async function DriverQueuePage({
 }: {
   searchParams: Promise<{ rejected?: string }>;
 }) {
-  const driverUserId =
-    process.env.ULTRA_DEFAULT_DRIVER_USER_ID ?? process.env.ULTRA_DEFAULT_USER_ID;
+  const driverUserId = await getRuntimeDriverUserId();
   const params = await searchParams;
   const rejectedRideId = params.rejected;
 

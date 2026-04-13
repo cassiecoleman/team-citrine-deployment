@@ -2,9 +2,16 @@
 
 import { MapPin, Share2 } from "lucide-react";
 import type { RideDetail } from "../types";
+import { useDriverLocation } from "../use-driver-location";
 
 export function InProgressTracker({ ride }: { ride: RideDetail }) {
   const progressPercent = ride.progressPercent ?? 0;
+  const { location } = useDriverLocation({
+    driverId: ride.driver?.id,
+  });
+  const locationLabel = location
+    ? `${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}`
+    : "Waiting for driver location...";
 
   return (
     <div className="flex flex-col gap-4 p-4">
@@ -14,8 +21,10 @@ export function InProgressTracker({ ride }: { ride: RideDetail }) {
         </span>
       </div>
 
-      <div className="h-56 rounded-xl bg-border flex items-center justify-center">
+      <div className="h-56 rounded-xl bg-border flex flex-col items-center justify-center gap-2">
         <MapPin className="text-muted" size={24} />
+        <p className="text-xs text-muted">Driver location</p>
+        <p className="text-sm font-semibold">{locationLabel}</p>
       </div>
 
       <div className="rounded-xl border border-border p-4">

@@ -1,5 +1,9 @@
 "use server";
 
+import {
+  getDemoQueueRideId,
+  setDemoRideStatus,
+} from "@/lib/demo-ride-state";
 import { mockDelay } from "@/lib/mock-delay";
 import { createServiceRoleClient } from "@/lib/supabase-server";
 import { z } from "zod";
@@ -21,13 +25,13 @@ const shiftSummary: DriverShiftSummary = {
   completionRate: 99,
   todayTrips: 8,
   earningsToday: 142.5,
-  activeTripId: "trip-204",
+  activeTripId: "new-ride",
   pendingQueueCount: 3,
   nextBreakLabel: "Break window opens after 2 more trips",
 };
 
 const queuedTrip: TripAssignment = {
-  id: "trip-204",
+  id: "new-ride",
   riderName: "Aisha R.",
   pickupLabel: "Community Clinic",
   pickupAddress: "1150 West End Ave",
@@ -46,7 +50,7 @@ const queuedTrip: TripAssignment = {
 };
 
 const activeTrip: ActiveDriverTrip = {
-  id: "trip-204",
+  id: "new-ride",
   riderName: "Aisha R.",
   riderRating: 4.8,
   pickupLabel: queuedTrip.pickupLabel,
@@ -69,7 +73,36 @@ const activeTrip: ActiveDriverTrip = {
   destinationEtaMin: 18,
 };
 
-function resolveDriverUserId(driverUserId?: string): string | undefined {
+export async function getRuntimeDriverUserId(
+  driverUserId?: string,
+): Promise<string | undefined> {
+  const configuredDriverUserId = resolveConfiguredDriverUserId(driverUserId);
+  if (configuredDriverUserId) {
+    return configuredDriverUserId;
+  }
+
+  const hasSupabaseConfig =
+    Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL) &&
+    Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY);
+  if (!hasSupabaseConfig) {
+    return undefined;
+  }
+
+  const supabase = createServiceRoleClient();
+  const fallbackDriverResult = await supabase
+    .from("drivers")
+    .select("user_id")
+    .order("created_at", { ascending: true })
+    .limit(1);
+
+  if (fallbackDriverResult.error || !fallbackDriverResult.data?.length) {
+    return undefined;
+  }
+
+  return fallbackDriverResult.data[0]?.user_id ?? undefined;
+}
+
+function resolveConfiguredDriverUserId(driverUserId?: string): string | undefined {
   return (
     driverUserId ??
     process.env.ULTRA_DEFAULT_DRIVER_USER_ID ??
@@ -80,7 +113,7 @@ function resolveDriverUserId(driverUserId?: string): string | undefined {
 export async function getDriverShiftSummary(
   driverUserId?: string,
 ): Promise<DriverShiftSummary> {
-  const resolvedUserId = resolveDriverUserId(driverUserId);
+  const resolvedUserId = resolveConfiguredDriverUserId(driverUserId);
   if (!resolvedUserId) {
     await mockDelay();
     return shiftSummary;
@@ -105,10 +138,22 @@ export async function getDriverShiftSummary(
 }
 
 export async function getQueuedTrip(driverUserId?: string): Promise<TripAssignment> {
-  const resolvedUserId = resolveDriverUserId(driverUserId);
+  const demoQueueRideId = await getDemoQueueRideId();
+  if (demoQueueRideId) {
+    await mockDelay();
+    return {
+      ...queuedTrip,
+      id: demoQueueRideId,
+    };
+  }
+
+  const resolvedUserId = resolveConfiguredDriverUserId(driverUserId);
   if (!resolvedUserId) {
     await mockDelay();
-    return queuedTrip;
+    return {
+      ...queuedTrip,
+      id: queuedTrip.id,
+    };
   }
 
   const assignedTripsResult = await getMatchingQueue(resolvedUserId);
@@ -124,7 +169,7 @@ export async function getActiveDriverTrip(
   id: string,
   driverUserId?: string,
 ): Promise<ActiveDriverTrip> {
-  const resolvedUserId = resolveDriverUserId(driverUserId);
+  const resolvedUserId = resolveConfiguredDriverUserId(driverUserId);
   if (!resolvedUserId) {
     await mockDelay();
     return { ...activeTrip, id };
@@ -190,6 +235,14 @@ const completeTripSchema = acceptTripSchema.extend({
 const toggleAvailabilitySchema = z.object({
   driverUserId: z.string().min(1),
   nextStatus: z.enum(["available", "offline"]),
+});
+
+const updateDriverLocationSchema = z.object({
+  driverUserId: z.string().min(1),
+  lat: z.number().min(-90).max(90),
+  lng: z.number().min(-180).max(180),
+  heading: z.number().min(0).max(360).optional(),
+  recordedAt: z.string().datetime().optional(),
 });
 
 export async function acceptTrip(input: {
@@ -272,6 +325,13 @@ export async function acceptTrip(input: {
       driverId: rideResult.data.driver_id ?? driverResult.data.id,
     },
   };
+}
+
+export async function setDemoRideStatusForDriverFlow(input: {
+  rideId: string;
+  status: "driver_en_route" | "in_progress";
+}): Promise<void> {
+  await setDemoRideStatus(input.rideId, input.status);
 }
 
 export async function rejectTrip(input: {
@@ -607,6 +667,100 @@ export async function toggleDriverAvailability(input: {
     data: {
       driverId: driverResult.data.id,
       status: parsed.data.nextStatus,
+    },
+  };
+}
+
+export async function updateDriverLocation(input: {
+  driverUserId: string;
+  lat: number;
+  lng: number;
+  heading?: number;
+  recordedAt?: string;
+}): Promise<
+  | {
+      success: true;
+      data: {
+        driverId: string;
+        lat: number;
+        lng: number;
+        heading: number | null;
+        recordedAt: string;
+        throttled: boolean;
+      };
+    }
+  | { success: false; error: string }
+> {
+  const parsed = updateDriverLocationSchema.safeParse(input);
+  if (!parsed.success) {
+    return { success: false, error: "Invalid driver location payload." };
+  }
+
+  const supabase = createServiceRoleClient();
+  const driverResult = await supabase
+    .from("drivers")
+    .select("id")
+    .eq("user_id", parsed.data.driverUserId)
+    .single();
+
+  if (driverResult.error || !driverResult.data) {
+    return { success: false, error: "Driver account was not found." };
+  }
+
+  const nextRecordedAt = parsed.data.recordedAt ?? new Date().toISOString();
+  const latestLocationResult = await supabase
+    .from("driver_locations")
+    .select("recorded_at")
+    .eq("driver_id", driverResult.data.id)
+    .maybeSingle();
+
+  const latestRecordedAt = latestLocationResult.data?.recorded_at;
+  if (latestRecordedAt) {
+    const elapsedMs =
+      new Date(nextRecordedAt).getTime() - new Date(latestRecordedAt).getTime();
+    if (elapsedMs < 3000) {
+      return {
+        success: true,
+        data: {
+          driverId: driverResult.data.id,
+          lat: parsed.data.lat,
+          lng: parsed.data.lng,
+          heading: parsed.data.heading ?? null,
+          recordedAt: nextRecordedAt,
+          throttled: true,
+        },
+      };
+    }
+  }
+
+  const upsertResult = await supabase
+    .from("driver_locations")
+    .upsert(
+      {
+        driver_id: driverResult.data.id,
+        lat: parsed.data.lat,
+        lng: parsed.data.lng,
+        heading: parsed.data.heading ?? null,
+        recorded_at: nextRecordedAt,
+      },
+      { onConflict: "driver_id" },
+    )
+    .select("driver_id,lat,lng,heading,recorded_at")
+    .single();
+
+  if (upsertResult.error || !upsertResult.data) {
+    return { success: false, error: "Unable to update driver location." };
+  }
+
+  return {
+    success: true,
+    data: {
+      driverId: upsertResult.data.driver_id,
+      lat: upsertResult.data.lat,
+      lng: upsertResult.data.lng,
+      heading: upsertResult.data.heading,
+      recordedAt: upsertResult.data.recorded_at,
+      throttled: false,
     },
   };
 }
