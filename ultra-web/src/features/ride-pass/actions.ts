@@ -1,10 +1,14 @@
-import { mockPassPlans, mockSpendingData, mockActivePass } from "@/lib/mock-data";
+import { mockSpendingData, mockActivePass } from "@/lib/mock-data";
 import { mockDelay } from "@/lib/mock-delay";
 import type { RidePassPlan, ActiveRidePass, SpendingData } from "./types";
+import { RIDE_PASS_PLANS } from "./plan-catalog";
+
+export async function getAvailablePasses(): Promise<RidePassPlan[]> {
+  return RIDE_PASS_PLANS;
+}
 
 export async function getRidePassPlans(): Promise<RidePassPlan[]> {
-  await mockDelay();
-  return mockPassPlans;
+  return getAvailablePasses();
 }
 
 export async function getSpendingData(): Promise<SpendingData> {
