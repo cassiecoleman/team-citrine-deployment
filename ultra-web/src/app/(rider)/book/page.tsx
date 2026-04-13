@@ -8,16 +8,27 @@ export default async function BookingPage() {
   const estimate = await getFareEstimate();
   const defaultUserId = process.env.ULTRA_DEFAULT_USER_ID;
 
-  async function requestRideAction() {
+  async function requestRideAction(formData: FormData) {
     "use server";
+
+    const pickup = {
+      lat: Number(formData.get("pickupLat")) || homeLocation.lat,
+      lng: Number(formData.get("pickupLng")) || homeLocation.lng,
+      address: String(formData.get("pickupAddress") || homeLocation.address),
+    };
+    const dropoff = {
+      lat: Number(formData.get("dropoffLat")) || hospitalLocation.lat,
+      lng: Number(formData.get("dropoffLng")) || hospitalLocation.lng,
+      address: String(formData.get("dropoffAddress") || hospitalLocation.address),
+    };
 
     let result: Awaited<ReturnType<typeof createRide>>;
     try {
       result = await Promise.race([
         createRide(
           {
-            pickup: homeLocation,
-            dropoff: hospitalLocation,
+            pickup,
+            dropoff,
           },
           defaultUserId,
         ),
@@ -46,5 +57,12 @@ export default async function BookingPage() {
     redirect(`/ride/${result.data.id}`);
   }
 
-  return <BookingClient estimate={estimate} requestRideAction={requestRideAction} />;
+  return (
+    <BookingClient
+      estimate={estimate}
+      pickup={homeLocation}
+      initialDropoff={hospitalLocation}
+      requestRideAction={requestRideAction}
+    />
+  );
 }
