@@ -30,6 +30,11 @@ export async function purchasePass(
     return { success: false, error: "You must be signed in to purchase a ride pass." };
   }
 
+  const plan = RIDE_PASS_PLANS.find((p) => p.id === planId);
+  if (!plan) {
+    return { success: false, error: "Invalid ride pass plan." };
+  }
+
   return { success: false, error: "Not implemented." };
 }
 

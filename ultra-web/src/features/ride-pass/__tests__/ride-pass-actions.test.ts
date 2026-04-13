@@ -37,4 +37,13 @@ describe("ride pass actions", () => {
       error: "You must be signed in to purchase a ride pass.",
     });
   });
+
+  it("purchasePass rejects an invalid planId", async () => {
+    const result = await purchasePass("nonexistent-plan", "user-1");
+
+    expect(result).toEqual({
+      success: false,
+      error: "Invalid ride pass plan.",
+    });
+  });
 });
