@@ -1,28 +1,34 @@
 'use server'
 
-import { createServiceRoleClient } from '@/lib/supabase-server'
-import { createClient } from '@/lib/supabase'
+import { createServiceRoleClient, createServerAuthClient } from '@/lib/supabase-server'
 import { z } from 'zod'
 
 // Role-based authorization
 async function requireAdminRole() {
-  const supabase = createClient()
-  const { data: user } = await supabase.auth.getUser()
+  // Get the current user's session from server cookies
+  const supabase = await createServerAuthClient()
+  const { data: authData, error: authError } = await supabase.auth.getUser()
 
-  if (!user?.user) {
+  if (authError || !authData?.user) {
     throw new Error('Unauthorized: No active session')
   }
 
-  // Check if user has admin role
-  const { data: roleData, error } = await supabase
+  const userId = authData.user.id
+
+  // Check if user has active admin role (not deleted)
+  const supabaseService = createServiceRoleClient()
+  const { data: roleData, error: roleError } = await supabaseService
     .from('user_roles')
     .select('role')
-    .eq('user_id', user.user.id)
+    .eq('user_id', userId)
+    .is('deleted_at', null) // Only consider non-deleted roles
     .single()
 
-  if (error || roleData?.role !== 'admin') {
+  if (roleError || roleData?.role !== 'admin') {
     throw new Error('Unauthorized: Admin role required')
   }
+
+  return userId
 }
 
 // Validation schemas
@@ -53,8 +59,8 @@ export type ActionResponse = {
  */
 export async function createAdminUser(input: CreateAdminUserInput): Promise<ActionResponse> {
   try {
-    // Verify admin role
-    await requireAdminRole()
+    // Verify admin role and get admin user ID
+    const adminUserId = await requireAdminRole()
 
     // Validate input
     const parsed = createAdminUserSchema.safeParse(input)
@@ -66,7 +72,6 @@ export async function createAdminUser(input: CreateAdminUserInput): Promise<Acti
 
     const { email, password } = parsed.data
     const supabase = createServiceRoleClient()
-    const { data: authData } = await supabase.auth.getUser()
 
     // Create auth user
     const { data: newUser, error: authError } = await supabase.auth.admin.createUser({
@@ -85,7 +90,7 @@ export async function createAdminUser(input: CreateAdminUserInput): Promise<Acti
       .insert({
         user_id: newUser.user.id,
         role: 'admin',
-        created_by: authData?.user?.id,
+        created_by: adminUserId,
       })
 
     if (roleError) {
@@ -109,8 +114,8 @@ export async function createAdminUser(input: CreateAdminUserInput): Promise<Acti
  */
 export async function updateUserRole(input: UpdateAdminRoleInput): Promise<ActionResponse> {
   try {
-    // Verify admin role
-    await requireAdminRole()
+    // Verify admin role and get admin user ID
+    const adminUserId = await requireAdminRole()
 
     // Validate input
     const parsed = updateAdminRoleSchema.safeParse(input)
@@ -122,17 +127,17 @@ export async function updateUserRole(input: UpdateAdminRoleInput): Promise<Actio
 
     const { userId, role } = parsed.data
     const supabase = createServiceRoleClient()
-    const { data: authData } = await supabase.auth.getUser()
 
     // Update role
     const { data, error } = await supabase
       .from('user_roles')
       .update({
         role,
-        updated_by: authData?.user?.id,
+        updated_by: adminUserId,
         updated_at: new Date().toISOString(),
       })
       .eq('user_id', userId)
+      .is('deleted_at', null) // Only update non-deleted roles
       .select()
 
     if (error) {
@@ -167,6 +172,7 @@ export async function getAdminUsers(): Promise<ActionResponse> {
       .from('user_roles')
       .select('id, user_id, role, created_at, updated_at')
       .eq('role', 'admin')
+      .is('deleted_at', null) // Only return non-deleted admins
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -218,21 +224,24 @@ export async function deleteAdminUser(adminUserId: string): Promise<ActionRespon
 }
 
 /**
- * Get current user's role
+ * Get current user's role (public)
  */
 export async function getCurrentUserRole(): Promise<ActionResponse> {
   try {
-    const supabase = createClient()
-    const { data: user } = await supabase.auth.getUser()
+    // Get current user from server session
+    const supabase = await createServerAuthClient()
+    const { data: authData, error: authError } = await supabase.auth.getUser()
 
-    if (!user?.user) {
+    if (authError || !authData?.user) {
       return { success: false, error: 'Unauthorized: No active session' }
     }
 
-    const { data, error } = await supabase
+    const supabaseService = createServiceRoleClient()
+    const { data, error } = await supabaseService
       .from('user_roles')
       .select('role')
-      .eq('user_id', user.user.id)
+      .eq('user_id', authData.user.id)
+      .is('deleted_at', null) // Only return active roles
       .single()
 
     if (error) {
