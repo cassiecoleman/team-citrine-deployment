@@ -27,4 +27,40 @@ test.describe("US13-US16 — ride tracking", () => {
       page.getByRole("button", { name: /cancel/i })
     ).toBeVisible();
   });
+
+  test("status updates live on the ride page", async ({ page }) => {
+    await page.goto("/ride/test-ride-1");
+
+    await expect(page.getByText("Finding your driver")).toBeVisible();
+    await page.waitForFunction(() => {
+      return Boolean((window as Window & { __ultraRideStatusListenerReady?: boolean }).__ultraRideStatusListenerReady);
+    });
+
+    await page.evaluate(() => {
+      window.dispatchEvent(
+        new CustomEvent("ultra:ride-status-update", {
+          detail: { rideId: "test-ride-1", status: "driver_en_route" },
+        }),
+      );
+    });
+    await expect(page.getByText("Driver En Route")).toBeVisible();
+
+    await page.evaluate(() => {
+      window.dispatchEvent(
+        new CustomEvent("ultra:ride-status-update", {
+          detail: { rideId: "test-ride-1", status: "arrived" },
+        }),
+      );
+    });
+    await expect(page.getByText("Your driver is here!")).toBeVisible();
+
+    await page.evaluate(() => {
+      window.dispatchEvent(
+        new CustomEvent("ultra:ride-status-update", {
+          detail: { rideId: "test-ride-1", status: "in_progress" },
+        }),
+      );
+    });
+    await expect(page.getByText("Ride In Progress")).toBeVisible();
+  });
 });

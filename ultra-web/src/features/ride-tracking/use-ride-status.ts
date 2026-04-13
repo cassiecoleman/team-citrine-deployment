@@ -10,6 +10,11 @@ interface UseRideStatusInput {
   initialRide: RideDetail;
 }
 
+interface DebugRideStatusEventDetail {
+  rideId: string;
+  status: string;
+}
+
 export function useRideStatus({ rideId, initialRide }: UseRideStatusInput): {
   ride: RideDetail;
 } {
@@ -61,6 +66,30 @@ export function useRideStatus({ rideId, initialRide }: UseRideStatusInput): {
       }
     };
   }, [rideId, supabase]);
+
+  useEffect(() => {
+    const testWindow = window as Window & { __ultraRideStatusListenerReady?: boolean };
+    testWindow.__ultraRideStatusListenerReady = true;
+
+    const handleDebugStatusUpdate = (event: Event) => {
+      const detail = (event as CustomEvent<DebugRideStatusEventDetail>).detail;
+      if (!detail || detail.rideId !== rideId) {
+        return;
+      }
+
+      setRide((previousRide) =>
+        buildRideViewModel(previousRide, {
+          status: detail.status,
+        }),
+      );
+    };
+
+    window.addEventListener("ultra:ride-status-update", handleDebugStatusUpdate);
+    return () => {
+      testWindow.__ultraRideStatusListenerReady = false;
+      window.removeEventListener("ultra:ride-status-update", handleDebugStatusUpdate);
+    };
+  }, [rideId]);
 
   return { ride };
 }
