@@ -38,6 +38,7 @@ describe("InProgressTracker live location", () => {
 
     render(<InProgressTracker ride={ride} />);
 
+    expect(screen.getByTestId("ride-map")).toBeInTheDocument();
     expect(screen.getByText("Driver location")).toBeInTheDocument();
     expect(screen.getByText("35.1495, -90.0490")).toBeInTheDocument();
   });
