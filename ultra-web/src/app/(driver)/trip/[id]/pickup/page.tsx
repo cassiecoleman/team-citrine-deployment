@@ -1,4 +1,8 @@
-import { confirmPickup, getActiveDriverTrip } from "@/features/driver-trips/actions";
+import {
+  confirmPickup,
+  getActiveDriverTrip,
+  getRuntimeDriverUserId,
+} from "@/features/driver-trips/actions";
 import { PickupConfirmationCard } from "@/features/driver-trips/components/PickupConfirmationCard";
 
 export default async function DriverPickupPage({
@@ -10,8 +14,7 @@ export default async function DriverPickupPage({
 }) {
   const { id } = await params;
   const query = await searchParams;
-  const driverUserId =
-    process.env.ULTRA_DEFAULT_DRIVER_USER_ID ?? process.env.ULTRA_DEFAULT_USER_ID;
+  const driverUserId = await getRuntimeDriverUserId();
   let isPickupConfirmed = false;
 
   if (driverUserId && query.confirmed === "1") {

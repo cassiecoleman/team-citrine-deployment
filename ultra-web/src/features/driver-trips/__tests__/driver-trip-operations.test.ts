@@ -7,6 +7,7 @@ import {
   confirmPickup,
   getAssignedTrips,
   getDriverStatus,
+  getRuntimeDriverUserId,
   rejectTrip,
   toggleDriverAvailability,
   updateDriverLocation,
@@ -14,7 +15,9 @@ import {
 
 const mockSingle = vi.fn();
 const mockEq = vi.fn(() => ({ single: mockSingle }));
-const mockSelect = vi.fn(() => ({ eq: mockEq }));
+const mockDriverLimit = vi.fn();
+const mockDriverOrder = vi.fn(() => ({ limit: mockDriverLimit }));
+const mockSelect = vi.fn(() => ({ eq: mockEq, order: mockDriverOrder }));
 
 const mockRideUpdateSingle = vi.fn();
 const mockRideUpdateMaybeSingle = vi.fn();
@@ -83,6 +86,8 @@ describe("driver trip operations", () => {
     mockRideOrder.mockReset();
     mockDriverUpdateEq.mockReset();
     mockHistoryInsert.mockReset();
+    mockDriverLimit.mockReset();
+    mockDriverOrder.mockReset();
     mockLocationUpsert.mockReset();
     mockLocationSelectSingle.mockReset();
     mockLocationSelectMaybeSingle.mockReset();
@@ -147,6 +152,31 @@ describe("driver trip operations", () => {
         change_source: "driver",
       }),
     );
+  });
+
+  it("resolves a fallback driver user id when env defaults are not set", async () => {
+    const originalDefaultDriverUserId = process.env.ULTRA_DEFAULT_DRIVER_USER_ID;
+    const originalDefaultUserId = process.env.ULTRA_DEFAULT_USER_ID;
+    const originalSupabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const originalServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    process.env.ULTRA_DEFAULT_DRIVER_USER_ID = "";
+    process.env.ULTRA_DEFAULT_USER_ID = "";
+    process.env.NEXT_PUBLIC_SUPABASE_URL = "https://example.supabase.co";
+    process.env.SUPABASE_SERVICE_ROLE_KEY = "service-role";
+    mockDriverLimit.mockResolvedValueOnce({
+      data: [{ user_id: "driver-user-fallback" }],
+      error: null,
+    });
+
+    const result = await getRuntimeDriverUserId();
+
+    expect(result).toBe("driver-user-fallback");
+
+    process.env.ULTRA_DEFAULT_DRIVER_USER_ID = originalDefaultDriverUserId;
+    process.env.ULTRA_DEFAULT_USER_ID = originalDefaultUserId;
+    process.env.NEXT_PUBLIC_SUPABASE_URL = originalSupabaseUrl;
+    process.env.SUPABASE_SERVICE_ROLE_KEY = originalServiceKey;
   });
 
   it("upserts a fresh driver location update", async () => {

@@ -114,7 +114,7 @@ export function DriverShiftBoard({
             Review Queue
           </Link>
           <a
-            href="/trip/trip-204"
+            href={`/trip/${summary.activeTripId}`}
             aria-label="Open active trip details"
             className="rounded-xl border border-border px-4 py-3 text-center text-sm font-semibold"
           >

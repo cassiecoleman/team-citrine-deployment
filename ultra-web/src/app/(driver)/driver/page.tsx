@@ -1,4 +1,5 @@
 import {
+  getRuntimeDriverUserId,
   getDriverShiftSummary,
   toggleDriverAvailability,
 } from "@/features/driver-trips/actions";
@@ -9,8 +10,7 @@ export default async function DriverHomePage({
 }: {
   searchParams: Promise<{ availability?: "available" | "offline" }>;
 }) {
-  const driverUserId =
-    process.env.ULTRA_DEFAULT_DRIVER_USER_ID ?? process.env.ULTRA_DEFAULT_USER_ID;
+  const driverUserId = await getRuntimeDriverUserId();
   const params = await searchParams;
 
   if (

@@ -31,13 +31,13 @@ const shiftSummary: DriverShiftSummary = {
   completionRate: 99,
   todayTrips: 8,
   earningsToday: 142.5,
-  activeTripId: "trip-204",
+  activeTripId: "test-ride-1",
   pendingQueueCount: 3,
   nextBreakLabel: "Break window opens after 2 more trips",
 };
 
 const assignment: TripAssignment = {
-  id: "trip-204",
+  id: "test-ride-1",
   riderName: "Aisha R.",
   pickupLabel: "Community Clinic",
   pickupAddress: "1150 West End Ave",
@@ -56,7 +56,7 @@ const assignment: TripAssignment = {
 };
 
 const activeTrip: ActiveDriverTrip = {
-  id: "trip-204",
+  id: "test-ride-1",
   riderName: "Aisha R.",
   riderRating: 4.8,
   pickupLabel: assignment.pickupLabel,
@@ -92,7 +92,7 @@ describe("driver trip components", () => {
     expect(html).toContain("Queue waiting");
     expect(html).toContain("Break window opens after 2 more trips");
     expect(html).toContain('href="/queue"');
-    expect(html).toContain('href="/trip/trip-204"');
+    expect(html).toContain('href="/trip/test-ride-1"');
   });
 
   it("renders assignment details, accessibility notes, and accept routing", () => {
@@ -102,7 +102,7 @@ describe("driver trip components", () => {
     expect(html).toContain("Medical appointment");
     expect(html).toContain("Allow extra trunk room for a folded walker");
     expect(html).toContain("Reject");
-    expect(html).toContain('href="/trip/trip-204"');
+    expect(html).toContain('href="/trip/test-ride-1"');
   });
 
   it("renders trip navigation details and the pickup transition route", () => {
@@ -112,7 +112,7 @@ describe("driver trip components", () => {
     expect(html).toContain("Turn-by-turn map preview");
     expect(html).toContain("Turn right on River Pkwy in 0.4 mi");
     expect(html).toContain("0 of 3 arrival checks complete");
-    expect(html).toContain('href="/trip/trip-204/pickup"');
+    expect(html).toContain('href="/trip/test-ride-1/pickup"');
   });
 
   it("renders pickup verification controls and the return route", () => {
@@ -122,6 +122,6 @@ describe("driver trip components", () => {
     expect(html).toContain("Pickup PIN 4821");
     expect(html).toContain("Identity check steps");
     expect(html).toContain("Confirm Pickup");
-    expect(html).toContain('href="/trip/trip-204"');
+    expect(html).toContain('href="/trip/test-ride-1"');
   });
 });

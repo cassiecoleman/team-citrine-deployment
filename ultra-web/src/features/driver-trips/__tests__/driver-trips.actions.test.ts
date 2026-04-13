@@ -21,7 +21,7 @@ describe("driver trip actions", () => {
     expect(summary.status).toBe("online");
     expect(summary.todayTrips).toBe(8);
     expect(summary.earningsToday).toBe(142.5);
-    expect(summary.activeTripId).toBe("trip-204");
+    expect(summary.activeTripId).toBe("test-ride-1");
     expect(summary.pendingQueueCount).toBe(3);
     expect(summary.nextBreakLabel).toContain("2 more trips");
   });
@@ -29,7 +29,7 @@ describe("driver trip actions", () => {
   it("returns the queued trip assignment used on the accept/reject screen", async () => {
     const assignment = await getQueuedTrip();
 
-    expect(assignment.id).toBe("trip-204");
+    expect(assignment.id).toBe("test-ride-1");
     expect(assignment.pickupLabel).toBe("Community Clinic");
     expect(assignment.dropoffLabel).toBe("Metro General Hospital");
     expect(assignment.note).toContain("blue awning");

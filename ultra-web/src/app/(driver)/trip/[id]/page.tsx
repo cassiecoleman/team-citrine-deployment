@@ -1,4 +1,8 @@
-import { acceptTrip, getActiveDriverTrip } from "@/features/driver-trips/actions";
+import {
+  acceptTrip,
+  getActiveDriverTrip,
+  getRuntimeDriverUserId,
+} from "@/features/driver-trips/actions";
 import { TripNavigationView } from "@/features/driver-trips/components/TripNavigationView";
 
 export default async function DriverTripPage({
@@ -7,8 +11,7 @@ export default async function DriverTripPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const driverUserId =
-    process.env.ULTRA_DEFAULT_DRIVER_USER_ID ?? process.env.ULTRA_DEFAULT_USER_ID;
+  const driverUserId = await getRuntimeDriverUserId();
 
   if (driverUserId) {
     await Promise.race([

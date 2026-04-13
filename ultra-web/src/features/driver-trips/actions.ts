@@ -21,13 +21,13 @@ const shiftSummary: DriverShiftSummary = {
   completionRate: 99,
   todayTrips: 8,
   earningsToday: 142.5,
-  activeTripId: "trip-204",
+  activeTripId: "test-ride-1",
   pendingQueueCount: 3,
   nextBreakLabel: "Break window opens after 2 more trips",
 };
 
 const queuedTrip: TripAssignment = {
-  id: "trip-204",
+  id: "test-ride-1",
   riderName: "Aisha R.",
   pickupLabel: "Community Clinic",
   pickupAddress: "1150 West End Ave",
@@ -46,7 +46,7 @@ const queuedTrip: TripAssignment = {
 };
 
 const activeTrip: ActiveDriverTrip = {
-  id: "trip-204",
+  id: "test-ride-1",
   riderName: "Aisha R.",
   riderRating: 4.8,
   pickupLabel: queuedTrip.pickupLabel,
@@ -69,7 +69,36 @@ const activeTrip: ActiveDriverTrip = {
   destinationEtaMin: 18,
 };
 
-function resolveDriverUserId(driverUserId?: string): string | undefined {
+export async function getRuntimeDriverUserId(
+  driverUserId?: string,
+): Promise<string | undefined> {
+  const configuredDriverUserId = resolveConfiguredDriverUserId(driverUserId);
+  if (configuredDriverUserId) {
+    return configuredDriverUserId;
+  }
+
+  const hasSupabaseConfig =
+    Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL) &&
+    Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY);
+  if (!hasSupabaseConfig) {
+    return undefined;
+  }
+
+  const supabase = createServiceRoleClient();
+  const fallbackDriverResult = await supabase
+    .from("drivers")
+    .select("user_id")
+    .order("created_at", { ascending: true })
+    .limit(1);
+
+  if (fallbackDriverResult.error || !fallbackDriverResult.data?.length) {
+    return undefined;
+  }
+
+  return fallbackDriverResult.data[0]?.user_id ?? undefined;
+}
+
+function resolveConfiguredDriverUserId(driverUserId?: string): string | undefined {
   return (
     driverUserId ??
     process.env.ULTRA_DEFAULT_DRIVER_USER_ID ??
@@ -80,7 +109,7 @@ function resolveDriverUserId(driverUserId?: string): string | undefined {
 export async function getDriverShiftSummary(
   driverUserId?: string,
 ): Promise<DriverShiftSummary> {
-  const resolvedUserId = resolveDriverUserId(driverUserId);
+  const resolvedUserId = resolveConfiguredDriverUserId(driverUserId);
   if (!resolvedUserId) {
     await mockDelay();
     return shiftSummary;
@@ -105,7 +134,7 @@ export async function getDriverShiftSummary(
 }
 
 export async function getQueuedTrip(driverUserId?: string): Promise<TripAssignment> {
-  const resolvedUserId = resolveDriverUserId(driverUserId);
+  const resolvedUserId = resolveConfiguredDriverUserId(driverUserId);
   if (!resolvedUserId) {
     await mockDelay();
     return queuedTrip;
@@ -124,7 +153,7 @@ export async function getActiveDriverTrip(
   id: string,
   driverUserId?: string,
 ): Promise<ActiveDriverTrip> {
-  const resolvedUserId = resolveDriverUserId(driverUserId);
+  const resolvedUserId = resolveConfiguredDriverUserId(driverUserId);
   if (!resolvedUserId) {
     await mockDelay();
     return { ...activeTrip, id };
