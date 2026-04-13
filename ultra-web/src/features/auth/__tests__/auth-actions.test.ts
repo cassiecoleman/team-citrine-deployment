@@ -51,4 +51,16 @@ describe('Auth actions — signUp', () => {
 
     expect(roleData?.role).toBe('rider')
   })
+
+  it('rejects duplicate email', async () => {
+    const email = `dup-test-${uid}@ultra.test`
+
+    const first = await signUp({ email, password: 'test-password-123' })
+    expect(first.success).toBe(true)
+    authUserIds.push(first.data.userId)
+
+    const second = await signUp({ email, password: 'test-password-456' })
+    expect(second.success).toBe(false)
+    expect(second.error).toBeTruthy()
+  })
 })
