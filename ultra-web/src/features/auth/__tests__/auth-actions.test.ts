@@ -12,7 +12,7 @@ vi.mock('next/headers', () => ({
   }),
 }))
 
-import { signUp, signIn } from '../actions'
+import { signUp, signIn, signOut, getCurrentUser } from '../actions'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -113,6 +113,52 @@ describe('Auth actions — signIn', () => {
     authUserIds.push(created.user!.id)
 
     const result = await signIn({ email, password: 'wrong-password-456' })
+
+    expect(result.success).toBe(false)
+  })
+})
+
+describe('Auth actions — signOut', () => {
+  it('signs out successfully', async () => {
+    // Sign in first to have an active session
+    const email = `signout-test-${uid}@ultra.test`
+    const { data: created } = await supabase.auth.admin.createUser({
+      email,
+      password: 'test-password-123',
+      email_confirm: true,
+    })
+    authUserIds.push(created.user!.id)
+
+    await signIn({ email, password: 'test-password-123' })
+    const result = await signOut()
+
+    expect(result.success).toBe(true)
+  })
+})
+
+describe('Auth actions — getCurrentUser', () => {
+  it('returns user after sign in', async () => {
+    const email = `getuser-test-${uid}@ultra.test`
+    const { data: created } = await supabase.auth.admin.createUser({
+      email,
+      password: 'test-password-123',
+      email_confirm: true,
+    })
+    authUserIds.push(created.user!.id)
+
+    await signIn({ email, password: 'test-password-123' })
+    const result = await getCurrentUser()
+
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data?.user).toBeTruthy()
+    }
+  })
+
+  it('returns error when no session', async () => {
+    // Clear cookies to simulate no session
+    mockCookieStore.clear()
+    const result = await getCurrentUser()
 
     expect(result.success).toBe(false)
   })
