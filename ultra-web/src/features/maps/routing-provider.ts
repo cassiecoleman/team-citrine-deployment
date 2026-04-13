@@ -9,13 +9,22 @@ export interface RouteResult {
   coordinates: RoutePoint[];
 }
 
-export class StubRoutingProvider {
+export interface RoutingProvider {
+  getRoute(origin: RoutePoint, destination: RoutePoint): Promise<RouteResult>;
+  getEtaMinutes(origin: RoutePoint, destination: RoutePoint): Promise<number>;
+}
+
+export class StubRoutingProvider implements RoutingProvider {
   async getRoute(origin: RoutePoint, destination: RoutePoint): Promise<RouteResult> {
     return {
       distanceMiles: 8.1,
       durationMinutes: 19,
       coordinates: [origin, destination],
     };
+  }
+
+  async getEtaMinutes(): Promise<number> {
+    return 19;
   }
 }
 
@@ -35,7 +44,7 @@ interface OSRMTableResponse {
 
 type FetchLike = typeof fetch;
 
-export class OSRMRoutingProvider {
+export class OSRMRoutingProvider implements RoutingProvider {
   constructor(private readonly fetchImpl: FetchLike = fetch) {}
 
   async getRoute(origin: RoutePoint, destination: RoutePoint): Promise<RouteResult> {
@@ -75,4 +84,14 @@ export class OSRMRoutingProvider {
 
     return Math.round(durationSeconds / 60);
   }
+}
+
+export function createRoutingProvider(
+  mode = process.env.NEXT_PUBLIC_ROUTING_PROVIDER ?? "stub",
+): RoutingProvider {
+  if (mode === "osrm") {
+    return new OSRMRoutingProvider();
+  }
+
+  return new StubRoutingProvider();
 }

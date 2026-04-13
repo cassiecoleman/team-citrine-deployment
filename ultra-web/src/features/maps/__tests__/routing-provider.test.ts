@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { OSRMRoutingProvider, StubRoutingProvider } from "../routing-provider";
+import {
+  OSRMRoutingProvider,
+  StubRoutingProvider,
+  createRoutingProvider,
+} from "../routing-provider";
 
 describe("StubRoutingProvider", () => {
   it("returns a simple route shape with stub ETA", async () => {
@@ -78,5 +82,13 @@ describe("OSRMRoutingProvider", () => {
       expect.any(Object),
     );
     expect(etaMinutes).toBe(11);
+  });
+});
+
+describe("createRoutingProvider", () => {
+  it("returns stub provider by default", () => {
+    const provider = createRoutingProvider();
+
+    expect(provider).toBeInstanceOf(StubRoutingProvider);
   });
 });
