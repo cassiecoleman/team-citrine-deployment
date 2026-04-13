@@ -199,6 +199,38 @@ describe("driver trip operations", () => {
     );
   });
 
+  it("throttles driver location updates faster than 3 seconds", async () => {
+    mockSingle.mockResolvedValueOnce({
+      data: { id: "driver-1" },
+      error: null,
+    });
+    mockLocationSelectMaybeSingle.mockResolvedValueOnce({
+      data: { recorded_at: "2026-04-13T20:00:03.000Z" },
+      error: null,
+    });
+
+    const result = await updateDriverLocation({
+      driverUserId: "auth-user-1",
+      lat: 35.15,
+      lng: -90.05,
+      heading: 180,
+      recordedAt: "2026-04-13T20:00:04.000Z",
+    });
+
+    expect(result).toEqual({
+      success: true,
+      data: {
+        driverId: "driver-1",
+        lat: 35.15,
+        lng: -90.05,
+        heading: 180,
+        recordedAt: "2026-04-13T20:00:04.000Z",
+        throttled: true,
+      },
+    });
+    expect(mockLocationUpsert).not.toHaveBeenCalled();
+  });
+
   it("rejects a trip by returning it to matching and clearing the assigned driver", async () => {
     mockSingle.mockResolvedValueOnce({
       data: { id: "driver-1" },
