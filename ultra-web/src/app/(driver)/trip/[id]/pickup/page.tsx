@@ -2,6 +2,7 @@ import {
   confirmPickup,
   getActiveDriverTrip,
   getRuntimeDriverUserId,
+  setDemoRideStatusForDriverFlow,
 } from "@/features/driver-trips/actions";
 import { PickupConfirmationCard } from "@/features/driver-trips/components/PickupConfirmationCard";
 
@@ -36,6 +37,10 @@ export default async function DriverPickupPage({
     ]);
     isPickupConfirmed = result.success;
   } else if (!driverUserId && query.confirmed === "1") {
+    await setDemoRideStatusForDriverFlow({
+      rideId: id,
+      status: "in_progress",
+    });
     isPickupConfirmed = true;
   }
 

@@ -1,3 +1,4 @@
+import { ensureDemoRide, getDemoRideStatus } from "@/lib/demo-ride-state";
 import { homeLocation, hospitalLocation, mockDriver } from "@/lib/mock-data";
 import { mockDelay } from "@/lib/mock-delay";
 import { createServiceRoleClient } from "@/lib/supabase-server";
@@ -45,8 +46,13 @@ export async function getRideStatus(id: string): Promise<RideDetail> {
     Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY);
 
   if (!hasSupabaseConfig) {
+    ensureDemoRide(id);
+    const demoStatus = getDemoRideStatus(id) ?? "matching";
     await mockDelay();
-    return fallbackRide;
+    return {
+      ...fallbackRide,
+      status: normalizeRideStatus(demoStatus),
+    };
   }
 
   const supabase = createServiceRoleClient();

@@ -2,6 +2,7 @@ import {
   acceptTrip,
   getActiveDriverTrip,
   getRuntimeDriverUserId,
+  setDemoRideStatusForDriverFlow,
 } from "@/features/driver-trips/actions";
 import { TripNavigationView } from "@/features/driver-trips/components/TripNavigationView";
 
@@ -21,6 +22,11 @@ export default async function DriverTripPage({
       }),
       new Promise((resolve) => setTimeout(resolve, 1500)),
     ]);
+  } else {
+    await setDemoRideStatusForDriverFlow({
+      rideId: id,
+      status: "driver_en_route",
+    });
   }
 
   const trip = await getActiveDriverTrip(id, driverUserId);

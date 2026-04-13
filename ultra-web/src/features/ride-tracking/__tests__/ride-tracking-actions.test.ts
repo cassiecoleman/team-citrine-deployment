@@ -1,4 +1,5 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { resetDemoRideState, setDemoRideStatus } from "@/lib/demo-ride-state";
 import { getRideStatus } from "../actions";
 
 const single = vi.fn();
@@ -10,6 +11,10 @@ const createServiceRoleClient = vi.fn(() => ({ from }));
 vi.mock("@/lib/supabase-server", () => ({
   createServiceRoleClient: () => createServiceRoleClient(),
 }));
+
+afterEach(() => {
+  resetDemoRideState();
+});
 
 describe("getRideStatus", () => {
   it("maps database status to rider-facing detailed status", async () => {
@@ -40,5 +45,22 @@ describe("getRideStatus", () => {
     expect(ride.id).toBe("ride-1");
     expect(ride.driver?.id).toBe("driver-real-1");
     expect(ride.estimatedFare).toBe(19);
+  });
+
+  it("uses demo ride state status when Supabase config is unavailable", async () => {
+    const originalSupabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const originalServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    process.env.NEXT_PUBLIC_SUPABASE_URL = "";
+    process.env.SUPABASE_SERVICE_ROLE_KEY = "";
+    setDemoRideStatus("new-ride", "driver_en_route");
+
+    const ride = await getRideStatus("new-ride");
+
+    expect(ride.id).toBe("new-ride");
+    expect(ride.status).toBe("en_route");
+
+    process.env.NEXT_PUBLIC_SUPABASE_URL = originalSupabaseUrl;
+    process.env.SUPABASE_SERVICE_ROLE_KEY = originalServiceRoleKey;
   });
 });

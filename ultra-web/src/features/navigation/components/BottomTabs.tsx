@@ -14,7 +14,7 @@ const riderTabs = [
 const driverTabs = [
   { label: "Shift", href: "/driver", icon: CarFront },
   { label: "Queue", href: "/queue", icon: ClipboardList },
-  { label: "Trip", href: "/trip/test-ride-1", icon: Navigation },
+  { label: "Trip", href: "/trip/new-ride", icon: Navigation },
   { label: "Account", href: "/profile", icon: User },
 ] as const;
 
@@ -38,7 +38,7 @@ export function BottomTabs() {
   function isActive(href: string) {
     if (href === "/driver") return pathname === "/driver";
     if (href === "/queue") return pathname === "/queue";
-    if (href === "/trip/test-ride-1") return pathname.startsWith("/trip/");
+    if (href === "/trip/new-ride") return pathname.startsWith("/trip/");
     if (href === "/") return pathname === "/";
     return pathname.startsWith(href);
   }

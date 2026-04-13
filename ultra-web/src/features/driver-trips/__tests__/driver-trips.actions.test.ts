@@ -1,4 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
+import { resetDemoRideState, setDemoRideStatus } from "@/lib/demo-ride-state";
 import {
   getActiveDriverTrip,
   getDriverShiftSummary,
@@ -12,6 +13,7 @@ vi.mock("@/lib/mock-delay", () => ({
 describe("driver trip actions", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    resetDemoRideState();
   });
 
   it("returns the current shift summary for the driver dashboard", async () => {
@@ -21,15 +23,16 @@ describe("driver trip actions", () => {
     expect(summary.status).toBe("online");
     expect(summary.todayTrips).toBe(8);
     expect(summary.earningsToday).toBe(142.5);
-    expect(summary.activeTripId).toBe("test-ride-1");
+    expect(summary.activeTripId).toBe("new-ride");
     expect(summary.pendingQueueCount).toBe(3);
     expect(summary.nextBreakLabel).toContain("2 more trips");
   });
 
   it("returns the queued trip assignment used on the accept/reject screen", async () => {
+    setDemoRideStatus("new-ride", "matching");
     const assignment = await getQueuedTrip();
 
-    expect(assignment.id).toBe("test-ride-1");
+    expect(assignment.id).toBe("new-ride");
     expect(assignment.pickupLabel).toBe("Community Clinic");
     expect(assignment.dropoffLabel).toBe("Metro General Hospital");
     expect(assignment.note).toContain("blue awning");

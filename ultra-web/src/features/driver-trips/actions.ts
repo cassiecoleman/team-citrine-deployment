@@ -1,5 +1,9 @@
 "use server";
 
+import {
+  getDemoQueueRideId,
+  setDemoRideStatus,
+} from "@/lib/demo-ride-state";
 import { mockDelay } from "@/lib/mock-delay";
 import { createServiceRoleClient } from "@/lib/supabase-server";
 import { z } from "zod";
@@ -21,13 +25,13 @@ const shiftSummary: DriverShiftSummary = {
   completionRate: 99,
   todayTrips: 8,
   earningsToday: 142.5,
-  activeTripId: "test-ride-1",
+  activeTripId: "new-ride",
   pendingQueueCount: 3,
   nextBreakLabel: "Break window opens after 2 more trips",
 };
 
 const queuedTrip: TripAssignment = {
-  id: "test-ride-1",
+  id: "new-ride",
   riderName: "Aisha R.",
   pickupLabel: "Community Clinic",
   pickupAddress: "1150 West End Ave",
@@ -46,7 +50,7 @@ const queuedTrip: TripAssignment = {
 };
 
 const activeTrip: ActiveDriverTrip = {
-  id: "test-ride-1",
+  id: "new-ride",
   riderName: "Aisha R.",
   riderRating: 4.8,
   pickupLabel: queuedTrip.pickupLabel,
@@ -137,7 +141,10 @@ export async function getQueuedTrip(driverUserId?: string): Promise<TripAssignme
   const resolvedUserId = resolveConfiguredDriverUserId(driverUserId);
   if (!resolvedUserId) {
     await mockDelay();
-    return queuedTrip;
+    return {
+      ...queuedTrip,
+      id: getDemoQueueRideId() ?? queuedTrip.id,
+    };
   }
 
   const assignedTripsResult = await getMatchingQueue(resolvedUserId);
@@ -309,6 +316,13 @@ export async function acceptTrip(input: {
       driverId: rideResult.data.driver_id ?? driverResult.data.id,
     },
   };
+}
+
+export async function setDemoRideStatusForDriverFlow(input: {
+  rideId: string;
+  status: "driver_en_route" | "in_progress";
+}): Promise<void> {
+  setDemoRideStatus(input.rideId, input.status);
 }
 
 export async function rejectTrip(input: {
