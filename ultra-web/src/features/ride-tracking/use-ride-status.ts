@@ -17,19 +17,48 @@ export function useRideStatus({ rideId, initialRide }: UseRideStatusInput): {
   const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
-    const channel = supabase
-      .channel(`ride-status:${rideId}`)
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "rides", filter: `id=eq.${rideId}` }, (payload) => {
-        setRide((previousRide) =>
-          buildRideViewModel(previousRide, {
-            status: (payload.new as { status?: string }).status,
-          }),
-        );
-      })
-      .subscribe();
+    let channel: ReturnType<typeof supabase.channel> | undefined;
+    let reconnectTimer: ReturnType<typeof setTimeout> | undefined;
+    let isActive = true;
+
+    const scheduleReconnect = () => {
+      if (!isActive || reconnectTimer) {
+        return;
+      }
+      reconnectTimer = setTimeout(() => {
+        reconnectTimer = undefined;
+        void supabase.removeChannel(channel!);
+        connect();
+      }, 1000);
+    };
+
+    const connect = () => {
+      channel = supabase
+        .channel(`ride-status:${rideId}`)
+        .on("postgres_changes", { event: "UPDATE", schema: "public", table: "rides", filter: `id=eq.${rideId}` }, (payload) => {
+          setRide((previousRide) =>
+            buildRideViewModel(previousRide, {
+              status: (payload.new as { status?: string }).status,
+            }),
+          );
+        })
+        .subscribe((status) => {
+          if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+            scheduleReconnect();
+          }
+        });
+    };
+
+    connect();
 
     return () => {
-      void supabase.removeChannel(channel);
+      isActive = false;
+      if (reconnectTimer) {
+        clearTimeout(reconnectTimer);
+      }
+      if (channel) {
+        void supabase.removeChannel(channel);
+      }
     };
   }, [rideId, supabase]);
 
