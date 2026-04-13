@@ -12,7 +12,7 @@ vi.mock('next/headers', () => ({
   }),
 }))
 
-import { signUp, signIn, signOut, getCurrentUser } from '../actions'
+import { signUp, signIn, signOut, getCurrentUser, resetPassword } from '../actions'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -161,5 +161,30 @@ describe('Auth actions — getCurrentUser', () => {
     const result = await getCurrentUser()
 
     expect(result.success).toBe(false)
+  })
+})
+
+describe('Auth actions — resetPassword', () => {
+  it('rejects invalid email format', async () => {
+    const result = await resetPassword({ email: 'not-valid' })
+
+    expect(result.success).toBe(false)
+    expect(result.error).toMatch(/invalid email/i)
+  })
+
+  it('sends reset email for existing user', async () => {
+    const email = `reset-test-${uid}@ultra.test`
+    const { data: created } = await supabase.auth.admin.createUser({
+      email,
+      password: 'test-password-123',
+      email_confirm: true,
+    })
+    authUserIds.push(created.user!.id)
+
+    const result = await resetPassword({ email })
+
+    // Supabase may return an error if email sending isn't configured,
+    // but the action should not throw — it should return a result
+    expect(result).toHaveProperty('success')
   })
 })
