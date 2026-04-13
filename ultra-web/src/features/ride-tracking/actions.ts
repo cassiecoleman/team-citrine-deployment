@@ -7,6 +7,7 @@ import { normalizeRideStatus } from "./ride-status-adapter";
 interface RideStatusRow {
   id: string;
   status: string;
+  driver_id: string | null;
   pickup_lat: number;
   pickup_lng: number;
   pickup_address: string;
@@ -52,7 +53,7 @@ export async function getRideStatus(id: string): Promise<RideDetail> {
   const rideResult = await supabase
     .from("rides")
     .select(
-      "id,status,pickup_lat,pickup_lng,pickup_address,dropoff_lat,dropoff_lng,dropoff_address,fare_estimate,fare_final,distance_miles,estimated_duration_min,actual_duration_min",
+      "id,status,driver_id,pickup_lat,pickup_lng,pickup_address,dropoff_lat,dropoff_lng,dropoff_address,fare_estimate,fare_final,distance_miles,estimated_duration_min,actual_duration_min",
     )
     .eq("id", id)
     .single();
@@ -83,7 +84,10 @@ export async function getRideStatus(id: string): Promise<RideDetail> {
     distanceMi: row.distance_miles ?? fallbackRide.distanceMi,
     durationMin:
       row.actual_duration_min ?? row.estimated_duration_min ?? fallbackRide.durationMin,
-    driver: fallbackRide.driver,
+    driver: {
+      ...fallbackRide.driver,
+      id: row.driver_id ?? fallbackRide.driver.id,
+    },
     progressPercent: status === "matching" ? 0 : fallbackRide.progressPercent,
     distanceRemainingMi: fallbackRide.distanceRemainingMi,
     etaMin: status === "arrived" ? 0 : fallbackRide.etaMin,

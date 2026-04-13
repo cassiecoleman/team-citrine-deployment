@@ -17,6 +17,7 @@ describe("getRideStatus", () => {
       data: {
         id: "ride-1",
         status: "driver_en_route",
+        driver_id: "driver-real-1",
         pickup_lat: 40.7128,
         pickup_lng: -74.006,
         pickup_address: "742 Elm St (Home)",
@@ -37,6 +38,7 @@ describe("getRideStatus", () => {
     expect(createServiceRoleClient).toHaveBeenCalledTimes(1);
     expect(ride.status).toBe("en_route");
     expect(ride.id).toBe("ride-1");
+    expect(ride.driver?.id).toBe("driver-real-1");
     expect(ride.estimatedFare).toBe(19);
   });
 });
