@@ -7,14 +7,13 @@ const supabase = createClient(
 )
 
 const uid = Date.now()
+let userSeq = 0
 const authUserIds: string[] = []
 const createdIds: { table: string; id: string }[] = []
 
 async function createTestUser(prefix: string) {
-  const email = `${prefix}-${uid}@ultra.test`
-  const { data: existing } = await supabase.auth.admin.listUsers()
-  const old = existing?.users?.find((u) => u.email === email)
-  if (old) await supabase.auth.admin.deleteUser(old.id)
+  userSeq += 1
+  const email = `${prefix}-${uid}-${userSeq}@ultra.test`
 
   const { data, error } = await supabase.auth.admin.createUser({
     email,
@@ -103,9 +102,15 @@ describe('Safety schema — Issue #15', () => {
     const { riderId } = await createTestRider('trust-dup-rider')
     const { driverId } = await createTestDriver('trust-dup-driver')
 
-    await supabase
+    const firstInsert = await supabase
       .from('trusted_drivers')
       .insert({ rider_id: riderId, driver_id: driverId })
+      .select()
+      .single()
+
+    expect(firstInsert.error).toBeNull()
+    expect(firstInsert.data).toBeTruthy()
+    createdIds.push({ table: 'trusted_drivers', id: firstInsert.data!.id })
 
     const { error } = await supabase
       .from('trusted_drivers')
