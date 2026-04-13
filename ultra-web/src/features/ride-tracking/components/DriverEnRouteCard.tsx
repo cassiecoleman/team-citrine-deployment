@@ -2,9 +2,16 @@
 
 import { Star, Phone, Shield } from "lucide-react";
 import type { RideDetail } from "../types";
+import { useDriverLocation } from "../use-driver-location";
 
 export function DriverEnRouteCard({ ride }: { ride: RideDetail }) {
   const driver = ride.driver!;
+  const { location } = useDriverLocation({
+    driverId: driver.id,
+  });
+  const locationLabel = location
+    ? `${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}`
+    : "Waiting for driver location...";
 
   return (
     <div className="flex flex-col gap-4 p-4">
@@ -40,6 +47,10 @@ export function DriverEnRouteCard({ ride }: { ride: RideDetail }) {
         <p className="text-sm font-semibold">{ride.pickup.address}</p>
         <p className="text-xs text-muted mt-1">to</p>
         <p className="text-sm font-semibold">{ride.dropoff.address}</p>
+        <div className="mt-3">
+          <p className="text-xs text-muted">Live location</p>
+          <p className="text-sm font-semibold">{locationLabel}</p>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
