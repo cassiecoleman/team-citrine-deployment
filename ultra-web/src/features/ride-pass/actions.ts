@@ -172,7 +172,14 @@ export async function getActivePassForUser(
     .limit(1)
     .single();
 
-  if (passResult.error || !passResult.data) {
+  if (passResult.error) {
+    if (passResult.error.code === "PGRST116") {
+      return { success: true, data: null };
+    }
+    return { success: false, error: "Unable to load ride pass right now." };
+  }
+
+  if (!passResult.data) {
     return { success: true, data: null };
   }
 

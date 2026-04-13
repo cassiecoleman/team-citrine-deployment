@@ -137,11 +137,16 @@ export async function acceptFareSplit(
       responded_at: new Date().toISOString(),
     })
     .eq("id", splitId)
+    .eq("status", "pending")
+    .gt("expires_at", new Date().toISOString())
     .select()
     .single();
 
   if (updateResult.error || !updateResult.data) {
-    return { success: false, error: "Unable to accept fare split right now." };
+    return {
+      success: false,
+      error: "Unable to accept fare split — it may have expired or already been responded to.",
+    };
   }
 
   const inviterResult = await supabase
@@ -207,11 +212,16 @@ export async function declineFareSplit(
       responded_at: new Date().toISOString(),
     })
     .eq("id", splitId)
+    .eq("status", "pending")
+    .gt("expires_at", new Date().toISOString())
     .select("id,status")
     .single();
 
   if (updateResult.error || !updateResult.data) {
-    return { success: false, error: "Unable to decline fare split right now." };
+    return {
+      success: false,
+      error: "Unable to decline fare split — it may have expired or already been responded to.",
+    };
   }
 
   return {
@@ -249,7 +259,14 @@ export async function getFareSplitForRide(
     .limit(1)
     .single();
 
-  if (splitResult.error || !splitResult.data) {
+  if (splitResult.error) {
+    if (splitResult.error.code === "PGRST116") {
+      return { success: true, data: null };
+    }
+    return { success: false, error: "Unable to load fare split right now." };
+  }
+
+  if (!splitResult.data) {
     return { success: true, data: null };
   }
 

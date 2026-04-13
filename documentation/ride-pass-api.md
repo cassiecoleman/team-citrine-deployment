@@ -4,6 +4,10 @@
 
 The ride pass system lets riders purchase weekly ride bundles at a discounted rate. Plans are static (not stored in DB); purchased passes are tracked in the `ride_passes` table.
 
+## Auth Model (Pre-M2)
+
+Authenticated actions accept an optional `userId` parameter. This is a **transitional pattern** — `userId` must be derived server-side by the caller, never from raw client input. When M2 auth (#17–#19) ships, these actions will be migrated to derive identity from the Supabase session/JWT internally. See `MASTER_PROMPT.md` "Server Action Auth Pattern" for details.
+
 ## Server Actions
 
 All authenticated actions require a `userId` parameter (Supabase Auth user ID). Returns `PassActionResult<T>` — either `{ success: true, data: T }` or `{ success: false, error: string }`.

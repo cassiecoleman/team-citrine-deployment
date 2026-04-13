@@ -7,6 +7,7 @@ const mockSingle = vi.fn();
 const createChainMock = () => {
   const chain: Record<string, ReturnType<typeof vi.fn>> = {};
   chain.eq = vi.fn(() => chain);
+  chain.gt = vi.fn(() => chain);
   chain.select = vi.fn(() => chain);
   chain.order = vi.fn(() => chain);
   chain.limit = vi.fn(() => chain);
@@ -309,5 +310,18 @@ describe("fare split actions", () => {
     if (result.success) {
       expect(result.data).toBeNull();
     }
+  });
+
+  it("getFareSplitForRide returns an error on non-404 DB failure", async () => {
+    mockSingle
+      .mockResolvedValueOnce({ data: { id: "rider-1", name: "Aisha" }, error: null })
+      .mockResolvedValueOnce({ data: null, error: { code: "PGRST500", message: "connection refused" } });
+
+    const result = await getFareSplitForRide("ride-1", "user-1");
+
+    expect(result).toEqual({
+      success: false,
+      error: "Unable to load fare split right now.",
+    });
   });
 });

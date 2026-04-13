@@ -169,6 +169,19 @@ describe("ride pass actions", () => {
     }
   });
 
+  it("getActivePassForUser returns an error on non-404 DB failure", async () => {
+    mockSingle
+      .mockResolvedValueOnce({ data: { id: "rider-1" }, error: null })
+      .mockResolvedValueOnce({ data: null, error: { code: "PGRST500", message: "connection refused" } });
+
+    const result = await getActivePassForUser("user-1");
+
+    expect(result).toEqual({
+      success: false,
+      error: "Unable to load ride pass right now.",
+    });
+  });
+
   it("getActivePassForUser returns mapped ActiveRidePass for an active pass", async () => {
     mockSingle
       .mockResolvedValueOnce({ data: { id: "rider-1" }, error: null })
