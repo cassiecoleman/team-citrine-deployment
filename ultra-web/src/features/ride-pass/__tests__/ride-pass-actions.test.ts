@@ -1,7 +1,7 @@
 // @vitest-environment node
 
-import { describe, expect, it } from "vitest";
-import { getAvailablePasses } from "../actions";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { getAvailablePasses, purchasePass } from "../actions";
 
 describe("ride pass actions", () => {
   it("getAvailablePasses returns the plan catalog with correct shapes", async () => {
@@ -27,5 +27,14 @@ describe("ride pass actions", () => {
         pricePerWeek: 140,
       }),
     );
+  });
+
+  it("purchasePass rejects unauthenticated users", async () => {
+    const result = await purchasePass("plan-5");
+
+    expect(result).toEqual({
+      success: false,
+      error: "You must be signed in to purchase a ride pass.",
+    });
   });
 });
