@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase";
 
 interface UseDriverLocationInput {
-  driverId: string;
+  driverId?: string | null;
 }
 
 interface DriverLocation {
@@ -27,6 +27,11 @@ export function useDriverLocation({
   const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
+    if (!driverId) {
+      setLocation(null);
+      return;
+    }
+
     let channel: ReturnType<typeof supabase.channel> | undefined;
     let reconnectTimer: ReturnType<typeof setTimeout> | undefined;
     let isActive = true;
@@ -87,6 +92,10 @@ export function useDriverLocation({
   }, [driverId, supabase]);
 
   useEffect(() => {
+    if (process.env.NODE_ENV === "production" || !driverId) {
+      return;
+    }
+
     const testWindow = window as Window & { __ultraDriverLocationListenerReady?: boolean };
     testWindow.__ultraDriverLocationListenerReady = true;
 

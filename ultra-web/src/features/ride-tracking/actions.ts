@@ -38,19 +38,23 @@ function buildFallbackRide(id: string): RideDetail {
   };
 }
 
+async function buildDemoFlowRide(id: string, fallbackRide: RideDetail): Promise<RideDetail> {
+  await ensureDemoRide(id);
+  const demoStatus = (await getDemoRideStatus(id)) ?? "matching";
+  await mockDelay();
+  return {
+    ...fallbackRide,
+    status: normalizeRideStatus(demoStatus),
+  };
+}
+
 export async function getRideStatus(id: string): Promise<RideDetail> {
   const fallbackRide = buildFallbackRide(id);
   const existingDemoStatus = await getDemoRideStatus(id);
   const shouldUseDemoFlow = id === "new-ride" || Boolean(existingDemoStatus);
 
   if (shouldUseDemoFlow) {
-    await ensureDemoRide(id);
-    const demoStatus = (await getDemoRideStatus(id)) ?? "matching";
-    await mockDelay();
-    return {
-      ...fallbackRide,
-      status: normalizeRideStatus(demoStatus),
-    };
+    return buildDemoFlowRide(id, fallbackRide);
   }
 
   const hasSupabaseConfig =
@@ -58,13 +62,7 @@ export async function getRideStatus(id: string): Promise<RideDetail> {
     Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY);
 
   if (!hasSupabaseConfig) {
-    await ensureDemoRide(id);
-    const demoStatus = (await getDemoRideStatus(id)) ?? "matching";
-    await mockDelay();
-    return {
-      ...fallbackRide,
-      status: normalizeRideStatus(demoStatus),
-    };
+    return buildDemoFlowRide(id, fallbackRide);
   }
 
   const supabase = createServiceRoleClient();

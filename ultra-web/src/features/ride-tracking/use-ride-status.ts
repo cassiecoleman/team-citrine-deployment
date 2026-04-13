@@ -15,6 +15,8 @@ interface DebugRideStatusEventDetail {
   status: string;
 }
 
+const STATUS_POLL_INTERVAL_MS = 5000;
+
 export function useRideStatus({ rideId, initialRide }: UseRideStatusInput): {
   ride: RideDetail;
 } {
@@ -96,7 +98,7 @@ export function useRideStatus({ rideId, initialRide }: UseRideStatusInput): {
     void syncStatus();
     pollTimer = setInterval(() => {
       void syncStatus();
-    }, 1000);
+    }, STATUS_POLL_INTERVAL_MS);
 
     return () => {
       isActive = false;
@@ -107,6 +109,10 @@ export function useRideStatus({ rideId, initialRide }: UseRideStatusInput): {
   }, [rideId]);
 
   useEffect(() => {
+    if (process.env.NODE_ENV === "production") {
+      return;
+    }
+
     const testWindow = window as Window & { __ultraRideStatusListenerReady?: boolean };
     testWindow.__ultraRideStatusListenerReady = true;
 

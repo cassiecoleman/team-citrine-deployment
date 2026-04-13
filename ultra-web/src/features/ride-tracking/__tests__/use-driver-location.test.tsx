@@ -53,6 +53,20 @@ afterEach(() => {
 });
 
 describe("useDriverLocation", () => {
+  it("does not subscribe when driver id is missing", () => {
+    const { result, unmount } = renderHook(() =>
+      useDriverLocation({
+        driverId: "",
+      }),
+    );
+
+    expect(channelFactory).not.toHaveBeenCalled();
+    expect(result.current.location).toBeNull();
+
+    unmount();
+    expect(removeChannel).not.toHaveBeenCalled();
+  });
+
   it("subscribes to driver location updates and maps payload coordinates", () => {
     const { result, unmount } = renderHook(() =>
       useDriverLocation({

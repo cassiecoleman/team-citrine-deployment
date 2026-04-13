@@ -7,7 +7,7 @@ import { useDriverLocation } from "../use-driver-location";
 export function InProgressTracker({ ride }: { ride: RideDetail }) {
   const progressPercent = ride.progressPercent ?? 0;
   const { location } = useDriverLocation({
-    driverId: ride.driver?.id ?? "",
+    driverId: ride.driver?.id,
   });
   const locationLabel = location
     ? `${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}`

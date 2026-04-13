@@ -30,7 +30,6 @@ const createChannel = () => {
 
 const channelFactory = vi.fn(() => createChannel());
 
-
 vi.mock("@/lib/supabase", () => ({
   createClient: () => ({
     channel: channelFactory,
