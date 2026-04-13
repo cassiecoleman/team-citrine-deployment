@@ -9,6 +9,7 @@ import {
   getDriverStatus,
   rejectTrip,
   toggleDriverAvailability,
+  updateDriverLocation,
 } from "../actions";
 
 const mockSingle = vi.fn();
@@ -37,6 +38,12 @@ const mockRideSelect = vi.fn(() => ({ eq: mockRideSelectEq }));
 const mockDriverUpdateEq = vi.fn();
 const mockDriverUpdate = vi.fn(() => ({ eq: mockDriverUpdateEq }));
 const mockHistoryInsert = vi.fn();
+const mockLocationUpsert = vi.fn();
+const mockLocationSelectSingle = vi.fn();
+const mockLocationSelectMaybeSingle = vi.fn();
+const mockLocationSelectEq = vi.fn(() => ({ maybeSingle: mockLocationSelectMaybeSingle }));
+const mockLocationSelect = vi.fn(() => ({ eq: mockLocationSelectEq }));
+const mockLocationUpsertSelect = vi.fn(() => ({ single: mockLocationSelectSingle }));
 
 const mockFrom = vi.fn((table: string) => {
   if (table === "drivers") {
@@ -49,6 +56,13 @@ const mockFrom = vi.fn((table: string) => {
 
   if (table === "ride_status_history") {
     return { insert: mockHistoryInsert };
+  }
+
+  if (table === "driver_locations") {
+    return {
+      select: mockLocationSelect,
+      upsert: mockLocationUpsert,
+    };
   }
 
   return {};
@@ -69,6 +83,12 @@ describe("driver trip operations", () => {
     mockRideOrder.mockReset();
     mockDriverUpdateEq.mockReset();
     mockHistoryInsert.mockReset();
+    mockLocationUpsert.mockReset();
+    mockLocationSelectSingle.mockReset();
+    mockLocationSelectMaybeSingle.mockReset();
+    mockLocationSelectEq.mockReset();
+    mockLocationSelect.mockReset();
+    mockLocationUpsertSelect.mockReset();
     mockHistoryInsert.mockResolvedValue({ error: null });
     mockEq.mockClear();
     mockSelect.mockClear();
@@ -125,6 +145,56 @@ describe("driver trip operations", () => {
         from_status: "matching",
         to_status: "driver_en_route",
         change_source: "driver",
+      }),
+    );
+  });
+
+  it("upserts a fresh driver location update", async () => {
+    mockSingle.mockResolvedValueOnce({
+      data: { id: "driver-1" },
+      error: null,
+    });
+    mockLocationSelectMaybeSingle.mockResolvedValueOnce({
+      data: { recorded_at: "2026-04-13T20:00:00.000Z" },
+      error: null,
+    });
+    mockLocationUpsert.mockReturnValueOnce({
+      select: mockLocationUpsertSelect,
+    });
+    mockLocationSelectSingle.mockResolvedValueOnce({
+      data: { driver_id: "driver-1", lat: 35.15, lng: -90.05, heading: 180, recorded_at: "2026-04-13T20:00:04.000Z" },
+      error: null,
+    });
+
+    const result = await updateDriverLocation({
+      driverUserId: "auth-user-1",
+      lat: 35.15,
+      lng: -90.05,
+      heading: 180,
+      recordedAt: "2026-04-13T20:00:04.000Z",
+    });
+
+    expect(result).toEqual({
+      success: true,
+      data: {
+        driverId: "driver-1",
+        lat: 35.15,
+        lng: -90.05,
+        heading: 180,
+        recordedAt: "2026-04-13T20:00:04.000Z",
+        throttled: false,
+      },
+    });
+    expect(mockFrom).toHaveBeenCalledWith("driver_locations");
+    expect(mockLocationUpsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        driver_id: "driver-1",
+        lat: 35.15,
+        lng: -90.05,
+        heading: 180,
+      }),
+      expect.objectContaining({
+        onConflict: "driver_id",
       }),
     );
   });

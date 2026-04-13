@@ -192,6 +192,14 @@ const toggleAvailabilitySchema = z.object({
   nextStatus: z.enum(["available", "offline"]),
 });
 
+const updateDriverLocationSchema = z.object({
+  driverUserId: z.string().min(1),
+  lat: z.number().min(-90).max(90),
+  lng: z.number().min(-180).max(180),
+  heading: z.number().min(0).max(360).optional(),
+  recordedAt: z.string().datetime().optional(),
+});
+
 export async function acceptTrip(input: {
   rideId: string;
   driverUserId: string;
@@ -607,6 +615,100 @@ export async function toggleDriverAvailability(input: {
     data: {
       driverId: driverResult.data.id,
       status: parsed.data.nextStatus,
+    },
+  };
+}
+
+export async function updateDriverLocation(input: {
+  driverUserId: string;
+  lat: number;
+  lng: number;
+  heading?: number;
+  recordedAt?: string;
+}): Promise<
+  | {
+      success: true;
+      data: {
+        driverId: string;
+        lat: number;
+        lng: number;
+        heading: number | null;
+        recordedAt: string;
+        throttled: boolean;
+      };
+    }
+  | { success: false; error: string }
+> {
+  const parsed = updateDriverLocationSchema.safeParse(input);
+  if (!parsed.success) {
+    return { success: false, error: "Invalid driver location payload." };
+  }
+
+  const supabase = createServiceRoleClient();
+  const driverResult = await supabase
+    .from("drivers")
+    .select("id")
+    .eq("user_id", parsed.data.driverUserId)
+    .single();
+
+  if (driverResult.error || !driverResult.data) {
+    return { success: false, error: "Driver account was not found." };
+  }
+
+  const nextRecordedAt = parsed.data.recordedAt ?? new Date().toISOString();
+  const latestLocationResult = await supabase
+    .from("driver_locations")
+    .select("recorded_at")
+    .eq("driver_id", driverResult.data.id)
+    .maybeSingle();
+
+  const latestRecordedAt = latestLocationResult.data?.recorded_at;
+  if (latestRecordedAt) {
+    const elapsedMs =
+      new Date(nextRecordedAt).getTime() - new Date(latestRecordedAt).getTime();
+    if (elapsedMs < 3000) {
+      return {
+        success: true,
+        data: {
+          driverId: driverResult.data.id,
+          lat: parsed.data.lat,
+          lng: parsed.data.lng,
+          heading: parsed.data.heading ?? null,
+          recordedAt: nextRecordedAt,
+          throttled: true,
+        },
+      };
+    }
+  }
+
+  const upsertResult = await supabase
+    .from("driver_locations")
+    .upsert(
+      {
+        driver_id: driverResult.data.id,
+        lat: parsed.data.lat,
+        lng: parsed.data.lng,
+        heading: parsed.data.heading ?? null,
+        recorded_at: nextRecordedAt,
+      },
+      { onConflict: "driver_id" },
+    )
+    .select("driver_id,lat,lng,heading,recorded_at")
+    .single();
+
+  if (upsertResult.error || !upsertResult.data) {
+    return { success: false, error: "Unable to update driver location." };
+  }
+
+  return {
+    success: true,
+    data: {
+      driverId: upsertResult.data.driver_id,
+      lat: upsertResult.data.lat,
+      lng: upsertResult.data.lng,
+      heading: upsertResult.data.heading,
+      recordedAt: upsertResult.data.recorded_at,
+      throttled: false,
     },
   };
 }
