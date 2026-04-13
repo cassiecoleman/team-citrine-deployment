@@ -24,6 +24,16 @@ export class StubGeocodingProvider {
       ];
     }
 
+    if (normalized.includes("union ave")) {
+      return [
+        {
+          address: "Union Ave, Memphis, TN, USA",
+          lat: 35.1374,
+          lng: -90.0342,
+        },
+      ];
+    }
+
     return [];
   }
 }

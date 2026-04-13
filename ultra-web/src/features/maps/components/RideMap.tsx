@@ -25,7 +25,7 @@ export function RideMap({
   ];
 
   return (
-    <div className={className}>
+    <div className={className} data-testid="ride-map">
       <MapContainer
         center={center}
         zoom={12}

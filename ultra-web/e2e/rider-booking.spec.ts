@@ -50,4 +50,17 @@ test.describe("US12 — request a ride", () => {
     await expect(page.getByText("Toyota Camry")).toBeVisible();
     await expect(page.getByText("ULT-2026")).toBeVisible();
   });
+
+  test("searches destination and previews it on map before request", async ({ page }) => {
+    await page.goto("/book");
+
+    await page.getByLabel("Destination").fill("Union Ave");
+    await page.getByRole("button", { name: "Find destination" }).click();
+
+    await expect(page.getByText("Union Ave, Memphis, TN, USA")).toBeVisible();
+    await expect(page.getByTestId("ride-map")).toBeVisible();
+
+    await page.getByRole("button", { name: /request ride/i }).click();
+    await expect(page).toHaveURL(/\/ride\/.+/);
+  });
 });

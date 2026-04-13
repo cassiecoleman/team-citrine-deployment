@@ -2,13 +2,21 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { MapPin, CreditCard, Users, Calendar } from "lucide-react";
 import type { FareEstimate } from "@/features/fare-split/types";
 import { createGeocodingProvider } from "@/features/maps/geocoding-provider";
-import { RideMap } from "@/features/maps/components/RideMap";
 import { createRoutingProvider } from "@/features/maps/routing-provider";
 import { formatCurrency } from "@/lib/utils";
 import type { Location } from "@/types";
+
+const RideMap = dynamic(
+  () => import("@/features/maps/components/RideMap").then((mod) => mod.RideMap),
+  {
+    ssr: false,
+    loading: () => <div className="h-full w-full rounded-xl border border-border bg-primary-light" />,
+  },
+);
 
 interface BookingClientProps {
   estimate: FareEstimate;
