@@ -83,6 +83,67 @@ export async function subscribeToPlan(planId: string): Promise<ActiveRidePass> {
   };
 }
 
+export async function decrementPassRide(
+  passId: string,
+  userId?: string,
+): Promise<PassActionResult<{ ridesRemaining: number }>> {
+  if (!userId) {
+    return { success: false, error: "You must be signed in to use a ride pass." };
+  }
+
+  const supabase = createServiceRoleClient();
+
+  const riderResult = await supabase
+    .from("riders")
+    .select("id")
+    .eq("user_id", userId)
+    .single();
+
+  if (riderResult.error || !riderResult.data) {
+    return { success: false, error: "No rider profile found for this account." };
+  }
+
+  const passResult = await supabase
+    .from("ride_passes")
+    .select()
+    .eq("id", passId)
+    .single();
+
+  if (passResult.error || !passResult.data) {
+    return { success: false, error: "Ride pass not found." };
+  }
+
+  if (passResult.data.rider_id !== riderResult.data.id) {
+    return { success: false, error: "You can only use your own ride pass." };
+  }
+
+  if (passResult.data.rides_remaining <= 0) {
+    return { success: false, error: "No rides remaining on this pass." };
+  }
+
+  const newRemaining = passResult.data.rides_remaining - 1;
+  const newStatus = newRemaining === 0 ? "exhausted" : passResult.data.status;
+  const newVersion = passResult.data.version + 1;
+
+  const updateResult = await supabase
+    .from("ride_passes")
+    .update({
+      rides_remaining: newRemaining,
+      status: newStatus,
+      version: newVersion,
+    })
+    .eq("id", passId)
+    .eq("version", passResult.data.version)
+    .select()
+    .single();
+
+  if (updateResult.error || !updateResult.data) {
+    return { success: false, error: "Unable to decrement ride pass. Please try again." };
+  }
+
+  return { success: true, data: { ridesRemaining: updateResult.data.rides_remaining } };
+}
+
 export async function getActivePassForUser(
   userId?: string,
 ): Promise<PassActionResult<ActiveRidePass | null>> {

@@ -5,16 +5,33 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mockSingle = vi.fn();
 const mockLimit = vi.fn(() => ({ single: mockSingle }));
 const mockOrder = vi.fn(() => ({ limit: mockLimit }));
-const mockEq = vi.fn(() => ({ single: mockSingle, order: mockOrder, eq: mockEq }));
-const mockSelect = vi.fn(() => ({ eq: mockEq }));
+
+// Chainable mock that returns itself for .eq(), .select(), .order(), .limit(), .single()
+const createChainMock = () => {
+  const chain: Record<string, ReturnType<typeof vi.fn>> = {};
+  chain.eq = vi.fn(() => chain);
+  chain.select = vi.fn(() => chain);
+  chain.order = vi.fn(() => chain);
+  chain.limit = vi.fn(() => chain);
+  chain.single = mockSingle;
+  return chain;
+};
+
+const mockRiderChain = createChainMock();
+const mockPassChain = createChainMock();
+
 const mockInsert = vi.fn(() => ({ select: () => ({ single: mockSingle }) }));
-const mockUpdate = vi.fn(() => ({ eq: mockEq }));
+const mockUpdate = vi.fn(() => mockPassChain);
 const mockFrom = vi.fn((table: string) => {
   if (table === "riders") {
-    return { select: mockSelect };
+    return { select: () => mockRiderChain };
   }
   if (table === "ride_passes") {
-    return { insert: mockInsert, select: mockSelect, update: mockUpdate };
+    return {
+      insert: mockInsert,
+      select: () => mockPassChain,
+      update: mockUpdate,
+    };
   }
   return {};
 });
@@ -23,22 +40,21 @@ vi.mock("@/lib/supabase-server", () => ({
   createServiceRoleClient: () => ({ from: mockFrom }),
 }));
 
-import { getAvailablePasses, purchasePass, getActivePassForUser } from "../actions";
+import {
+  getAvailablePasses,
+  purchasePass,
+  getActivePassForUser,
+  decrementPassRide,
+} from "../actions";
 
 describe("ride pass actions", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockSingle.mockReset();
-    mockLimit.mockReset();
-    mockLimit.mockReturnValue({ single: mockSingle });
-    mockOrder.mockReset();
-    mockOrder.mockReturnValue({ limit: mockLimit });
-    mockEq.mockClear();
-    mockEq.mockReturnValue({ single: mockSingle, order: mockOrder, eq: mockEq });
-    mockSelect.mockClear();
-    mockSelect.mockReturnValue({ eq: mockEq });
     mockInsert.mockClear();
+    mockInsert.mockReturnValue({ select: () => ({ single: mockSingle }) });
     mockUpdate.mockClear();
+    mockUpdate.mockReturnValue(mockPassChain);
     mockFrom.mockClear();
   });
 
@@ -183,5 +199,95 @@ describe("ride pass actions", () => {
       expect(result.data!.usedRides).toBe(3);
       expect(result.data!.status).toBe("active");
     }
+  });
+
+  it("decrementPassRide reduces rides_remaining by 1", async () => {
+    mockSingle
+      // rider lookup
+      .mockResolvedValueOnce({ data: { id: "rider-1" }, error: null })
+      // pass select
+      .mockResolvedValueOnce({
+        data: {
+          id: "pass-1",
+          rider_id: "rider-1",
+          rides_remaining: 5,
+          status: "active",
+          version: 1,
+        },
+        error: null,
+      })
+      // pass update
+      .mockResolvedValueOnce({
+        data: { id: "pass-1", rides_remaining: 4, status: "active", version: 2 },
+        error: null,
+      });
+
+    const result = await decrementPassRide("pass-1", "user-1");
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.ridesRemaining).toBe(4);
+    }
+    expect(mockUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        rides_remaining: 4,
+        version: 2,
+      }),
+    );
+  });
+
+  it("decrementPassRide sets status to exhausted when rides reach 0", async () => {
+    mockSingle
+      .mockResolvedValueOnce({ data: { id: "rider-1" }, error: null })
+      .mockResolvedValueOnce({
+        data: {
+          id: "pass-1",
+          rider_id: "rider-1",
+          rides_remaining: 1,
+          status: "active",
+          version: 3,
+        },
+        error: null,
+      })
+      .mockResolvedValueOnce({
+        data: { id: "pass-1", rides_remaining: 0, status: "exhausted", version: 4 },
+        error: null,
+      });
+
+    const result = await decrementPassRide("pass-1", "user-1");
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.ridesRemaining).toBe(0);
+    }
+    expect(mockUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        rides_remaining: 0,
+        status: "exhausted",
+        version: 4,
+      }),
+    );
+  });
+
+  it("decrementPassRide rejects when no rides remain", async () => {
+    mockSingle
+      .mockResolvedValueOnce({ data: { id: "rider-1" }, error: null })
+      .mockResolvedValueOnce({
+        data: {
+          id: "pass-1",
+          rider_id: "rider-1",
+          rides_remaining: 0,
+          status: "exhausted",
+          version: 5,
+        },
+        error: null,
+      });
+
+    const result = await decrementPassRide("pass-1", "user-1");
+
+    expect(result).toEqual({
+      success: false,
+      error: "No rides remaining on this pass.",
+    });
   });
 });
