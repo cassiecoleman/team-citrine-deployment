@@ -179,6 +179,66 @@ export async function getActivePassForUser(
   return { success: true, data: mapRidePassRowToActivePass(passResult.data) };
 }
 
+export async function cancelPass(
+  passId: string,
+  reason: string,
+  userId?: string,
+): Promise<PassActionResult<{ id: string; status: string }>> {
+  if (!userId) {
+    return { success: false, error: "You must be signed in to cancel a ride pass." };
+  }
+
+  const supabase = createServiceRoleClient();
+
+  const riderResult = await supabase
+    .from("riders")
+    .select("id")
+    .eq("user_id", userId)
+    .single();
+
+  if (riderResult.error || !riderResult.data) {
+    return { success: false, error: "No rider profile found for this account." };
+  }
+
+  const passResult = await supabase
+    .from("ride_passes")
+    .select()
+    .eq("id", passId)
+    .single();
+
+  if (passResult.error || !passResult.data) {
+    return { success: false, error: "Ride pass not found." };
+  }
+
+  if (passResult.data.rider_id !== riderResult.data.id) {
+    return { success: false, error: "You can only cancel your own ride pass." };
+  }
+
+  if (passResult.data.status !== "active") {
+    return { success: false, error: "This pass is not active and cannot be cancelled." };
+  }
+
+  const updateResult = await supabase
+    .from("ride_passes")
+    .update({
+      status: "cancelled",
+      cancellation_reason: reason,
+      cancelled_at: new Date().toISOString(),
+    })
+    .eq("id", passId)
+    .select("id,status")
+    .single();
+
+  if (updateResult.error || !updateResult.data) {
+    return { success: false, error: "Unable to cancel ride pass right now." };
+  }
+
+  return {
+    success: true,
+    data: { id: updateResult.data.id, status: updateResult.data.status },
+  };
+}
+
 export async function getActivePass(): Promise<ActiveRidePass | null> {
   await mockDelay();
   return mockActivePass;

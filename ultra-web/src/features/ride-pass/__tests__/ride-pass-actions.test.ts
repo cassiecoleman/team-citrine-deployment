@@ -45,6 +45,7 @@ import {
   purchasePass,
   getActivePassForUser,
   decrementPassRide,
+  cancelPass,
 } from "../actions";
 
 describe("ride pass actions", () => {
@@ -288,6 +289,58 @@ describe("ride pass actions", () => {
     expect(result).toEqual({
       success: false,
       error: "No rides remaining on this pass.",
+    });
+  });
+
+  it("cancelPass sets status to cancelled with reason and timestamp", async () => {
+    mockSingle
+      .mockResolvedValueOnce({ data: { id: "rider-1" }, error: null })
+      .mockResolvedValueOnce({
+        data: {
+          id: "pass-1",
+          rider_id: "rider-1",
+          status: "active",
+          version: 1,
+        },
+        error: null,
+      })
+      .mockResolvedValueOnce({
+        data: { id: "pass-1", status: "cancelled" },
+        error: null,
+      });
+
+    const result = await cancelPass("pass-1", "Too expensive", "user-1");
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data).toEqual({ id: "pass-1", status: "cancelled" });
+    }
+    expect(mockUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: "cancelled",
+        cancellation_reason: "Too expensive",
+      }),
+    );
+  });
+
+  it("cancelPass rejects already-cancelled pass", async () => {
+    mockSingle
+      .mockResolvedValueOnce({ data: { id: "rider-1" }, error: null })
+      .mockResolvedValueOnce({
+        data: {
+          id: "pass-1",
+          rider_id: "rider-1",
+          status: "cancelled",
+          version: 2,
+        },
+        error: null,
+      });
+
+    const result = await cancelPass("pass-1", "Changed mind", "user-1");
+
+    expect(result).toEqual({
+      success: false,
+      error: "This pass is not active and cannot be cancelled.",
     });
   });
 });
