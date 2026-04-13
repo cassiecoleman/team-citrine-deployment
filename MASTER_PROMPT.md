@@ -3,7 +3,7 @@
 Copy and paste the prompt below (everything inside the code fence) at the start of every Claude Code session when working on Ultra backend features.
 
 ---
-
+Use gh cli to update issue #16 and create a pr for the issue and make sure it has not already been done
 ```
 You are helping me build the backend for Ultra, a ride-sharing app (Next.js 16 + React 19 + TypeScript + Tailwind v4). The frontend is already built with mock data — our job is to replace mocks with real backend functionality.
 
