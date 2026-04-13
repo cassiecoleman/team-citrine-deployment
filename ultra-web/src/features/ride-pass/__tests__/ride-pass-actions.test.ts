@@ -151,4 +151,37 @@ describe("ride pass actions", () => {
       expect(result.data).toBeNull();
     }
   });
+
+  it("getActivePassForUser returns mapped ActiveRidePass for an active pass", async () => {
+    mockSingle
+      .mockResolvedValueOnce({ data: { id: "rider-1" }, error: null })
+      .mockResolvedValueOnce({
+        data: {
+          id: "pass-42",
+          rider_id: "rider-1",
+          plan_name: "weekly-10",
+          plan_description: "10 rides per week",
+          rides_total: 10,
+          rides_remaining: 7,
+          price_paid: "140.00",
+          status: "active",
+          purchased_at: "2026-04-06T00:00:00Z",
+          expires_at: "2026-04-13T00:00:00Z",
+          version: 1,
+        },
+        error: null,
+      });
+
+    const result = await getActivePassForUser("user-1");
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data).not.toBeNull();
+      expect(result.data!.id).toBe("pass-42");
+      expect(result.data!.plan.tier).toBe("weekly-10");
+      expect(result.data!.plan.pricePerWeek).toBe(140);
+      expect(result.data!.usedRides).toBe(3);
+      expect(result.data!.status).toBe("active");
+    }
+  });
 });
