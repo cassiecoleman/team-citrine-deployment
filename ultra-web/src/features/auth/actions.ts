@@ -38,8 +38,7 @@ export async function signUp(input: SignUpInput): Promise<AuthResponse> {
     // Validate input
     const parsed = signUpSchema.safeParse(input)
     if (!parsed.success) {
-      const errors = parsed.error.errors
-      const message = errors[0]?.message || 'Validation failed'
+      const message = parsed.error.issues[0]?.message || 'Validation failed'
       return { success: false, error: message }
     }
 
