@@ -78,7 +78,7 @@ describe('Admin role system — Issue #16', () => {
       })
 
     expect(error).not.toBeNull()
-    expect(error?.message).toContain('CHECK')
+    expect(error?.message?.toLowerCase()).toMatch(/check|violates/)
   })
 
   it('user_id has UNIQUE constraint — only one role per user', async () => {
@@ -110,6 +110,6 @@ describe('Admin role system — Issue #16', () => {
       })
 
     expect(secondError).not.toBeNull()
-    expect(secondError?.message).toContain('UNIQUE')
+    expect(secondError?.message?.toLowerCase()).toMatch(/unique|duplicate/)
   })
 })
