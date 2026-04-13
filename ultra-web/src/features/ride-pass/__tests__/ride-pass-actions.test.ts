@@ -3,7 +3,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockSingle = vi.fn();
-const mockEq = vi.fn(() => ({ single: mockSingle }));
+const mockLimit = vi.fn(() => ({ single: mockSingle }));
+const mockOrder = vi.fn(() => ({ limit: mockLimit }));
+const mockEq = vi.fn(() => ({ single: mockSingle, order: mockOrder, eq: mockEq }));
 const mockSelect = vi.fn(() => ({ eq: mockEq }));
 const mockInsert = vi.fn(() => ({ select: () => ({ single: mockSingle }) }));
 const mockUpdate = vi.fn(() => ({ eq: mockEq }));
@@ -21,14 +23,20 @@ vi.mock("@/lib/supabase-server", () => ({
   createServiceRoleClient: () => ({ from: mockFrom }),
 }));
 
-import { getAvailablePasses, purchasePass } from "../actions";
+import { getAvailablePasses, purchasePass, getActivePassForUser } from "../actions";
 
 describe("ride pass actions", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockSingle.mockReset();
+    mockLimit.mockReset();
+    mockLimit.mockReturnValue({ single: mockSingle });
+    mockOrder.mockReset();
+    mockOrder.mockReturnValue({ limit: mockLimit });
     mockEq.mockClear();
+    mockEq.mockReturnValue({ single: mockSingle, order: mockOrder, eq: mockEq });
     mockSelect.mockClear();
+    mockSelect.mockReturnValue({ eq: mockEq });
     mockInsert.mockClear();
     mockUpdate.mockClear();
     mockFrom.mockClear();
@@ -129,5 +137,18 @@ describe("ride pass actions", () => {
         status: "active",
       }),
     );
+  });
+
+  it("getActivePassForUser returns null when no active pass exists", async () => {
+    mockSingle
+      .mockResolvedValueOnce({ data: { id: "rider-1" }, error: null })
+      .mockResolvedValueOnce({ data: null, error: { code: "PGRST116" } });
+
+    const result = await getActivePassForUser("user-1");
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data).toBeNull();
+    }
   });
 });

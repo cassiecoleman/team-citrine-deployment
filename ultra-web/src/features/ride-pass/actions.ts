@@ -83,6 +83,41 @@ export async function subscribeToPlan(planId: string): Promise<ActiveRidePass> {
   };
 }
 
+export async function getActivePassForUser(
+  userId?: string,
+): Promise<PassActionResult<ActiveRidePass | null>> {
+  if (!userId) {
+    return { success: false, error: "You must be signed in to view your ride pass." };
+  }
+
+  const supabase = createServiceRoleClient();
+
+  const riderResult = await supabase
+    .from("riders")
+    .select("id")
+    .eq("user_id", userId)
+    .single();
+
+  if (riderResult.error || !riderResult.data) {
+    return { success: false, error: "No rider profile found for this account." };
+  }
+
+  const passResult = await supabase
+    .from("ride_passes")
+    .select()
+    .eq("rider_id", riderResult.data.id)
+    .eq("status", "active")
+    .order("purchased_at", { ascending: false })
+    .limit(1)
+    .single();
+
+  if (passResult.error || !passResult.data) {
+    return { success: true, data: null };
+  }
+
+  return { success: true, data: mapRidePassRowToActivePass(passResult.data) };
+}
+
 export async function getActivePass(): Promise<ActiveRidePass | null> {
   await mockDelay();
   return mockActivePass;
