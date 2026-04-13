@@ -29,6 +29,10 @@ interface OSRMRouteResponse {
   }>;
 }
 
+interface OSRMTableResponse {
+  durations: number[][];
+}
+
 type FetchLike = typeof fetch;
 
 export class OSRMRoutingProvider {
@@ -51,5 +55,24 @@ export class OSRMRoutingProvider {
       durationMinutes: Math.round(route.duration / 60),
       coordinates: route.geometry.coordinates.map(([lng, lat]) => ({ lat, lng })),
     };
+  }
+
+  async getEtaMinutes(origin: RoutePoint, destination: RoutePoint): Promise<number> {
+    const response = await this.fetchImpl(
+      `https://router.project-osrm.org/table/v1/driving/${origin.lng},${origin.lat};${destination.lng},${destination.lat}?sources=0&destinations=1`,
+      {
+        headers: {
+          accept: "application/json",
+        },
+      },
+    );
+    const payload = (await response.json()) as OSRMTableResponse;
+    const durationSeconds = payload.durations?.[0]?.[1];
+
+    if (typeof durationSeconds !== "number" || Number.isNaN(durationSeconds)) {
+      return 0;
+    }
+
+    return Math.round(durationSeconds / 60);
   }
 }

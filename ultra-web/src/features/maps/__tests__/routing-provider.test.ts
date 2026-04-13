@@ -59,4 +59,24 @@ describe("OSRMRoutingProvider", () => {
       ],
     });
   });
+
+  it("parses ETA minutes from OSRM table matrix response", async () => {
+    const fetchMock = vi.fn(async () =>
+      Response.json({
+        durations: [[0, 660]],
+      }),
+    );
+    const provider = new OSRMRoutingProvider(fetchMock);
+
+    const etaMinutes = await provider.getEtaMinutes(
+      { lat: 35.1495, lng: -90.049 },
+      { lat: 35.1151, lng: -89.9174 },
+    );
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://router.project-osrm.org/table/v1/driving/-90.049,35.1495;-89.9174,35.1151?sources=0&destinations=1",
+      expect.any(Object),
+    );
+    expect(etaMinutes).toBe(11);
+  });
 });
