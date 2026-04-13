@@ -14,6 +14,82 @@ export type Database = {
   }
   public: {
     Tables: {
+      driver_flags: {
+        Row: {
+          admin_notes: string | null
+          created_at: string
+          created_by: string | null
+          details: string | null
+          driver_id: string
+          id: string
+          reason: string
+          reporter_id: string
+          resolved_at: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          ride_id: string | null
+          status: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          created_at?: string
+          created_by?: string | null
+          details?: string | null
+          driver_id: string
+          id?: string
+          reason: string
+          reporter_id: string
+          resolved_at?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          ride_id?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          admin_notes?: string | null
+          created_at?: string
+          created_by?: string | null
+          details?: string | null
+          driver_id?: string
+          id?: string
+          reason?: string
+          reporter_id?: string
+          resolved_at?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          ride_id?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_flags_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_flags_reporter_id_fkey"
+            columns: ["reporter_id"]
+            isOneToOne: false
+            referencedRelation: "riders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_flags_ride_id_fkey"
+            columns: ["ride_id"]
+            isOneToOne: false
+            referencedRelation: "rides"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       driver_locations: {
         Row: {
           created_at: string
@@ -236,6 +312,76 @@ export type Database = {
           },
         ]
       }
+      fare_splits: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          expires_at: string
+          id: string
+          invitee_amount: number
+          invitee_id: string
+          inviter_amount: number
+          inviter_id: string
+          responded_at: string | null
+          ride_id: string
+          status: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          expires_at: string
+          id?: string
+          invitee_amount: number
+          invitee_id: string
+          inviter_amount: number
+          inviter_id: string
+          responded_at?: string | null
+          ride_id: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string
+          id?: string
+          invitee_amount?: number
+          invitee_id?: string
+          inviter_amount?: number
+          inviter_id?: string
+          responded_at?: string | null
+          ride_id?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fare_splits_invitee_id_fkey"
+            columns: ["invitee_id"]
+            isOneToOne: false
+            referencedRelation: "riders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fare_splits_inviter_id_fkey"
+            columns: ["inviter_id"]
+            isOneToOne: false
+            referencedRelation: "riders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fare_splits_ride_id_fkey"
+            columns: ["ride_id"]
+            isOneToOne: false
+            referencedRelation: "rides"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notification_preferences: {
         Row: {
           created_at: string
@@ -268,6 +414,164 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      payments: {
+        Row: {
+          amount: number
+          authorized_at: string | null
+          captured_at: string | null
+          created_at: string
+          created_by: string | null
+          currency: string
+          deleted_at: string | null
+          failed_at: string | null
+          failure_reason: string | null
+          id: string
+          payment_method: string | null
+          refunded_at: string | null
+          ride_id: string
+          rider_id: string
+          status: string
+          stripe_charge_id: string | null
+          stripe_payment_intent_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          amount: number
+          authorized_at?: string | null
+          captured_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          deleted_at?: string | null
+          failed_at?: string | null
+          failure_reason?: string | null
+          id?: string
+          payment_method?: string | null
+          refunded_at?: string | null
+          ride_id: string
+          rider_id: string
+          status?: string
+          stripe_charge_id?: string | null
+          stripe_payment_intent_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          amount?: number
+          authorized_at?: string | null
+          captured_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          deleted_at?: string | null
+          failed_at?: string | null
+          failure_reason?: string | null
+          id?: string
+          payment_method?: string | null
+          refunded_at?: string | null
+          ride_id?: string
+          rider_id?: string
+          status?: string
+          stripe_charge_id?: string | null
+          stripe_payment_intent_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_ride_id_fkey"
+            columns: ["ride_id"]
+            isOneToOne: false
+            referencedRelation: "rides"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_rider_id_fkey"
+            columns: ["rider_id"]
+            isOneToOne: false
+            referencedRelation: "riders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ride_passes: {
+        Row: {
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          expires_at: string
+          id: string
+          plan_description: string | null
+          plan_name: string
+          price_paid: number
+          purchased_at: string
+          rider_id: string
+          rides_remaining: number
+          rides_total: number
+          status: string
+          stripe_subscription_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          expires_at: string
+          id?: string
+          plan_description?: string | null
+          plan_name: string
+          price_paid: number
+          purchased_at?: string
+          rider_id: string
+          rides_remaining: number
+          rides_total: number
+          status?: string
+          stripe_subscription_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          expires_at?: string
+          id?: string
+          plan_description?: string | null
+          plan_name?: string
+          price_paid?: number
+          purchased_at?: string
+          rider_id?: string
+          rides_remaining?: number
+          rides_total?: number
+          status?: string
+          stripe_subscription_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ride_passes_rider_id_fkey"
+            columns: ["rider_id"]
+            isOneToOne: false
+            referencedRelation: "riders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ride_ratings: {
         Row: {
@@ -675,6 +979,110 @@ export type Database = {
             columns: ["rider_profile_id"]
             isOneToOne: false
             referencedRelation: "rider_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trip_shares: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          expires_at: string
+          id: string
+          is_active: boolean
+          last_viewed_at: string | null
+          recipient_email: string | null
+          recipient_name: string
+          recipient_phone: string | null
+          ride_id: string
+          share_token: string
+          updated_at: string
+          view_count: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          expires_at: string
+          id?: string
+          is_active?: boolean
+          last_viewed_at?: string | null
+          recipient_email?: string | null
+          recipient_name: string
+          recipient_phone?: string | null
+          ride_id: string
+          share_token: string
+          updated_at?: string
+          view_count?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string
+          id?: string
+          is_active?: boolean
+          last_viewed_at?: string | null
+          recipient_email?: string | null
+          recipient_name?: string
+          recipient_phone?: string | null
+          ride_id?: string
+          share_token?: string
+          updated_at?: string
+          view_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_shares_ride_id_fkey"
+            columns: ["ride_id"]
+            isOneToOne: false
+            referencedRelation: "rides"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trusted_drivers: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          driver_id: string
+          id: string
+          nickname: string | null
+          rider_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          driver_id: string
+          id?: string
+          nickname?: string | null
+          rider_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          driver_id?: string
+          id?: string
+          nickname?: string | null
+          rider_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trusted_drivers_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trusted_drivers_rider_id_fkey"
+            columns: ["rider_id"]
+            isOneToOne: false
+            referencedRelation: "riders"
             referencedColumns: ["id"]
           },
         ]
