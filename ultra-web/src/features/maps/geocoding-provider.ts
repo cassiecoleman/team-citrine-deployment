@@ -4,6 +4,12 @@ export interface GeocodeLocation {
   lng: number;
 }
 
+interface NominatimResult {
+  display_name: string;
+  lat: string;
+  lon: string;
+}
+
 export class StubGeocodingProvider {
   async search(query: string): Promise<GeocodeLocation[]> {
     const normalized = query.trim().toLowerCase();
@@ -19,5 +25,30 @@ export class StubGeocodingProvider {
     }
 
     return [];
+  }
+}
+
+type FetchLike = typeof fetch;
+
+export class NominatimGeocodingProvider {
+  constructor(private readonly fetchImpl: FetchLike = fetch) {}
+
+  async search(query: string): Promise<GeocodeLocation[]> {
+    const encodedQuery = encodeURIComponent(query.trim());
+    const response = await this.fetchImpl(
+      `https://nominatim.openstreetmap.org/search?format=json&limit=5&q=${encodedQuery}`,
+      {
+        headers: {
+          accept: "application/json",
+        },
+      },
+    );
+    const payload = (await response.json()) as NominatimResult[];
+
+    return payload.map((entry) => ({
+      address: entry.display_name,
+      lat: Number(entry.lat),
+      lng: Number(entry.lon),
+    }));
   }
 }
