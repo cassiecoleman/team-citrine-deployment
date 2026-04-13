@@ -5,7 +5,7 @@ interface RideRealtimeUpdate {
 }
 
 export function normalizeRideStatus(status: string | null | undefined): DetailedRideStatus {
-  if (status === "driver_en_route") {
+  if (status === "driver_en_route" || status === "en_route") {
     return "en_route";
   }
 

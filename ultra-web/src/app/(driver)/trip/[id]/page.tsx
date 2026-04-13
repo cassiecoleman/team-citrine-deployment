@@ -15,13 +15,28 @@ export default async function DriverTripPage({
   const driverUserId = await getRuntimeDriverUserId();
 
   if (driverUserId) {
-    await Promise.race([
+    const acceptResult = await Promise.race<Awaited<ReturnType<typeof acceptTrip>>>([
       acceptTrip({
         rideId: id,
         driverUserId,
       }),
-      new Promise((resolve) => setTimeout(resolve, 1500)),
+      new Promise<Awaited<ReturnType<typeof acceptTrip>>>((resolve) =>
+        setTimeout(
+          () =>
+            resolve({
+              success: false,
+              error: "Trip acceptance timed out.",
+            }),
+          1500,
+        ),
+      ),
     ]);
+    if (!acceptResult.success) {
+      await setDemoRideStatusForDriverFlow({
+        rideId: id,
+        status: "driver_en_route",
+      });
+    }
   } else {
     await setDemoRideStatusForDriverFlow({
       rideId: id,

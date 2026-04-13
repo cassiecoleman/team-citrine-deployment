@@ -138,12 +138,21 @@ export async function getDriverShiftSummary(
 }
 
 export async function getQueuedTrip(driverUserId?: string): Promise<TripAssignment> {
+  const demoQueueRideId = await getDemoQueueRideId();
+  if (demoQueueRideId) {
+    await mockDelay();
+    return {
+      ...queuedTrip,
+      id: demoQueueRideId,
+    };
+  }
+
   const resolvedUserId = resolveConfiguredDriverUserId(driverUserId);
   if (!resolvedUserId) {
     await mockDelay();
     return {
       ...queuedTrip,
-      id: getDemoQueueRideId() ?? queuedTrip.id,
+      id: queuedTrip.id,
     };
   }
 
@@ -322,7 +331,7 @@ export async function setDemoRideStatusForDriverFlow(input: {
   rideId: string;
   status: "driver_en_route" | "in_progress";
 }): Promise<void> {
-  setDemoRideStatus(input.rideId, input.status);
+  await setDemoRideStatus(input.rideId, input.status);
 }
 
 export async function rejectTrip(input: {

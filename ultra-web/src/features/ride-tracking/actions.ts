@@ -40,14 +40,26 @@ function buildFallbackRide(id: string): RideDetail {
 
 export async function getRideStatus(id: string): Promise<RideDetail> {
   const fallbackRide = buildFallbackRide(id);
+  const existingDemoStatus = await getDemoRideStatus(id);
+  const shouldUseDemoFlow = id === "new-ride" || Boolean(existingDemoStatus);
+
+  if (shouldUseDemoFlow) {
+    await ensureDemoRide(id);
+    const demoStatus = (await getDemoRideStatus(id)) ?? "matching";
+    await mockDelay();
+    return {
+      ...fallbackRide,
+      status: normalizeRideStatus(demoStatus),
+    };
+  }
 
   const hasSupabaseConfig =
     Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL) &&
     Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY);
 
   if (!hasSupabaseConfig) {
-    ensureDemoRide(id);
-    const demoStatus = getDemoRideStatus(id) ?? "matching";
+    await ensureDemoRide(id);
+    const demoStatus = (await getDemoRideStatus(id)) ?? "matching";
     await mockDelay();
     return {
       ...fallbackRide,

@@ -68,6 +68,45 @@ export function useRideStatus({ rideId, initialRide }: UseRideStatusInput): {
   }, [rideId, supabase]);
 
   useEffect(() => {
+    let isActive = true;
+    let pollTimer: ReturnType<typeof setInterval> | undefined;
+
+    const syncStatus = async () => {
+      try {
+        const response = await fetch(`/api/rides/${rideId}/status`, {
+          cache: "no-store",
+        });
+        if (!response.ok) {
+          return;
+        }
+        const payload = (await response.json()) as { status?: string };
+        if (!isActive || !payload.status) {
+          return;
+        }
+        setRide((previousRide) =>
+          buildRideViewModel(previousRide, {
+            status: payload.status,
+          }),
+        );
+      } catch {
+        // Ignore transient polling errors; realtime/debug updates still apply.
+      }
+    };
+
+    void syncStatus();
+    pollTimer = setInterval(() => {
+      void syncStatus();
+    }, 1000);
+
+    return () => {
+      isActive = false;
+      if (pollTimer) {
+        clearInterval(pollTimer);
+      }
+    };
+  }, [rideId]);
+
+  useEffect(() => {
     const testWindow = window as Window & { __ultraRideStatusListenerReady?: boolean };
     testWindow.__ultraRideStatusListenerReady = true;
 

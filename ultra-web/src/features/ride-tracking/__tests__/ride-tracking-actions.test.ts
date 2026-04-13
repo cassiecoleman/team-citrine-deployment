@@ -12,8 +12,8 @@ vi.mock("@/lib/supabase-server", () => ({
   createServiceRoleClient: () => createServiceRoleClient(),
 }));
 
-afterEach(() => {
-  resetDemoRideState();
+afterEach(async () => {
+  await resetDemoRideState();
 });
 
 describe("getRideStatus", () => {
@@ -53,7 +53,7 @@ describe("getRideStatus", () => {
 
     process.env.NEXT_PUBLIC_SUPABASE_URL = "";
     process.env.SUPABASE_SERVICE_ROLE_KEY = "";
-    setDemoRideStatus("new-ride", "driver_en_route");
+    await setDemoRideStatus("new-ride", "driver_en_route");
 
     const ride = await getRideStatus("new-ride");
 

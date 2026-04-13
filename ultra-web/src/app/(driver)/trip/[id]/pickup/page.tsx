@@ -35,7 +35,15 @@ export default async function DriverPickupPage({
         ),
       ),
     ]);
-    isPickupConfirmed = result.success;
+    if (result.success) {
+      isPickupConfirmed = true;
+    } else {
+      await setDemoRideStatusForDriverFlow({
+        rideId: id,
+        status: "in_progress",
+      });
+      isPickupConfirmed = true;
+    }
   } else if (!driverUserId && query.confirmed === "1") {
     await setDemoRideStatusForDriverFlow({
       rideId: id,

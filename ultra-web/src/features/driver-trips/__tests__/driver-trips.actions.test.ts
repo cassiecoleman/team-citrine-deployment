@@ -11,9 +11,9 @@ vi.mock("@/lib/mock-delay", () => ({
 }));
 
 describe("driver trip actions", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
-    resetDemoRideState();
+    await resetDemoRideState();
   });
 
   it("returns the current shift summary for the driver dashboard", async () => {
@@ -29,7 +29,7 @@ describe("driver trip actions", () => {
   });
 
   it("returns the queued trip assignment used on the accept/reject screen", async () => {
-    setDemoRideStatus("new-ride", "matching");
+    await setDemoRideStatus("new-ride", "matching");
     const assignment = await getQueuedTrip();
 
     expect(assignment.id).toBe("new-ride");
