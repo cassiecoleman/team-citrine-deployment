@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { NominatimGeocodingProvider, StubGeocodingProvider } from "../geocoding-provider";
+import {
+  NominatimGeocodingProvider,
+  StubGeocodingProvider,
+  createGeocodingProvider,
+} from "../geocoding-provider";
 
 describe("StubGeocodingProvider", () => {
   it("resolves a known Memphis destination", async () => {
@@ -47,5 +51,13 @@ describe("NominatimGeocodingProvider", () => {
         lng: -90.0342,
       },
     ]);
+  });
+});
+
+describe("createGeocodingProvider", () => {
+  it("returns stub provider by default", () => {
+    const provider = createGeocodingProvider();
+
+    expect(provider).toBeInstanceOf(StubGeocodingProvider);
   });
 });

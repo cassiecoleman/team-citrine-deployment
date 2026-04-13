@@ -52,3 +52,13 @@ export class NominatimGeocodingProvider {
     }));
   }
 }
+
+export function createGeocodingProvider(
+  mode = process.env.NEXT_PUBLIC_GEO_PROVIDER ?? "stub",
+) {
+  if (mode === "nominatim") {
+    return new NominatimGeocodingProvider();
+  }
+
+  return new StubGeocodingProvider();
+}
