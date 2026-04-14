@@ -84,11 +84,18 @@ function InnerPaymentForm({
         payment_method_data: {
           billing_details: {
             // When the Element is configured with fields.billingDetails.address
-            // = "never", Stripe requires the address here. Riders can't enter
-            // one in the form, so we use a placeholder. If real address-on-file
+            // = "never", Stripe requires a complete address here. Riders can't
+            // enter one in the form, so we use a placeholder that satisfies
+            // Stripe's validation for card payments. If real address-on-file
             // becomes a requirement, flip billingDetails to "auto" or wire a
             // separate address collection step.
-            address: { country: "US", postal_code: "00000" },
+            address: {
+              line1: "N/A",
+              city: "N/A",
+              state: "CA",
+              postal_code: "00000",
+              country: "US",
+            },
           },
         },
       },
