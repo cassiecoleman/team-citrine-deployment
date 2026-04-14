@@ -106,13 +106,13 @@ Any future expiration, any 3-digit CVC, any postal code.
 | Issue | Scope |
 |---|---|
 | #31 | Ride pass purchase via Payment Element |
-| #32 | Add a payment method (Setup Intent + lazy Customer) |
-| #33 | List saved payment methods |
-| #34 | Set default / remove saved payment methods |
-| #35 | Use saved default in payment flows |
-| #36 | Ride fare capture (authorize + capture + refund) |
-| #37 | Fare split invitee payment |
-| #38 | Stripe webhook handler (production hardening) |
+| #54 | Add a payment method (Setup Intent + lazy Customer) |
+| #55 | List saved payment methods |
+| #56 | Set default / remove saved payment methods |
+| #57 | Use saved default in payment flows |
+| #58 | Ride fare capture (authorize + capture + refund) |
+| #59 | Fare split invitee payment |
+| #60 | Stripe webhook handler (production hardening) |
 
 ## Related user stories
 
