@@ -35,6 +35,12 @@ interface RideActionResponse {
   status: string;
 }
 
+interface MatchDriverResponse {
+  id: string;
+  status: string;
+  driverId: string;
+}
+
 const locationSchema = z.object({
   lat: z.number(),
   lng: z.number(),
@@ -68,6 +74,89 @@ const paginationSchema = z.object({
   page: z.number().int().min(1).default(1),
   pageSize: z.number().int().min(1).max(50).default(10),
 });
+
+interface MatchableRideRow {
+  id: string;
+  rider_id: string;
+  pickup_lat: number;
+  pickup_lng: number;
+  status: string;
+  is_child_safe_required: boolean;
+  prefer_trusted_driver: boolean;
+  requested_at?: string;
+}
+
+interface MatchableDriverRow {
+  id: string;
+  status: string;
+  is_child_safe: boolean;
+}
+
+interface DriverLocationRow {
+  driver_id: string;
+  lat: number;
+  lng: number;
+}
+
+interface TrustedDriverRow {
+  driver_id: string;
+}
+
+interface MatchDriverOptions {
+  timeoutMs?: number;
+}
+
+function degreesToRadians(value: number): number {
+  return (value * Math.PI) / 180;
+}
+
+function haversineMiles(
+  startLat: number,
+  startLng: number,
+  endLat: number,
+  endLng: number,
+): number {
+  const earthRadiusMiles = 3958.8;
+  const latDelta = degreesToRadians(endLat - startLat);
+  const lngDelta = degreesToRadians(endLng - startLng);
+  const startLatRadians = degreesToRadians(startLat);
+  const endLatRadians = degreesToRadians(endLat);
+
+  const a =
+    Math.sin(latDelta / 2) ** 2 +
+    Math.cos(startLatRadians) *
+      Math.cos(endLatRadians) *
+      Math.sin(lngDelta / 2) ** 2;
+
+  return 2 * earthRadiusMiles * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+async function cancelRideForMatchingTimeout(
+  rideId: string,
+  fromStatus: string,
+  supabase: ReturnType<typeof createServiceRoleClient>,
+): Promise<RideActionResult<MatchDriverResponse>> {
+  await supabase
+    .from("rides")
+    .update({
+      status: "cancelled",
+      cancel_reason: "No driver found within matching timeout.",
+      cancelled_at: new Date().toISOString(),
+    })
+    .eq("id", rideId)
+    .select("id,status,driver_id")
+    .single();
+
+  await supabase.from("ride_status_history").insert({
+    ride_id: rideId,
+    from_status: fromStatus,
+    to_status: "cancelled",
+    change_reason: "No driver found within matching timeout.",
+    change_source: "system",
+  });
+
+  return { success: false, error: "No driver found in time." };
+}
 
 function assertAuthenticatedUserId(userId: string): RideActionResult<never> | null {
   // Trust boundary: caller must pass an auth-derived user id (never client-provided raw input).
@@ -144,7 +233,7 @@ export async function createRide(
       dropoff_lat: parsed.data.dropoff.lat,
       dropoff_lng: parsed.data.dropoff.lng,
       dropoff_address: parsed.data.dropoff.address,
-      status: "requested",
+      status: "matching",
     })
     .select("id,status")
     .single();
@@ -161,6 +250,155 @@ export async function createRide(
     data: {
       id: rideResult.data.id,
       status: rideResult.data.status,
+    },
+  };
+}
+
+export async function matchDriver(
+  rideId: string,
+  options: MatchDriverOptions = {},
+): Promise<RideActionResult<MatchDriverResponse>> {
+  const supabase = createServiceRoleClient();
+  const timeoutMs = options.timeoutMs ?? 30_000;
+
+  const rideResult = await supabase
+    .from("rides")
+    .select(
+      "id,rider_id,pickup_lat,pickup_lng,status,is_child_safe_required,prefer_trusted_driver,requested_at",
+    )
+    .eq("id", rideId)
+    .single();
+
+  if (rideResult.error || !rideResult.data) {
+    return { success: false, error: "Ride was not found." };
+  }
+
+  const ride = rideResult.data as MatchableRideRow;
+  const timedOut =
+    timeoutMs <= 0 ||
+    (ride.requested_at
+      ? Date.now() - new Date(ride.requested_at).getTime() >= timeoutMs
+      : false);
+
+  const driversResult = await supabase
+    .from("drivers")
+    .select("id,status,is_child_safe")
+    .eq("status", "available");
+
+  if (driversResult.error) {
+    return { success: false, error: "No drivers are currently available." };
+  }
+
+  if (!driversResult.data?.length) {
+    if (timedOut) {
+      return cancelRideForMatchingTimeout(rideId, ride.status, supabase);
+    }
+
+    return { success: false, error: "No drivers are currently available." };
+  }
+
+  const eligibleDrivers = (driversResult.data as MatchableDriverRow[]).filter(
+    (driver) => !ride.is_child_safe_required || driver.is_child_safe,
+  );
+
+  if (!eligibleDrivers.length) {
+    if (timedOut) {
+      return cancelRideForMatchingTimeout(rideId, ride.status, supabase);
+    }
+
+    return { success: false, error: "No drivers are currently available." };
+  }
+
+  const locationResult = await supabase
+    .from("driver_locations")
+    .select("driver_id,lat,lng")
+    .in(
+      "driver_id",
+      eligibleDrivers.map((driver) => driver.id),
+    );
+
+  if (locationResult.error || !locationResult.data?.length) {
+    if (timedOut) {
+      return cancelRideForMatchingTimeout(rideId, ride.status, supabase);
+    }
+
+    return { success: false, error: "No drivers are currently available." };
+  }
+
+  const locationsByDriverId = new Map(
+    (locationResult.data as DriverLocationRow[]).map((location) => [location.driver_id, location]),
+  );
+
+  let trustedDriverIds = new Set<string>();
+  if (ride.prefer_trusted_driver) {
+    const trustedDriversResult = await supabase
+      .from("trusted_drivers")
+      .select("driver_id")
+      .eq("rider_id", ride.rider_id);
+
+    if (!trustedDriversResult.error && trustedDriversResult.data) {
+      trustedDriverIds = new Set(
+        (trustedDriversResult.data as TrustedDriverRow[]).map((trustedDriver) => trustedDriver.driver_id),
+      );
+    }
+  }
+
+  const nearestDriver = eligibleDrivers
+    .filter((driver) => locationsByDriverId.has(driver.id))
+    .sort((left, right) => {
+      const leftTrustedScore = trustedDriverIds.has(left.id) ? 0 : 1;
+      const rightTrustedScore = trustedDriverIds.has(right.id) ? 0 : 1;
+      if (leftTrustedScore !== rightTrustedScore) {
+        return leftTrustedScore - rightTrustedScore;
+      }
+
+      const leftLocation = locationsByDriverId.get(left.id)!;
+      const rightLocation = locationsByDriverId.get(right.id)!;
+
+      return (
+        haversineMiles(ride.pickup_lat, ride.pickup_lng, leftLocation.lat, leftLocation.lng) -
+        haversineMiles(ride.pickup_lat, ride.pickup_lng, rightLocation.lat, rightLocation.lng)
+      );
+    })[0];
+
+  if (!nearestDriver) {
+    if (timedOut) {
+      return cancelRideForMatchingTimeout(rideId, ride.status, supabase);
+    }
+
+    return { success: false, error: "No drivers are currently available." };
+  }
+
+  const matchedAt = new Date().toISOString();
+  const updateResult = await supabase
+    .from("rides")
+    .update({
+      driver_id: nearestDriver.id,
+      status: "driver_en_route",
+      matched_at: matchedAt,
+    })
+    .eq("id", rideId)
+    .select("id,status,driver_id")
+    .single();
+
+  if (updateResult.error || !updateResult.data) {
+    return { success: false, error: "Unable to match a driver right now." };
+  }
+
+  await supabase.from("ride_status_history").insert({
+    ride_id: rideId,
+    from_status: ride.status,
+    to_status: "driver_en_route",
+    change_reason: "Nearest available driver matched automatically.",
+    change_source: "system",
+  });
+
+  return {
+    success: true,
+    data: {
+      id: updateResult.data.id,
+      status: updateResult.data.status,
+      driverId: updateResult.data.driver_id,
     },
   };
 }

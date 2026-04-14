@@ -66,11 +66,11 @@ describe("ride scheduling actions", () => {
     });
   });
 
-  it("creates an immediate ride with requested status for the signed-in rider", async () => {
+  it("creates an immediate ride with matching status for the signed-in rider", async () => {
     mockSingle
       .mockResolvedValueOnce({ data: { id: "rider-1" }, error: null })
       .mockResolvedValueOnce({
-        data: { id: "ride-1", status: "requested", rider_id: "rider-1" },
+        data: { id: "ride-1", status: "matching", rider_id: "rider-1" },
         error: null,
       });
 
@@ -89,14 +89,14 @@ describe("ride scheduling actions", () => {
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.id).toBe("ride-1");
-      expect(result.data.status).toBe("requested");
+      expect(result.data.status).toBe("matching");
     }
     expect(mockFrom).toHaveBeenCalledWith("riders");
     expect(mockFrom).toHaveBeenCalledWith("rides");
     expect(mockInsert).toHaveBeenCalledWith(
       expect.objectContaining({
         rider_id: "rider-1",
-        status: "requested",
+        status: "matching",
       }),
     );
   });

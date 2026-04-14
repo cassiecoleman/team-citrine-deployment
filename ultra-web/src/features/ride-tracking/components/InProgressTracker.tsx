@@ -1,10 +1,31 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { MapPin, Share2 } from "lucide-react";
 import type { RideDetail } from "../types";
+import { useDriverLocation } from "../use-driver-location";
+
+const RideMap = dynamic(
+  () => import("@/features/maps/components/RideMap").then((mod) => mod.RideMap),
+  {
+    ssr: false,
+    loading: () => (
+      <div
+        className="h-full w-full rounded-xl border border-border bg-primary-light"
+        data-testid="ride-map"
+      />
+    ),
+  },
+);
 
 export function InProgressTracker({ ride }: { ride: RideDetail }) {
   const progressPercent = ride.progressPercent ?? 0;
+  const { location } = useDriverLocation({
+    driverId: ride.driver?.id,
+  });
+  const locationLabel = location
+    ? `${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}`
+    : "Waiting for driver location...";
 
   return (
     <div className="flex flex-col gap-4 p-4">
@@ -14,8 +35,18 @@ export function InProgressTracker({ ride }: { ride: RideDetail }) {
         </span>
       </div>
 
-      <div className="h-56 rounded-xl bg-border flex items-center justify-center">
-        <MapPin className="text-muted" size={24} />
+      <div className="h-56">
+        <RideMap
+          pickup={ride.pickup}
+          dropoff={ride.dropoff}
+          driverLocation={location ? { lat: location.lat, lng: location.lng } : undefined}
+          className="h-full w-full rounded-xl border border-border"
+        />
+        <div className="mt-2 flex items-center justify-center gap-2">
+          <MapPin className="text-muted" size={16} />
+          <p className="text-xs text-muted">Driver location</p>
+          <p className="text-sm font-semibold">{locationLabel}</p>
+        </div>
       </div>
 
       <div className="rounded-xl border border-border p-4">

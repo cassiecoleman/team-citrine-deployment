@@ -183,6 +183,13 @@ useEffect IS appropriate for: WebSocket subscriptions (e.g., Supabase Realtime),
 - Store secrets in environment variables, never in code.
 - Use RLS policies to enforce that riders can only see their own data, drivers see their assignments, admins see everything.
 
+### Server Action Auth Pattern (Pre-M2)
+Until M2 auth infrastructure lands (Supabase session cookies, `getAuthenticatedUser()` helper), server actions accept an optional `userId` parameter for identity. **This is a transitional pattern:**
+- `userId` MUST be derived server-side by the caller (e.g., from a page's session context), NEVER from raw client/browser input.
+- All actions using `createServiceRoleClient()` bypass RLS, so the `userId` parameter is the sole trust boundary for identity — treat it as security-critical.
+- When M2 (#17–#19) ships the auth layer, all actions must be migrated to derive identity from the authenticated session/JWT internally, removing the `userId` parameter.
+- RLS policies remain the defense-in-depth layer for any query path that uses the anon/browser client.
+
 ### Testing Backend Code
 - Unit test server actions and utility functions with Vitest.
 - For database tests, use a test Supabase project or mock the Supabase client.

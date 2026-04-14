@@ -7,13 +7,17 @@ import {
   confirmPickup,
   getAssignedTrips,
   getDriverStatus,
+  getRuntimeDriverUserId,
   rejectTrip,
   toggleDriverAvailability,
+  updateDriverLocation,
 } from "../actions";
 
 const mockSingle = vi.fn();
 const mockEq = vi.fn(() => ({ single: mockSingle }));
-const mockSelect = vi.fn(() => ({ eq: mockEq }));
+const mockDriverLimit = vi.fn();
+const mockDriverOrder = vi.fn(() => ({ limit: mockDriverLimit }));
+const mockSelect = vi.fn(() => ({ eq: mockEq, order: mockDriverOrder }));
 
 const mockRideUpdateSingle = vi.fn();
 const mockRideUpdateMaybeSingle = vi.fn();
@@ -37,6 +41,12 @@ const mockRideSelect = vi.fn(() => ({ eq: mockRideSelectEq }));
 const mockDriverUpdateEq = vi.fn();
 const mockDriverUpdate = vi.fn(() => ({ eq: mockDriverUpdateEq }));
 const mockHistoryInsert = vi.fn();
+const mockLocationUpsert = vi.fn();
+const mockLocationSelectSingle = vi.fn();
+const mockLocationSelectMaybeSingle = vi.fn();
+const mockLocationSelectEq = vi.fn(() => ({ maybeSingle: mockLocationSelectMaybeSingle }));
+const mockLocationSelect = vi.fn(() => ({ eq: mockLocationSelectEq }));
+const mockLocationUpsertSelect = vi.fn(() => ({ single: mockLocationSelectSingle }));
 
 const mockFrom = vi.fn((table: string) => {
   if (table === "drivers") {
@@ -49,6 +59,13 @@ const mockFrom = vi.fn((table: string) => {
 
   if (table === "ride_status_history") {
     return { insert: mockHistoryInsert };
+  }
+
+  if (table === "driver_locations") {
+    return {
+      select: mockLocationSelect,
+      upsert: mockLocationUpsert,
+    };
   }
 
   return {};
@@ -69,6 +86,14 @@ describe("driver trip operations", () => {
     mockRideOrder.mockReset();
     mockDriverUpdateEq.mockReset();
     mockHistoryInsert.mockReset();
+    mockDriverLimit.mockReset();
+    mockDriverOrder.mockReset();
+    mockLocationUpsert.mockReset();
+    mockLocationSelectSingle.mockReset();
+    mockLocationSelectMaybeSingle.mockReset();
+    mockLocationSelectEq.mockReset();
+    mockLocationSelect.mockReset();
+    mockLocationUpsertSelect.mockReset();
     mockHistoryInsert.mockResolvedValue({ error: null });
     mockEq.mockClear();
     mockSelect.mockClear();
@@ -127,6 +152,113 @@ describe("driver trip operations", () => {
         change_source: "driver",
       }),
     );
+  });
+
+  it("resolves a fallback driver user id when env defaults are not set", async () => {
+    const originalDefaultDriverUserId = process.env.ULTRA_DEFAULT_DRIVER_USER_ID;
+    const originalDefaultUserId = process.env.ULTRA_DEFAULT_USER_ID;
+    const originalSupabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const originalServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    process.env.ULTRA_DEFAULT_DRIVER_USER_ID = "";
+    process.env.ULTRA_DEFAULT_USER_ID = "";
+    process.env.NEXT_PUBLIC_SUPABASE_URL = "https://example.supabase.co";
+    process.env.SUPABASE_SERVICE_ROLE_KEY = "service-role";
+    mockDriverLimit.mockResolvedValueOnce({
+      data: [{ user_id: "driver-user-fallback" }],
+      error: null,
+    });
+
+    const result = await getRuntimeDriverUserId();
+
+    expect(result).toBe("driver-user-fallback");
+
+    process.env.ULTRA_DEFAULT_DRIVER_USER_ID = originalDefaultDriverUserId;
+    process.env.ULTRA_DEFAULT_USER_ID = originalDefaultUserId;
+    process.env.NEXT_PUBLIC_SUPABASE_URL = originalSupabaseUrl;
+    process.env.SUPABASE_SERVICE_ROLE_KEY = originalServiceKey;
+  });
+
+  it("upserts a fresh driver location update", async () => {
+    mockSingle.mockResolvedValueOnce({
+      data: { id: "driver-1" },
+      error: null,
+    });
+    mockLocationSelectMaybeSingle.mockResolvedValueOnce({
+      data: { recorded_at: "2026-04-13T20:00:00.000Z" },
+      error: null,
+    });
+    mockLocationUpsert.mockReturnValueOnce({
+      select: mockLocationUpsertSelect,
+    });
+    mockLocationSelectSingle.mockResolvedValueOnce({
+      data: { driver_id: "driver-1", lat: 35.15, lng: -90.05, heading: 180, recorded_at: "2026-04-13T20:00:04.000Z" },
+      error: null,
+    });
+
+    const result = await updateDriverLocation({
+      driverUserId: "auth-user-1",
+      lat: 35.15,
+      lng: -90.05,
+      heading: 180,
+      recordedAt: "2026-04-13T20:00:04.000Z",
+    });
+
+    expect(result).toEqual({
+      success: true,
+      data: {
+        driverId: "driver-1",
+        lat: 35.15,
+        lng: -90.05,
+        heading: 180,
+        recordedAt: "2026-04-13T20:00:04.000Z",
+        throttled: false,
+      },
+    });
+    expect(mockFrom).toHaveBeenCalledWith("driver_locations");
+    expect(mockLocationUpsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        driver_id: "driver-1",
+        lat: 35.15,
+        lng: -90.05,
+        heading: 180,
+      }),
+      expect.objectContaining({
+        onConflict: "driver_id",
+      }),
+    );
+  });
+
+  it("throttles driver location updates faster than 3 seconds", async () => {
+    mockSingle.mockResolvedValueOnce({
+      data: { id: "driver-1" },
+      error: null,
+    });
+    mockLocationSelectMaybeSingle.mockResolvedValueOnce({
+      data: { recorded_at: "2026-04-13T20:00:03.000Z" },
+      error: null,
+    });
+
+    const result = await updateDriverLocation({
+      driverUserId: "auth-user-1",
+      lat: 35.15,
+      lng: -90.05,
+      heading: 180,
+      recordedAt: "2026-04-13T20:00:04.000Z",
+    });
+
+    expect(result).toEqual({
+      success: true,
+      data: {
+        driverId: "driver-1",
+        lat: 35.15,
+        lng: -90.05,
+        heading: 180,
+        recordedAt: "2026-04-13T20:00:04.000Z",
+        throttled: true,
+      },
+    });
+    expect(mockLocationUpsert).not.toHaveBeenCalled();
   });
 
   it("rejects a trip by returning it to matching and clearing the assigned driver", async () => {
