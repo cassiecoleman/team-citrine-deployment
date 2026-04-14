@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { matchDriver } from "@/features/ride-scheduling/actions";
 import { getRideStatus } from "@/features/ride-tracking/actions";
 import type { Database } from "@/types/supabase";
 
@@ -15,6 +16,17 @@ export async function GET(
 
   const { id } = await params;
   const ride = await getRideStatus(id);
+
+  if (ride.status === "matching") {
+    const matchResult = await matchDriver(id);
+    if (matchResult?.success) {
+      return NextResponse.json({
+        id: matchResult.data.id,
+        status: matchResult.data.status,
+      });
+    }
+  }
+
   return NextResponse.json({
     id: ride.id,
     status: ride.status,
