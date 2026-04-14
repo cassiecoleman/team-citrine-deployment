@@ -35,6 +35,12 @@ interface RideActionResponse {
   status: string;
 }
 
+interface MatchDriverResponse {
+  id: string;
+  status: string;
+  driverId: string;
+}
+
 const locationSchema = z.object({
   lat: z.number(),
   lng: z.number(),
@@ -68,6 +74,53 @@ const paginationSchema = z.object({
   page: z.number().int().min(1).default(1),
   pageSize: z.number().int().min(1).max(50).default(10),
 });
+
+interface MatchableRideRow {
+  id: string;
+  rider_id: string;
+  pickup_lat: number;
+  pickup_lng: number;
+  status: string;
+  is_child_safe_required: boolean;
+  prefer_trusted_driver: boolean;
+}
+
+interface MatchableDriverRow {
+  id: string;
+  status: string;
+  is_child_safe: boolean;
+}
+
+interface DriverLocationRow {
+  driver_id: string;
+  lat: number;
+  lng: number;
+}
+
+function degreesToRadians(value: number): number {
+  return (value * Math.PI) / 180;
+}
+
+function haversineMiles(
+  startLat: number,
+  startLng: number,
+  endLat: number,
+  endLng: number,
+): number {
+  const earthRadiusMiles = 3958.8;
+  const latDelta = degreesToRadians(endLat - startLat);
+  const lngDelta = degreesToRadians(endLng - startLng);
+  const startLatRadians = degreesToRadians(startLat);
+  const endLatRadians = degreesToRadians(endLat);
+
+  const a =
+    Math.sin(latDelta / 2) ** 2 +
+    Math.cos(startLatRadians) *
+      Math.cos(endLatRadians) *
+      Math.sin(lngDelta / 2) ** 2;
+
+  return 2 * earthRadiusMiles * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
 
 function assertAuthenticatedUserId(userId: string): RideActionResult<never> | null {
   // Trust boundary: caller must pass an auth-derived user id (never client-provided raw input).
@@ -161,6 +214,106 @@ export async function createRide(
     data: {
       id: rideResult.data.id,
       status: rideResult.data.status,
+    },
+  };
+}
+
+export async function matchDriver(
+  rideId: string,
+): Promise<RideActionResult<MatchDriverResponse>> {
+  const supabase = createServiceRoleClient();
+
+  const rideResult = await supabase
+    .from("rides")
+    .select("id,rider_id,pickup_lat,pickup_lng,status,is_child_safe_required,prefer_trusted_driver")
+    .eq("id", rideId)
+    .single();
+
+  if (rideResult.error || !rideResult.data) {
+    return { success: false, error: "Ride was not found." };
+  }
+
+  const ride = rideResult.data as MatchableRideRow;
+
+  const driversResult = await supabase
+    .from("drivers")
+    .select("id,status,is_child_safe")
+    .eq("status", "available");
+
+  if (driversResult.error || !driversResult.data?.length) {
+    return { success: false, error: "No drivers are currently available." };
+  }
+
+  const eligibleDrivers = (driversResult.data as MatchableDriverRow[]).filter(
+    (driver) => !ride.is_child_safe_required || driver.is_child_safe,
+  );
+
+  if (!eligibleDrivers.length) {
+    return { success: false, error: "No drivers are currently available." };
+  }
+
+  const locationResult = await supabase
+    .from("driver_locations")
+    .select("driver_id,lat,lng")
+    .in(
+      "driver_id",
+      eligibleDrivers.map((driver) => driver.id),
+    );
+
+  if (locationResult.error || !locationResult.data?.length) {
+    return { success: false, error: "No drivers are currently available." };
+  }
+
+  const locationsByDriverId = new Map(
+    (locationResult.data as DriverLocationRow[]).map((location) => [location.driver_id, location]),
+  );
+
+  const nearestDriver = eligibleDrivers
+    .filter((driver) => locationsByDriverId.has(driver.id))
+    .sort((left, right) => {
+      const leftLocation = locationsByDriverId.get(left.id)!;
+      const rightLocation = locationsByDriverId.get(right.id)!;
+
+      return (
+        haversineMiles(ride.pickup_lat, ride.pickup_lng, leftLocation.lat, leftLocation.lng) -
+        haversineMiles(ride.pickup_lat, ride.pickup_lng, rightLocation.lat, rightLocation.lng)
+      );
+    })[0];
+
+  if (!nearestDriver) {
+    return { success: false, error: "No drivers are currently available." };
+  }
+
+  const matchedAt = new Date().toISOString();
+  const updateResult = await supabase
+    .from("rides")
+    .update({
+      driver_id: nearestDriver.id,
+      status: "driver_en_route",
+      matched_at: matchedAt,
+    })
+    .eq("id", rideId)
+    .select("id,status,driver_id")
+    .single();
+
+  if (updateResult.error || !updateResult.data) {
+    return { success: false, error: "Unable to match a driver right now." };
+  }
+
+  await supabase.from("ride_status_history").insert({
+    ride_id: rideId,
+    from_status: ride.status,
+    to_status: "driver_en_route",
+    change_reason: "Nearest available driver matched automatically.",
+    change_source: "system",
+  });
+
+  return {
+    success: true,
+    data: {
+      id: updateResult.data.id,
+      status: updateResult.data.status,
+      driverId: updateResult.data.driver_id,
     },
   };
 }
