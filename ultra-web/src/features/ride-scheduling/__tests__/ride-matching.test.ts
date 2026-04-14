@@ -7,6 +7,7 @@ const rideSingle = vi.fn();
 const matchedRideSingle = vi.fn();
 const availableDriversEq = vi.fn();
 const driverLocationsIn = vi.fn();
+const trustedDriversEq = vi.fn();
 const historyInsert = vi.fn();
 
 const ridesSelect = vi.fn(() => ({
@@ -31,6 +32,10 @@ const driverLocationsSelect = vi.fn(() => ({
   in: driverLocationsIn,
 }));
 
+const trustedDriversSelect = vi.fn(() => ({
+  eq: trustedDriversEq,
+}));
+
 const mockFrom = vi.fn((table: string) => {
   if (table === "rides") {
     return { select: ridesSelect, update: ridesUpdate };
@@ -48,6 +53,10 @@ const mockFrom = vi.fn((table: string) => {
     return { insert: historyInsert };
   }
 
+  if (table === "trusted_drivers") {
+    return { select: trustedDriversSelect };
+  }
+
   return {};
 });
 
@@ -62,6 +71,7 @@ describe("matchDriver", () => {
     matchedRideSingle.mockReset();
     availableDriversEq.mockReset();
     driverLocationsIn.mockReset();
+    trustedDriversEq.mockReset();
     historyInsert.mockReset();
     historyInsert.mockResolvedValue({ error: null });
   });
@@ -115,6 +125,63 @@ describe("matchDriver", () => {
       expect.objectContaining({
         driver_id: "driver-near",
         status: "driver_en_route",
+      }),
+    );
+  });
+
+  it("prefers a trusted driver before a closer non-trusted driver", async () => {
+    rideSingle.mockResolvedValueOnce({
+      data: {
+        id: "ride-2",
+        rider_id: "rider-1",
+        pickup_lat: 35.1495,
+        pickup_lng: -90.049,
+        status: "matching",
+        is_child_safe_required: false,
+        prefer_trusted_driver: true,
+      },
+      error: null,
+    });
+
+    availableDriversEq.mockResolvedValueOnce({
+      data: [
+        { id: "driver-trusted", status: "available", is_child_safe: false },
+        { id: "driver-closer", status: "available", is_child_safe: false },
+      ],
+      error: null,
+    });
+
+    trustedDriversEq.mockResolvedValueOnce({
+      data: [{ driver_id: "driver-trusted" }],
+      error: null,
+    });
+
+    driverLocationsIn.mockResolvedValueOnce({
+      data: [
+        { driver_id: "driver-trusted", lat: 35.17, lng: -90.07 },
+        { driver_id: "driver-closer", lat: 35.1501, lng: -90.0491 },
+      ],
+      error: null,
+    });
+
+    matchedRideSingle.mockResolvedValueOnce({
+      data: { id: "ride-2", status: "driver_en_route", driver_id: "driver-trusted" },
+      error: null,
+    });
+
+    const result = await matchDriver("ride-2");
+
+    expect(result).toEqual({
+      success: true,
+      data: {
+        id: "ride-2",
+        status: "driver_en_route",
+        driverId: "driver-trusted",
+      },
+    });
+    expect(ridesUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        driver_id: "driver-trusted",
       }),
     );
   });

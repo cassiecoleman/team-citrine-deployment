@@ -97,6 +97,10 @@ interface DriverLocationRow {
   lng: number;
 }
 
+interface TrustedDriverRow {
+  driver_id: string;
+}
+
 function degreesToRadians(value: number): number {
   return (value * Math.PI) / 180;
 }
@@ -268,9 +272,29 @@ export async function matchDriver(
     (locationResult.data as DriverLocationRow[]).map((location) => [location.driver_id, location]),
   );
 
+  let trustedDriverIds = new Set<string>();
+  if (ride.prefer_trusted_driver) {
+    const trustedDriversResult = await supabase
+      .from("trusted_drivers")
+      .select("driver_id")
+      .eq("rider_id", ride.rider_id);
+
+    if (!trustedDriversResult.error && trustedDriversResult.data) {
+      trustedDriverIds = new Set(
+        (trustedDriversResult.data as TrustedDriverRow[]).map((trustedDriver) => trustedDriver.driver_id),
+      );
+    }
+  }
+
   const nearestDriver = eligibleDrivers
     .filter((driver) => locationsByDriverId.has(driver.id))
     .sort((left, right) => {
+      const leftTrustedScore = trustedDriverIds.has(left.id) ? 0 : 1;
+      const rightTrustedScore = trustedDriverIds.has(right.id) ? 0 : 1;
+      if (leftTrustedScore !== rightTrustedScore) {
+        return leftTrustedScore - rightTrustedScore;
+      }
+
       const leftLocation = locationsByDriverId.get(left.id)!;
       const rightLocation = locationsByDriverId.get(right.id)!;
 
