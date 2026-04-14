@@ -185,4 +185,44 @@ describe("matchDriver", () => {
       }),
     );
   });
+
+  it("cancels the ride when no eligible driver is found before the timeout", async () => {
+    rideSingle.mockResolvedValueOnce({
+      data: {
+        id: "ride-3",
+        rider_id: "rider-1",
+        pickup_lat: 35.1495,
+        pickup_lng: -90.049,
+        status: "matching",
+        is_child_safe_required: true,
+        prefer_trusted_driver: false,
+      },
+      error: null,
+    });
+
+    availableDriversEq.mockResolvedValueOnce({
+      data: [
+        { id: "driver-1", status: "available", is_child_safe: false },
+      ],
+      error: null,
+    });
+
+    matchedRideSingle.mockResolvedValueOnce({
+      data: { id: "ride-3", status: "cancelled", driver_id: null },
+      error: null,
+    });
+
+    const result = await matchDriver("ride-3", { timeoutMs: 0 });
+
+    expect(result).toEqual({
+      success: false,
+      error: "No driver found in time.",
+    });
+    expect(ridesUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: "cancelled",
+        cancel_reason: "No driver found within matching timeout.",
+      }),
+    );
+  });
 });
