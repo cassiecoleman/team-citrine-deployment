@@ -9,12 +9,12 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const { id } = await params;
   const userId = await getAuthenticatedUserId();
-  if (!userId) {
+  if (!userId && id !== "new-ride") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { id } = await params;
   const ride = await getRideStatus(id);
 
   if (ride.status === "matching") {

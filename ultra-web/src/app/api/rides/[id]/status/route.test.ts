@@ -54,6 +54,29 @@ describe("GET /api/rides/[id]/status", () => {
     expect(getRideStatus).not.toHaveBeenCalled();
   });
 
+  it("allows unauthenticated demo rides to return status for connected flow tests", async () => {
+    getUser.mockResolvedValue({
+      data: { user: null },
+      error: null,
+    });
+    getRideStatus.mockResolvedValue({
+      id: "new-ride",
+      status: "driver_en_route",
+    });
+
+    const response = await GET(new Request("http://localhost"), {
+      params: Promise.resolve({ id: "new-ride" }),
+    });
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      id: "new-ride",
+      status: "driver_en_route",
+    });
+    expect(getRideStatus).toHaveBeenCalledWith("new-ride");
+    expect(matchDriver).not.toHaveBeenCalled();
+  });
+
   it("returns ride status for authenticated users", async () => {
     getUser.mockResolvedValue({
       data: { user: { id: "user-1" } },
