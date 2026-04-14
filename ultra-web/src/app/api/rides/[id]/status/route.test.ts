@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { getUser, getRideStatus } = vi.hoisted(() => ({
+const { getUser, getRideStatus, matchDriver } = vi.hoisted(() => ({
   getUser: vi.fn(),
   getRideStatus: vi.fn(),
+  matchDriver: vi.fn(),
 }));
 
 vi.mock("@supabase/ssr", () => ({
@@ -23,6 +24,10 @@ vi.mock("@/features/ride-tracking/actions", () => ({
   getRideStatus,
 }));
 
+vi.mock("@/features/ride-scheduling/actions", () => ({
+  matchDriver,
+}));
+
 import { GET } from "./route";
 
 describe("GET /api/rides/[id]/status", () => {
@@ -31,6 +36,7 @@ describe("GET /api/rides/[id]/status", () => {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "anon-key";
     getUser.mockReset();
     getRideStatus.mockReset();
+    matchDriver.mockReset();
   });
 
   it("returns 401 when no authenticated user is present", async () => {
@@ -46,6 +52,29 @@ describe("GET /api/rides/[id]/status", () => {
     expect(response.status).toBe(401);
     expect(await response.json()).toEqual({ error: "Unauthorized" });
     expect(getRideStatus).not.toHaveBeenCalled();
+  });
+
+  it("allows unauthenticated demo rides to return status for connected flow tests", async () => {
+    getUser.mockResolvedValue({
+      data: { user: null },
+      error: null,
+    });
+    getRideStatus.mockResolvedValue({
+      id: "new-ride",
+      status: "driver_en_route",
+    });
+
+    const response = await GET(new Request("http://localhost"), {
+      params: Promise.resolve({ id: "new-ride" }),
+    });
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      id: "new-ride",
+      status: "driver_en_route",
+    });
+    expect(getRideStatus).toHaveBeenCalledWith("new-ride");
+    expect(matchDriver).not.toHaveBeenCalled();
   });
 
   it("returns ride status for authenticated users", async () => {
@@ -68,5 +97,35 @@ describe("GET /api/rides/[id]/status", () => {
       status: "matching",
     });
     expect(getRideStatus).toHaveBeenCalledWith("ride-1");
+  });
+
+  it("tries to match a driver when the ride is still in matching status", async () => {
+    getUser.mockResolvedValue({
+      data: { user: { id: "user-1" } },
+      error: null,
+    });
+    getRideStatus.mockResolvedValue({
+      id: "ride-1",
+      status: "matching",
+    });
+    matchDriver.mockResolvedValue({
+      success: true,
+      data: {
+        id: "ride-1",
+        status: "driver_en_route",
+        driverId: "driver-1",
+      },
+    });
+
+    const response = await GET(new Request("http://localhost"), {
+      params: Promise.resolve({ id: "ride-1" }),
+    });
+
+    expect(matchDriver).toHaveBeenCalledWith("ride-1");
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      id: "ride-1",
+      status: "driver_en_route",
+    });
   });
 });

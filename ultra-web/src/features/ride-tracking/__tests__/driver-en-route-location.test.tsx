@@ -38,6 +38,7 @@ describe("DriverEnRouteCard live location", () => {
 
     render(<DriverEnRouteCard ride={ride} />);
 
+    expect(screen.getByTestId("ride-map")).toBeInTheDocument();
     expect(screen.getByText("Live location")).toBeInTheDocument();
     expect(screen.getByText("35.1495, -90.0490")).toBeInTheDocument();
   });
