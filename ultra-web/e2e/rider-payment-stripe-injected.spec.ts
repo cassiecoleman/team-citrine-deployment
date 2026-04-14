@@ -77,51 +77,43 @@ test.describe("Issue #31 — ride pass Stripe Elements (session-injected)", () =
   test("filling the test card and clicking Subscribe completes the purchase", async ({
     page,
   }) => {
+    // Stripe Elements + real PaymentIntent roundtrip takes longer than the
+    // default 30s test timeout.
+    test.setTimeout(90_000);
+
     await page.goto("/passes");
     await page.getByText("Weekly Commute").click();
     await expect(page).toHaveURL(/\/passes\/review/);
 
-    // Target the card-number input inside Stripe's iframe. Stripe nests
-    // the individual inputs inside one outer Payment Element iframe, so
-    // we drill into it with frameLocator.
-    //
-    // RED today: iframe doesn't exist -> frameLocator operations time out.
+    // Stripe's unified Payment Element nests its fields inside an iframe
+    // titled "Secure payment input frame". (There are several other
+    // __privateStripeFrame iframes for internal controllers; they don't
+    // contain the card inputs.)
+    // PaymentForm configures the Payment Element with
+    //   layout: { defaultCollapsed: false }  (no accordion click needed)
+    //   fields.billingDetails.address: 'never'  (no ZIP field rendered)
+    // so we only need to fill card number, expiry, and CVC.
     const paymentFrame = page.frameLocator(
-      'iframe[name^="__privateStripeFrame"]'
+      'iframe[src*="elements-inner-accessory-target"]'
     );
 
     await paymentFrame
-      .locator('[name="number"], [placeholder*="Card number" i]')
-      .first()
-      .fill(TEST_CARD_NUMBER);
+      .locator('input[autocomplete="cc-number"]')
+      .pressSequentially(TEST_CARD_NUMBER.replace(/\s/g, ""), { delay: 10 });
     await paymentFrame
-      .locator('[name="expiry"], [placeholder*="MM" i]')
-      .first()
-      .fill(TEST_CARD_EXP);
+      .locator('input[autocomplete="cc-exp"]')
+      .pressSequentially(TEST_CARD_EXP.replace(/[\s/]/g, ""), { delay: 10 });
     await paymentFrame
-      .locator('[name="cvc"], [placeholder*="CVC" i]')
-      .first()
-      .fill(TEST_CARD_CVC);
-    await paymentFrame
-      .locator('[name="postalCode"], [placeholder*="ZIP" i]')
-      .first()
-      .fill(TEST_CARD_POSTAL)
-      .catch(() => {
-        // Postal field is only rendered for some billing configurations.
-        // Ignore if Stripe doesn't request it.
-      });
+      .locator('input[autocomplete="cc-csc"]')
+      .pressSequentially(TEST_CARD_CVC, { delay: 10 });
 
-    await page.getByRole("button", { name: /subscribe|pay/i }).click();
+    // Force-click to bypass Stripe's "developer tools" floating overlay
+    // which intercepts normal click events in the bottom-right corner.
+    await page.getByRole("button", { name: /subscribe|pay/i }).click({ force: true });
 
-    // After stripe.confirmPayment() resolves successfully, the client
-    // should call recordPaymentSuccess() on the server and route the
-    // rider to /passes/active.
-    //
-    // RED today: no Elements integration, subscribe redirects to
-    // /passes/active directly without ever hitting Stripe. That coincidentally
-    // passes this URL assertion — but the card-fill steps above will fail
-    // first, which is what we want.
-    await expect(page).toHaveURL(/\/passes\/active/, { timeout: 15_000 });
+    // stripe.confirmPayment() with test card 4242... auto-succeeds; the
+    // client then calls confirmPassPurchase() and routes to /passes/active.
+    await expect(page).toHaveURL(/\/passes\/active/, { timeout: 30_000 });
     await expect(page.getByText(/active/i).first()).toBeVisible();
   });
 });

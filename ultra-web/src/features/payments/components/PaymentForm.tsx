@@ -74,9 +74,24 @@ function InnerPaymentForm({
 
     // `redirect: "if_required"` keeps most payments in-page; Stripe only
     // redirects for 3DS challenges that require it.
+    //
+    // Billing address is disabled on the PaymentElement (we don't need it
+    // for ride-pass purchases), so we pass a minimal `billing_details`
+    // here to satisfy Stripe's minimum requirements for card payments.
     const { error: confirmError, paymentIntent } = await stripe.confirmPayment({
       elements,
-      confirmParams: {},
+      confirmParams: {
+        payment_method_data: {
+          billing_details: {
+            // When the Element is configured with fields.billingDetails.address
+            // = "never", Stripe requires the address here. Riders can't enter
+            // one in the form, so we use a placeholder. If real address-on-file
+            // becomes a requirement, flip billingDetails to "auto" or wire a
+            // separate address collection step.
+            address: { country: "US", postal_code: "00000" },
+          },
+        },
+      },
       redirect: "if_required",
     });
 
@@ -105,7 +120,18 @@ function InnerPaymentForm({
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      <PaymentElement />
+      <PaymentElement
+        options={{
+          // Skip address collection (country, postal code, etc). We don't
+          // need a billing address on file for ride-pass purchases.
+          fields: { billingDetails: { address: "never" } },
+          // Expand the accordion immediately so card inputs are visible.
+          layout: { type: "accordion", defaultCollapsed: false },
+          // Disable digital wallets that require HTTPS + domain verification.
+          wallets: { applePay: "never", googlePay: "never" },
+          terms: { card: "never" },
+        }}
+      />
 
       {error ? (
         <div className="rounded-xl border border-red-300 bg-red-50 p-3 text-sm text-red-700">

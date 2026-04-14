@@ -79,30 +79,22 @@ test.describe.skip(
       await expect(page).toHaveURL(/\/passes\/review/);
 
       const paymentFrame = page.frameLocator(
-        'iframe[name^="__privateStripeFrame"]'
+        'iframe[src*="elements-inner-accessory-target"]'
       );
 
       await paymentFrame
-        .locator('[name="number"], [placeholder*="Card number" i]')
-        .first()
-        .fill(TEST_CARD_NUMBER);
+        .locator('input[autocomplete="cc-number"]')
+        .pressSequentially(TEST_CARD_NUMBER.replace(/\s/g, ""), { delay: 10 });
       await paymentFrame
-        .locator('[name="expiry"], [placeholder*="MM" i]')
-        .first()
-        .fill(TEST_CARD_EXP);
+        .locator('input[autocomplete="cc-exp"]')
+        .pressSequentially(TEST_CARD_EXP.replace(/[\s/]/g, ""), { delay: 10 });
       await paymentFrame
-        .locator('[name="cvc"], [placeholder*="CVC" i]')
-        .first()
-        .fill(TEST_CARD_CVC);
-      await paymentFrame
-        .locator('[name="postalCode"], [placeholder*="ZIP" i]')
-        .first()
-        .fill(TEST_CARD_POSTAL)
-        .catch(() => {});
+        .locator('input[autocomplete="cc-csc"]')
+        .pressSequentially(TEST_CARD_CVC, { delay: 10 });
 
-      await page.getByRole("button", { name: /subscribe|pay/i }).click();
+      await page.getByRole("button", { name: /subscribe|pay/i }).click({ force: true });
 
-      await expect(page).toHaveURL(/\/passes\/active/, { timeout: 15_000 });
+      await expect(page).toHaveURL(/\/passes\/active/, { timeout: 30_000 });
       await expect(page.getByText(/active/i).first()).toBeVisible();
     });
   }

@@ -65,7 +65,9 @@ export async function createPassPaymentIntent(
     const intent = await stripe.paymentIntents.create({
       amount: amountCents,
       currency,
-      automatic_payment_methods: { enabled: true },
+      // Explicit card-only to avoid "payment method not activated" warnings
+      // for wallets/BNPL methods the Stripe test account hasn't enabled.
+      payment_method_types: ["card"],
       metadata: {
         kind: "ride_pass",
         planId: plan.id,

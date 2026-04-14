@@ -81,6 +81,13 @@ export async function createTestRider(emailPrefix = "e2e-rider"): Promise<TestUs
     .from("user_roles")
     .insert({ user_id: data.user.id, role: "rider" });
 
+  // Also create a riders row — payment + ride flows look up riders by
+  // auth user_id. Without this row, createPassPaymentIntent fails with
+  // "No rider profile found for this account."
+  await admin
+    .from("riders")
+    .insert({ user_id: data.user.id, name: `E2E Rider ${emailPrefix}` });
+
   return { userId: data.user.id, email, password };
 }
 
@@ -149,6 +156,21 @@ export async function deleteTestUser(userId: string): Promise<void> {
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) return;
 
   const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+  // Resolve the rider row for this user so we can clean up its dependents
+  // before the cascade from auth.users deletion runs.
+  const { data: riderRow } = await admin
+    .from("riders")
+    .select("id")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (riderRow?.id) {
+    // ride_passes.rider_id has no ON DELETE CASCADE, so delete first.
+    await admin.from("ride_passes").delete().eq("rider_id", riderRow.id);
+  }
+
   await admin.from("user_roles").delete().eq("user_id", userId);
+  // Deleting the auth user cascades to riders via ON DELETE CASCADE.
   await admin.auth.admin.deleteUser(userId);
 }
