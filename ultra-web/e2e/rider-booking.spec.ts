@@ -24,4 +24,30 @@ test.describe("US12 — request a ride", () => {
     await page.getByRole("button", { name: /request ride/i }).click();
     await expect(page).toHaveURL(/\/ride\/.+/);
   });
+
+  test("request ride reaches the matched driver view with driver details", async ({
+    page,
+  }) => {
+    let statusPollCount = 0;
+    await page.route("**/api/rides/*/status", async (route) => {
+      statusPollCount += 1;
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          id: "new-ride",
+          status: statusPollCount === 1 ? "matching" : "driver_en_route",
+        }),
+      });
+    });
+
+    await page.goto("/book");
+
+    await page.getByRole("button", { name: /request ride/i }).click();
+    await expect(page).toHaveURL(/\/ride\/.+/);
+    await expect(page.getByText("Driver En Route")).toBeVisible();
+    await expect(page.getByText("Marcus W.")).toBeVisible();
+    await expect(page.getByText("Toyota Camry")).toBeVisible();
+    await expect(page.getByText("ULT-2026")).toBeVisible();
+  });
 });
