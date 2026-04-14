@@ -7,26 +7,35 @@ import {
 } from "./helpers/auth";
 
 /**
- * Issue #31 — Stripe payment integration, session-injection variant.
+ * Issue #31 — Ride pass purchase via Stripe Elements, session-injection variant.
  *
  * This test authenticates by writing Supabase session cookies directly into
  * the browser context, bypassing the login UI entirely. It runs today,
  * before the login/register pages (PR #51) land, so that Stripe integration
  * work on issue #31 can progress in parallel with the auth UI work.
  *
- * The assertions target the Stripe Checkout redirect that issue #31's
- * `createCheckoutSession()` server action will produce. Before Stripe is
- * integrated, clicking Subscribe on /passes/review redirects to
- * /passes/active directly; after integration, it should redirect to a
- * checkout.stripe.com URL. These tests are RED today and will go GREEN once
- * issue #31 is implemented.
+ * The flow exercised:
+ *   /passes -> click plan -> /passes/review -> Stripe Payment Element mounts ->
+ *   fill test card -> click Subscribe -> in-page confirmation -> /passes/active
+ *
+ * We assert on Stripe Elements iframe presence (no redirect to
+ * checkout.stripe.com — this is the embedded Elements flow, not hosted
+ * Checkout). These tests are RED today and will go GREEN once issue #31
+ * wires up createPaymentIntent() and mounts <PaymentElement /> on the
+ * review page.
  */
 
-test.describe("Issue #31 — ride pass Stripe checkout (session-injected)", () => {
+// Stripe test card that always succeeds in test mode.
+const TEST_CARD_NUMBER = "4242 4242 4242 4242";
+const TEST_CARD_EXP = "12 / 34";
+const TEST_CARD_CVC = "123";
+const TEST_CARD_POSTAL = "90210";
+
+test.describe("Issue #31 — ride pass Stripe Elements (session-injected)", () => {
   let rider: TestUser;
 
   test.beforeAll(async () => {
-    rider = await createTestRider("e2e-stripe-injected");
+    rider = await createTestRider("e2e-stripe-elements");
   });
 
   test.afterAll(async () => {
@@ -48,44 +57,71 @@ test.describe("Issue #31 — ride pass Stripe checkout (session-injected)", () =
     await expect(page.getByText("Weekly Commute")).toBeVisible();
   });
 
-  test("subscribing to a pass redirects to Stripe Checkout", async ({ page }) => {
+  test("review page mounts the Stripe Payment Element", async ({ page }) => {
     await page.goto("/passes");
     await page.getByText("Weekly Commute").click();
 
     await expect(page).toHaveURL(/\/passes\/review/);
 
-    const subscribe = page.getByRole("button", { name: /subscribe/i });
-    await expect(subscribe).toBeVisible();
-
-    // Stripe Checkout is an external redirect. Listen for the navigation
-    // that leaves our origin.
-    const checkoutNavigation = page.waitForURL(
-      /checkout\.stripe\.com/,
-      { timeout: 10_000 }
-    );
-
-    await subscribe.click();
-
-    // RED today: the action redirects to /passes/active without going
-    // through Stripe. GREEN after issue #31 wires createCheckoutSession().
-    await checkoutNavigation;
-
-    expect(page.url()).toContain("checkout.stripe.com");
+    // Stripe Payment Element renders inside an iframe whose name begins
+    // with "__privateStripeFrame". Its title includes "payment input" or
+    // "card" depending on the Element mode and country.
+    //
+    // RED today: no Stripe iframe exists on the review page. GREEN once
+    // <PaymentElement /> is mounted with a client secret from
+    // createPaymentIntent().
+    const stripeFrame = page.locator('iframe[name^="__privateStripeFrame"]').first();
+    await expect(stripeFrame).toBeVisible({ timeout: 10_000 });
   });
 
-  test("canceling Stripe Checkout returns the rider to the review page", async ({
+  test("filling the test card and clicking Subscribe completes the purchase", async ({
     page,
   }) => {
-    // Once createCheckoutSession() supports cancel_url, hitting it should
-    // bring the rider back to /passes/review without creating a ride_passes
-    // row. We hit the cancel_url directly here to avoid interacting with
-    // the real Stripe UI.
-    await page.goto("/passes/review?plan=weekly-commute&checkout=cancelled");
-
+    await page.goto("/passes");
+    await page.getByText("Weekly Commute").click();
     await expect(page).toHaveURL(/\/passes\/review/);
-    // RED today: no cancellation message exists. GREEN once the review
-    // page renders a "Checkout cancelled" banner when returning from
-    // Stripe's cancel_url.
-    await expect(page.getByText(/checkout cancelled/i)).toBeVisible();
+
+    // Target the card-number input inside Stripe's iframe. Stripe nests
+    // the individual inputs inside one outer Payment Element iframe, so
+    // we drill into it with frameLocator.
+    //
+    // RED today: iframe doesn't exist -> frameLocator operations time out.
+    const paymentFrame = page.frameLocator(
+      'iframe[name^="__privateStripeFrame"]'
+    );
+
+    await paymentFrame
+      .locator('[name="number"], [placeholder*="Card number" i]')
+      .first()
+      .fill(TEST_CARD_NUMBER);
+    await paymentFrame
+      .locator('[name="expiry"], [placeholder*="MM" i]')
+      .first()
+      .fill(TEST_CARD_EXP);
+    await paymentFrame
+      .locator('[name="cvc"], [placeholder*="CVC" i]')
+      .first()
+      .fill(TEST_CARD_CVC);
+    await paymentFrame
+      .locator('[name="postalCode"], [placeholder*="ZIP" i]')
+      .first()
+      .fill(TEST_CARD_POSTAL)
+      .catch(() => {
+        // Postal field is only rendered for some billing configurations.
+        // Ignore if Stripe doesn't request it.
+      });
+
+    await page.getByRole("button", { name: /subscribe|pay/i }).click();
+
+    // After stripe.confirmPayment() resolves successfully, the client
+    // should call recordPaymentSuccess() on the server and route the
+    // rider to /passes/active.
+    //
+    // RED today: no Elements integration, subscribe redirects to
+    // /passes/active directly without ever hitting Stripe. That coincidentally
+    // passes this URL assertion — but the card-fill steps above will fail
+    // first, which is what we want.
+    await expect(page).toHaveURL(/\/passes\/active/, { timeout: 15_000 });
+    await expect(page.getByText(/active/i).first()).toBeVisible();
   });
 });
