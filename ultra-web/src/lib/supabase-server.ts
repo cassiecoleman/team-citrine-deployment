@@ -16,6 +16,9 @@ export function createServiceRoleClient() {
   )
 }
 
+/**
+ * Create a server client for reading the current user's auth session from cookies.
+ */
 export async function createServerAuthClient() {
   const cookieStore = await cookies()
 
@@ -29,11 +32,11 @@ export async function createServerAuthClient() {
         },
         setAll(cookiesToSet) {
           try {
-            cookiesToSet.forEach(({ name, value, options }) =>
+            cookiesToSet.forEach(({ name, value, options }) => {
               cookieStore.set(name, value, options)
-            )
+            })
           } catch {
-            // Ignore errors during cookie setting in server actions
+            // Ignore cookie set errors in server actions.
           }
         },
       },

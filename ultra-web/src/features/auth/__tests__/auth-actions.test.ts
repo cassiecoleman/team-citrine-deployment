@@ -12,7 +12,7 @@ vi.mock('next/headers', () => ({
   }),
 }))
 
-import { signUp, signIn, signOut, getCurrentUser, resetPassword } from '../actions'
+import { signUp, signIn, signOut, getCurrentUser, getSession, resetPassword } from '../actions'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -74,6 +74,26 @@ describe('Auth actions — signUp', () => {
     const second = await signUp({ email, password: 'test-password-456' })
     expect(second.success).toBe(false)
     expect(second.error).toBeTruthy()
+  })
+
+  it('creates auth user and assigns driver role when requested', async () => {
+    const email = `driver-signup-${uid}@ultra.test`
+    const result = await signUp({
+      email,
+      password: 'test-password-123',
+      role: 'driver',
+    })
+
+    expect(result.success).toBe(true)
+    authUserIds.push(result.data.userId)
+
+    const { data: roleData } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', result.data.userId)
+      .single()
+
+    expect(roleData?.role).toBe('driver')
   })
 })
 
@@ -161,6 +181,26 @@ describe('Auth actions — getCurrentUser', () => {
     const result = await getCurrentUser()
 
     expect(result.success).toBe(false)
+  })
+})
+
+describe('Auth actions — getSession', () => {
+  it('returns authenticated user context', async () => {
+    const email = `getsession-test-${uid}@ultra.test`
+    const { data: created } = await supabase.auth.admin.createUser({
+      email,
+      password: 'test-password-123',
+      email_confirm: true,
+    })
+    authUserIds.push(created.user!.id)
+
+    await signIn({ email, password: 'test-password-123' })
+    const result = await getSession()
+
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data?.user).toBeTruthy()
+    }
   })
 })
 

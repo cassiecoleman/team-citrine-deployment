@@ -1,12 +1,13 @@
 'use server'
 
-import { createServiceRoleClient, createServerAuthClient } from '@/lib/supabase-server'
+import { createServerAuthClient, createServiceRoleClient } from '@/lib/supabase-server'
 import { z } from 'zod'
 
 // Validation schemas
 const signUpSchema = z.object({
   email: z.string().email('Invalid email address'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
+  role: z.enum(['rider', 'driver', 'admin']).default('rider'),
 })
 
 const signInSchema = z.object({
@@ -18,28 +19,32 @@ const resetPasswordSchema = z.object({
   email: z.string().email('Invalid email address'),
 })
 
-export type SignUpInput = z.infer<typeof signUpSchema>
+export type SignUpInput = z.input<typeof signUpSchema>
 export type SignInInput = z.infer<typeof signInSchema>
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>
 
-export type AuthResponse<T = Record<string, unknown>> =
-  | { success: true; data?: T }
+export type AuthResponse<T = void> =
+  | { success: true; data: T }
+  | { success: true }
   | { success: false; error: string }
 
 /**
  * Sign up a new rider or driver
  * Creates auth user and corresponding user_roles/riders entry
  */
-export async function signUp(input: SignUpInput): Promise<AuthResponse> {
+export async function signUp(
+  input: SignUpInput
+): Promise<AuthResponse<{ userId: string; email: string; role: 'rider' | 'driver' | 'admin' }>> {
   try {
     // Validate input
     const parsed = signUpSchema.safeParse(input)
     if (!parsed.success) {
-      const message = parsed.error.issues[0]?.message || 'Validation failed'
+      const errors = parsed.error.errors
+      const message = errors[0]?.message || 'Validation failed'
       return { success: false, error: message }
     }
 
-    const { email, password } = parsed.data
+    const { email, password, role } = parsed.data
     const supabase = createServiceRoleClient()
 
     // Create auth user
@@ -47,6 +52,7 @@ export async function signUp(input: SignUpInput): Promise<AuthResponse> {
       email,
       password,
       email_confirm: false, // Require email verification
+      user_metadata: { role },
     })
 
     if (authError || !authData?.user) {
@@ -55,12 +61,12 @@ export async function signUp(input: SignUpInput): Promise<AuthResponse> {
 
     const userId = authData.user.id
 
-    // Create user_roles entry (default to rider)
+    // Create user_roles entry
     const { error: rolesError } = await supabase
       .from('user_roles')
       .insert({
         user_id: userId,
-        role: 'rider',
+        role,
       })
 
     if (rolesError) {
@@ -71,7 +77,7 @@ export async function signUp(input: SignUpInput): Promise<AuthResponse> {
 
     return {
       success: true,
-      data: { userId, email },
+      data: { userId, email, role },
     }
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Unknown error'
@@ -82,12 +88,13 @@ export async function signUp(input: SignUpInput): Promise<AuthResponse> {
 /**
  * Sign in with email and password
  */
-export async function signIn(input: SignInInput): Promise<AuthResponse> {
+export async function signIn(input: SignInInput): Promise<AuthResponse<{ session: unknown }>> {
   try {
     // Validate input
     const parsed = signInSchema.safeParse(input)
     if (!parsed.success) {
-      const message = parsed.error.issues[0]?.message || 'Validation failed'
+      const errors = parsed.error.errors
+      const message = errors[0]?.message || 'Validation failed'
       return { success: false, error: message }
     }
 
@@ -135,11 +142,14 @@ export async function signOut(): Promise<AuthResponse> {
 /**
  * Request a password reset email
  */
-export async function resetPassword(input: ResetPasswordInput): Promise<AuthResponse> {
+export async function resetPassword(
+  input: ResetPasswordInput
+): Promise<AuthResponse<{ message: string }>> {
   try {
     const parsed = resetPasswordSchema.safeParse(input)
     if (!parsed.success) {
-      const message = parsed.error.issues[0]?.message || 'Validation failed'
+      const errors = parsed.error.errors
+      const message = errors[0]?.message || 'Validation failed'
       return { success: false, error: message }
     }
 
@@ -167,18 +177,18 @@ export async function resetPassword(input: ResetPasswordInput): Promise<AuthResp
 /**
  * Get current session
  */
-export async function getSession(): Promise<AuthResponse> {
+export async function getSession(): Promise<AuthResponse<{ user: unknown }>> {
   try {
     const supabase = await createServerAuthClient()
-    const { data, error } = await supabase.auth.getSession()
+    const { data, error } = await supabase.auth.getUser()
 
-    if (error) {
-      return { success: false, error: error.message }
+    if (error || !data?.user) {
+      return { success: false, error: error?.message || 'No authenticated user' }
     }
 
     return {
       success: true,
-      data: { session: data?.session },
+      data: { user: data.user },
     }
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Unknown error'
@@ -189,7 +199,7 @@ export async function getSession(): Promise<AuthResponse> {
 /**
  * Get current user
  */
-export async function getCurrentUser(): Promise<AuthResponse> {
+export async function getCurrentUser(): Promise<AuthResponse<{ user: unknown }>> {
   try {
     const supabase = await createServerAuthClient()
     const { data, error } = await supabase.auth.getUser()
