@@ -1,6 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
 import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
 import type { Database } from '@/types/supabase'
 
 export function createServiceRoleClient() {
@@ -20,6 +19,7 @@ export function createServiceRoleClient() {
  * Create a server client for reading the current user's auth session from cookies.
  */
 export async function createServerAuthClient() {
+  const { cookies } = await import('next/headers')
   const cookieStore = await cookies()
 
   return createServerClient<Database>(
