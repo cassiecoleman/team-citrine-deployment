@@ -186,6 +186,61 @@ describe("matchDriver", () => {
     );
   });
 
+  it("filters to child-safe drivers for child-safe rides", async () => {
+    rideSingle.mockResolvedValueOnce({
+      data: {
+        id: "ride-child-1",
+        rider_id: "rider-1",
+        pickup_lat: 35.1495,
+        pickup_lng: -90.049,
+        status: "matching",
+        is_child_safe_required: true,
+        prefer_trusted_driver: false,
+      },
+      error: null,
+    });
+
+    availableDriversEq.mockResolvedValueOnce({
+      data: [
+        { id: "driver-closer", status: "available", is_child_safe: false },
+        { id: "driver-child-safe", status: "available", is_child_safe: true },
+      ],
+      error: null,
+    });
+
+    driverLocationsIn.mockResolvedValueOnce({
+      data: [
+        { driver_id: "driver-child-safe", lat: 35.17, lng: -90.07 },
+      ],
+      error: null,
+    });
+
+    matchedRideSingle.mockResolvedValueOnce({
+      data: {
+        id: "ride-child-1",
+        status: "driver_en_route",
+        driver_id: "driver-child-safe",
+      },
+      error: null,
+    });
+
+    const result = await matchDriver("ride-child-1");
+
+    expect(result).toEqual({
+      success: true,
+      data: {
+        id: "ride-child-1",
+        status: "driver_en_route",
+        driverId: "driver-child-safe",
+      },
+    });
+    expect(ridesUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        driver_id: "driver-child-safe",
+      }),
+    );
+  });
+
   it("cancels the ride when no eligible driver is found before the timeout", async () => {
     rideSingle.mockResolvedValueOnce({
       data: {
