@@ -1,3 +1,5 @@
+"use server";
+
 import { mockDriver, aishaPayment } from "@/lib/mock-data";
 import { createServiceRoleClient } from "@/lib/supabase-server";
 import { z } from "zod";
