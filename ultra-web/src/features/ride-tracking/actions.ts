@@ -9,6 +9,16 @@ interface RideStatusRow {
   id: string;
   status: string;
   driver_id: string | null;
+  drivers:
+    | {
+        id: string;
+        name: string | null;
+        rating: number | null;
+        vehicle_make: string | null;
+        vehicle_model: string | null;
+        license_plate: string | null;
+      }
+    | null;
   pickup_lat: number;
   pickup_lng: number;
   pickup_address: string;
@@ -69,7 +79,7 @@ export async function getRideStatus(id: string): Promise<RideDetail> {
   const rideResult = await supabase
     .from("rides")
     .select(
-      "id,status,driver_id,pickup_lat,pickup_lng,pickup_address,dropoff_lat,dropoff_lng,dropoff_address,fare_estimate,fare_final,distance_miles,estimated_duration_min,actual_duration_min",
+      "id,status,driver_id,pickup_lat,pickup_lng,pickup_address,dropoff_lat,dropoff_lng,dropoff_address,fare_estimate,fare_final,distance_miles,estimated_duration_min,actual_duration_min,drivers(id,name,rating,vehicle_make,vehicle_model,license_plate)",
     )
     .eq("id", id)
     .single();
@@ -81,6 +91,9 @@ export async function getRideStatus(id: string): Promise<RideDetail> {
 
   const row = rideResult.data as RideStatusRow;
   const status = normalizeRideStatus(row.status);
+  const driverVehicle = [row.drivers?.vehicle_make, row.drivers?.vehicle_model]
+    .filter(Boolean)
+    .join(" ");
 
   return {
     id: row.id,
@@ -101,8 +114,12 @@ export async function getRideStatus(id: string): Promise<RideDetail> {
     durationMin:
       row.actual_duration_min ?? row.estimated_duration_min ?? fallbackRide.durationMin,
     driver: {
-      ...fallbackRide.driver,
       id: row.driver_id ?? fallbackRide.driver.id,
+      name: row.drivers?.name ?? fallbackRide.driver.name,
+      rating: row.drivers?.rating ?? fallbackRide.driver.rating,
+      vehicle: driverVehicle || fallbackRide.driver.vehicle,
+      licensePlate: row.drivers?.license_plate ?? fallbackRide.driver.licensePlate,
+      etaMinutes: fallbackRide.driver.etaMinutes,
     },
     progressPercent: status === "matching" ? 0 : fallbackRide.progressPercent,
     distanceRemainingMi: fallbackRide.distanceRemainingMi,

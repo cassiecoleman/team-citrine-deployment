@@ -23,6 +23,14 @@ describe("getRideStatus", () => {
         id: "ride-1",
         status: "driver_en_route",
         driver_id: "driver-real-1",
+        drivers: {
+          id: "driver-real-1",
+          name: "Sam Driver",
+          rating: 4.7,
+          vehicle_make: "Honda",
+          vehicle_model: "Civic",
+          license_plate: "REAL-101",
+        },
         pickup_lat: 40.7128,
         pickup_lng: -74.006,
         pickup_address: "742 Elm St (Home)",
@@ -44,6 +52,9 @@ describe("getRideStatus", () => {
     expect(ride.status).toBe("en_route");
     expect(ride.id).toBe("ride-1");
     expect(ride.driver?.id).toBe("driver-real-1");
+    expect(ride.driver?.name).toBe("Sam Driver");
+    expect(ride.driver?.vehicle).toBe("Honda Civic");
+    expect(ride.driver?.licensePlate).toBe("REAL-101");
     expect(ride.estimatedFare).toBe(19);
   });
 
