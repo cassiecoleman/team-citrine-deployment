@@ -428,18 +428,47 @@ classDiagram
 
 ```
 src/features/
-├── matching/
-│   ├── engine.ts                    # MatchingEngine — find & rank drivers
-│   ├── haversine.ts                 # Haversine distance calculation utility
-│   ├── validators.ts                # Zod schemas for match requests
-│   ├── types.ts                     # MatchResult, DriverWithDistance, TrustedPartition
+├── ride-scheduling/
+│   ├── actions.ts                   # createRide, scheduleRide, createRecurringRide, matchDriver
 │   └── __tests__/
-│       ├── matching-engine.test.ts
-│       └── haversine.test.ts
+│       ├── ride-actions.test.ts
+│       └── ride-matching.test.ts
+├── ride-tracking/
+│   ├── actions.ts                   # getRideStatus DB mapping for rider screens
+│   └── __tests__/
+│       └── ride-tracking-actions.test.ts
 └── driver-management/
-    ├── actions.ts                   # getDriver, updateDriver, updateLocation, toggleAvailability, certs
-    ├── validators.ts                # Zod schemas for driver inputs
-    ├── types.ts                     # Driver, DriverSafetyCert, DriverLocation
-    └── __tests__/
-        └── driver-management.test.ts
+    └── ...
 ```
+
+### Current Issue #30 Implementation
+
+- `createRide()` now persists immediate ride requests in `matching` status instead of `requested`.
+- `matchDriver(rideId)` lives in `ultra-web/src/features/ride-scheduling/actions.ts`.
+- Matching uses a simple Haversine distance calculation in the application layer.
+- Candidate filtering is intentionally small-scale and optimized for the course target of roughly 15 active drivers:
+  - only `drivers.status = 'available'`
+  - require `drivers.is_child_safe = true` when `rides.is_child_safe_required = true`
+  - when `rides.prefer_trusted_driver = true`, rank `trusted_drivers` ahead of non-trusted drivers, then break ties by distance
+- Successful matches update:
+  - `rides.driver_id`
+  - `rides.status = 'driver_en_route'`
+  - `rides.matched_at`
+  - `ride_status_history` with `change_source = 'system'`
+- Unmatched rides are cancelled once the matching window exceeds 30 seconds:
+  - `rides.status = 'cancelled'`
+  - `rides.cancel_reason = 'No driver found within matching timeout.'`
+  - `rides.cancelled_at`
+  - `ride_status_history` audit entry
+- Rider polling in `ultra-web/src/app/api/rides/[id]/status/route.ts` now attempts matching when the current ride is still in `matching`, allowing the waiting screen to transition into the matched state without blocking the initial booking form submit.
+- `ultra-web/src/features/ride-tracking/actions.ts` now maps joined driver details from `drivers(...)` so matched rider screens show the assigned driver's real name, vehicle, and plate instead of only a fallback mock driver identity.
+
+### Verification Notes
+
+- Unit coverage for issue #30 currently lives in:
+  - `ultra-web/src/features/ride-scheduling/__tests__/ride-actions.test.ts`
+  - `ultra-web/src/features/ride-scheduling/__tests__/ride-matching.test.ts`
+  - `ultra-web/src/app/api/rides/[id]/status/route.test.ts`
+  - `ultra-web/src/features/ride-tracking/__tests__/ride-tracking-actions.test.ts`
+- An end-to-end acceptance test was added to `ultra-web/e2e/rider-booking.spec.ts` for the request-to-matched-driver flow.
+- In this workspace, Playwright browser launch is currently blocked by the local Chromium sandbox (`sandbox_host_linux.cc`), so browser execution must be rerun in an environment where Playwright can launch Chromium successfully.
