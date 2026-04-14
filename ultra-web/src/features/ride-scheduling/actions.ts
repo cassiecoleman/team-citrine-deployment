@@ -83,6 +83,7 @@ interface MatchableRideRow {
   status: string;
   is_child_safe_required: boolean;
   prefer_trusted_driver: boolean;
+  requested_at?: string;
 }
 
 interface MatchableDriverRow {
@@ -128,6 +129,33 @@ function haversineMiles(
       Math.sin(lngDelta / 2) ** 2;
 
   return 2 * earthRadiusMiles * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+async function cancelRideForMatchingTimeout(
+  rideId: string,
+  fromStatus: string,
+  supabase: ReturnType<typeof createServiceRoleClient>,
+): Promise<RideActionResult<MatchDriverResponse>> {
+  await supabase
+    .from("rides")
+    .update({
+      status: "cancelled",
+      cancel_reason: "No driver found within matching timeout.",
+      cancelled_at: new Date().toISOString(),
+    })
+    .eq("id", rideId)
+    .select("id,status,driver_id")
+    .single();
+
+  await supabase.from("ride_status_history").insert({
+    ride_id: rideId,
+    from_status: fromStatus,
+    to_status: "cancelled",
+    change_reason: "No driver found within matching timeout.",
+    change_source: "system",
+  });
+
+  return { success: false, error: "No driver found in time." };
 }
 
 function assertAuthenticatedUserId(userId: string): RideActionResult<never> | null {
@@ -235,7 +263,9 @@ export async function matchDriver(
 
   const rideResult = await supabase
     .from("rides")
-    .select("id,rider_id,pickup_lat,pickup_lng,status,is_child_safe_required,prefer_trusted_driver")
+    .select(
+      "id,rider_id,pickup_lat,pickup_lng,status,is_child_safe_required,prefer_trusted_driver,requested_at",
+    )
     .eq("id", rideId)
     .single();
 
@@ -244,13 +274,26 @@ export async function matchDriver(
   }
 
   const ride = rideResult.data as MatchableRideRow;
+  const timedOut =
+    timeoutMs <= 0 ||
+    (ride.requested_at
+      ? Date.now() - new Date(ride.requested_at).getTime() >= timeoutMs
+      : false);
 
   const driversResult = await supabase
     .from("drivers")
     .select("id,status,is_child_safe")
     .eq("status", "available");
 
-  if (driversResult.error || !driversResult.data?.length) {
+  if (driversResult.error) {
+    return { success: false, error: "No drivers are currently available." };
+  }
+
+  if (!driversResult.data?.length) {
+    if (timedOut) {
+      return cancelRideForMatchingTimeout(rideId, ride.status, supabase);
+    }
+
     return { success: false, error: "No drivers are currently available." };
   }
 
@@ -259,27 +302,8 @@ export async function matchDriver(
   );
 
   if (!eligibleDrivers.length) {
-    if (timeoutMs <= 0) {
-      await supabase
-        .from("rides")
-        .update({
-          status: "cancelled",
-          cancel_reason: "No driver found within matching timeout.",
-          cancelled_at: new Date().toISOString(),
-        })
-        .eq("id", rideId)
-        .select("id,status,driver_id")
-        .single();
-
-      await supabase.from("ride_status_history").insert({
-        ride_id: rideId,
-        from_status: ride.status,
-        to_status: "cancelled",
-        change_reason: "No driver found within matching timeout.",
-        change_source: "system",
-      });
-
-      return { success: false, error: "No driver found in time." };
+    if (timedOut) {
+      return cancelRideForMatchingTimeout(rideId, ride.status, supabase);
     }
 
     return { success: false, error: "No drivers are currently available." };
@@ -294,27 +318,8 @@ export async function matchDriver(
     );
 
   if (locationResult.error || !locationResult.data?.length) {
-    if (timeoutMs <= 0) {
-      await supabase
-        .from("rides")
-        .update({
-          status: "cancelled",
-          cancel_reason: "No driver found within matching timeout.",
-          cancelled_at: new Date().toISOString(),
-        })
-        .eq("id", rideId)
-        .select("id,status,driver_id")
-        .single();
-
-      await supabase.from("ride_status_history").insert({
-        ride_id: rideId,
-        from_status: ride.status,
-        to_status: "cancelled",
-        change_reason: "No driver found within matching timeout.",
-        change_source: "system",
-      });
-
-      return { success: false, error: "No driver found in time." };
+    if (timedOut) {
+      return cancelRideForMatchingTimeout(rideId, ride.status, supabase);
     }
 
     return { success: false, error: "No drivers are currently available." };
@@ -357,27 +362,8 @@ export async function matchDriver(
     })[0];
 
   if (!nearestDriver) {
-    if (timeoutMs <= 0) {
-      await supabase
-        .from("rides")
-        .update({
-          status: "cancelled",
-          cancel_reason: "No driver found within matching timeout.",
-          cancelled_at: new Date().toISOString(),
-        })
-        .eq("id", rideId)
-        .select("id,status,driver_id")
-        .single();
-
-      await supabase.from("ride_status_history").insert({
-        ride_id: rideId,
-        from_status: ride.status,
-        to_status: "cancelled",
-        change_reason: "No driver found within matching timeout.",
-        change_source: "system",
-      });
-
-      return { success: false, error: "No driver found in time." };
+    if (timedOut) {
+      return cancelRideForMatchingTimeout(rideId, ride.status, supabase);
     }
 
     return { success: false, error: "No drivers are currently available." };
