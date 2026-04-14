@@ -45,12 +45,19 @@ https://claude.ai/share/61465c46-f1ff-462f-a53d-f3dcbb983437
 **I want** to subscribe to a weekly ride pass at a fixed price for my regular commute route,
 **so that** I can budget my transportation costs without worrying about surge pricing.
 
+**Acceptance notes**
+- Purchase is a one-time weekly payment (not a Stripe Subscription) billed through the Stripe Payment Element inline on `/passes/review`. Rider stays on Ultra throughout the flow.
+- On success, the pass appears on `/passes/active` with remaining rides and expiry.
+
 ---
 
 ### US06 — Split a Fare with Another Rider
 **As a** budget-conscious commuter,
 **I want** to split the cost of a ride with another Ultra user traveling a similar route,
 **so that** I can reduce my daily transportation expenses while still getting door-to-door service.
+
+**Acceptance notes**
+- Invitee's portion of the fare is charged via the Stripe Payment Element when they accept the split, using their saved default card if present (see US29).
 
 ---
 
@@ -225,4 +232,54 @@ https://claude.ai/share/61465c46-f1ff-462f-a53d-f3dcbb983437
 
 ---
 
-*Document version: 2.0 | Project: Ultra Ride-Sharing App*
+## Epic 7: Payment Methods
+
+### US26 — Add a Payment Method to My Profile
+**As a** rider,
+**I want** to add a credit or debit card to my profile via Stripe's secure form,
+**so that** I can pay for rides and passes without re-entering card details each time.
+
+**Acceptance notes**
+- Card input is rendered by the Stripe Payment Element (Stripe-hosted iframes); raw card numbers never touch Ultra's servers.
+- The first card added triggers Stripe Customer creation for the rider and is set as the default payment method.
+- On successful card attach, the rider returns to a confirmation or profile screen that shows the saved card (brand + last 4 digits).
+
+---
+
+### US27 — See My Saved Payment Methods
+**As a** rider,
+**I want** to view the cards I've saved,
+**so that** I know which ones are on file and which is my default.
+
+**Acceptance notes**
+- List shows card brand, last 4 digits, expiration month/year, and a "Default" tag on one card.
+- Data is fetched server-side from Stripe (source of truth) rather than cached in Ultra's database.
+- Empty state shows a clear call to action to add a payment method.
+
+---
+
+### US28 — Manage My Saved Payment Methods
+**As a** rider,
+**I want** to set a default card and remove cards I no longer use,
+**so that** my payment flow is predictable and safe.
+
+**Acceptance notes**
+- Setting default updates Stripe's `customer.invoice_settings.default_payment_method`.
+- Removing a card detaches it from the Stripe Customer; removed cards stop appearing in the list.
+- Removing the current default requires the rider to pick a new default first if more than one card is on file.
+
+---
+
+### US29 — Pay with My Saved Card
+**As a** rider with a saved default card,
+**I want** payments to use that card automatically, with the option to choose a different one,
+**so that** I don't re-enter card details for every transaction.
+
+**Acceptance notes**
+- Review/checkout screens show the default card summary ("Visa ···· 4242") with a "Use different card" option.
+- Picking "Use different card" reveals the Stripe Payment Element to enter a new card for this transaction (optionally save it for future use).
+- If the rider has no saved card, the Payment Element is shown directly.
+
+---
+
+*Document version: 2.1 | Project: Ultra Ride-Sharing App*
