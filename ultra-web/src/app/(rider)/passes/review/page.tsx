@@ -1,5 +1,8 @@
+import Link from "next/link";
 import { getRidePassPlans } from "@/features/ride-pass/actions";
-import { SubscribeButton } from "@/features/ride-pass/components/SubscribeButton";
+import { createPassPaymentIntent } from "@/features/payments/actions";
+import { PassCheckoutForm } from "@/features/payments/components/PassCheckoutForm";
+import { createServerAuthClient } from "@/lib/supabase-server";
 import { formatCurrency } from "@/lib/utils";
 
 export default async function PlanReview({
@@ -10,6 +13,17 @@ export default async function PlanReview({
   const { plan: planId } = await searchParams;
   const plans = await getRidePassPlans();
   const plan = plans.find((p) => p.id === planId) ?? plans[0];
+
+  // Resolve the signed-in rider (Pre-M2 auth pattern). If there's no
+  // session we can't create a PaymentIntent; surface a sign-in prompt.
+  const supabase = await createServerAuthClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const intentResult = user
+    ? await createPassPaymentIntent({ planId: plan.id, userId: user.id })
+    : null;
 
   return (
     <div className="flex flex-col gap-4 p-4">
@@ -50,7 +64,7 @@ export default async function PlanReview({
         </div>
         <div className="flex justify-between px-4 py-3 text-sm">
           <span>Billed</span>
-          <span>Every Monday</span>
+          <span>One-time weekly payment</span>
         </div>
         <div className="flex justify-between px-4 py-3 text-sm">
           <span>Cancel</span>
@@ -58,19 +72,21 @@ export default async function PlanReview({
         </div>
       </div>
 
-      {/* Payment method */}
-      <div className="rounded-xl border border-border px-4 py-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span>{"\uD83D\uDCB3"}</span>
-            <span className="text-sm">Visa ····4821</span>
-          </div>
-          <button className="text-xs text-primary">[Change method]</button>
+      {/* Payment form (or sign-in prompt if not authenticated) */}
+      {!user ? (
+        <div className="rounded-xl border border-border bg-neutral-50 p-4 text-sm">
+          You need to <Link href="/login" className="text-primary underline">sign in</Link> to purchase a pass.
         </div>
-      </div>
-
-      {/* Subscribe button */}
-      <SubscribeButton planId={plan.id} pricePerWeek={plan.pricePerWeek} />
+      ) : !intentResult?.success ? (
+        <div className="rounded-xl border border-red-300 bg-red-50 p-4 text-sm text-red-700">
+          Unable to start checkout: {intentResult?.error ?? "Unknown error"}.
+        </div>
+      ) : (
+        <PassCheckoutForm
+          clientSecret={intentResult.data.clientSecret}
+          amountCents={intentResult.data.amountCents}
+        />
+      )}
     </div>
   );
 }
