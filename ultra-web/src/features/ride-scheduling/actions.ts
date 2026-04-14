@@ -144,7 +144,7 @@ export async function createRide(
       dropoff_lat: parsed.data.dropoff.lat,
       dropoff_lng: parsed.data.dropoff.lng,
       dropoff_address: parsed.data.dropoff.address,
-      status: "requested",
+      status: "matching",
     })
     .select("id,status")
     .single();
