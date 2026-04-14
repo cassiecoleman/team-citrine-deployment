@@ -14,22 +14,34 @@ vi.mock('next/headers', () => ({
 
 import { signUp, signIn, signOut, getCurrentUser, getSession, resetPassword } from '../actions'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+const hasSupabaseEnv =
+  Boolean(supabaseUrl) &&
+  Boolean(serviceRoleKey) &&
+  !String(supabaseUrl).includes('your-project-ref') &&
+  !String(serviceRoleKey).includes('your-service-role-key')
+
+const runIntegration =
+  hasSupabaseEnv && process.env.RUN_SUPABASE_INTEGRATION === 'true' ? describe : describe.skip
+
+const supabase = hasSupabaseEnv ? createClient(supabaseUrl!, serviceRoleKey!) : null
 
 const uid = Date.now()
 const authUserIds: string[] = []
 
 afterAll(async () => {
+  if (!supabase) {
+    return
+  }
+
   for (const id of authUserIds) {
     await supabase.from('user_roles').delete().eq('user_id', id)
     await supabase.auth.admin.deleteUser(id)
   }
 })
 
-describe('Auth actions — signUp', () => {
+runIntegration('Auth actions — signUp', () => {
   it('rejects invalid email', async () => {
     const result = await signUp({ email: 'not-an-email', password: 'test-password-123' })
 
@@ -97,7 +109,7 @@ describe('Auth actions — signUp', () => {
   })
 })
 
-describe('Auth actions — signIn', () => {
+runIntegration('Auth actions — signIn', () => {
   it('signs in with valid credentials', async () => {
     // Create a confirmed user to sign in with
     const email = `signin-test-${uid}@ultra.test`
@@ -138,7 +150,7 @@ describe('Auth actions — signIn', () => {
   })
 })
 
-describe('Auth actions — signOut', () => {
+runIntegration('Auth actions — signOut', () => {
   it('signs out successfully', async () => {
     // Sign in first to have an active session
     const email = `signout-test-${uid}@ultra.test`
@@ -156,7 +168,7 @@ describe('Auth actions — signOut', () => {
   })
 })
 
-describe('Auth actions — getCurrentUser', () => {
+runIntegration('Auth actions — getCurrentUser', () => {
   it('returns user after sign in', async () => {
     const email = `getuser-test-${uid}@ultra.test`
     const { data: created } = await supabase.auth.admin.createUser({
@@ -184,7 +196,7 @@ describe('Auth actions — getCurrentUser', () => {
   })
 })
 
-describe('Auth actions — getSession', () => {
+runIntegration('Auth actions — getSession', () => {
   it('returns authenticated user context', async () => {
     const email = `getsession-test-${uid}@ultra.test`
     const { data: created } = await supabase.auth.admin.createUser({
@@ -204,7 +216,7 @@ describe('Auth actions — getSession', () => {
   })
 })
 
-describe('Auth actions — resetPassword', () => {
+runIntegration('Auth actions — resetPassword', () => {
   it('rejects invalid email format', async () => {
     const result = await resetPassword({ email: 'not-valid' })
 
