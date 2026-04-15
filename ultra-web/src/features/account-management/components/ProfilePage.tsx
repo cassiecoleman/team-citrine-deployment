@@ -57,7 +57,7 @@ export function ProfilePage({ account, children }: ProfilePageProps) {
           <span className="text-sm flex-1">Notifications</span>
           <ChevronRight size={16} className="text-muted" />
         </Link>
-        <Link href="#" className="flex items-center gap-3 px-4 py-3">
+        <Link href="/profile/payment-methods" className="flex items-center gap-3 px-4 py-3">
           <CreditCard size={18} />
           <span className="text-sm flex-1">Payment Methods</span>
           <ChevronRight size={16} className="text-muted" />
