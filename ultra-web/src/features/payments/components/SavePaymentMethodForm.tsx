@@ -107,9 +107,12 @@ function InnerForm() {
     return (
       <div
         role="status"
-        className="rounded-xl border border-green-300 bg-green-50 p-4 text-sm text-green-800"
+        className="flex flex-col gap-3 rounded-xl border border-green-300 bg-green-50 p-4 text-sm text-green-800"
       >
-        Card saved. You can now use it for ride passes and rides.
+        <p>Card saved. You can now use it for ride passes and rides.</p>
+        <a href="/profile/payment-methods" className="font-semibold underline">
+          View saved payment methods
+        </a>
       </div>
     );
   }
