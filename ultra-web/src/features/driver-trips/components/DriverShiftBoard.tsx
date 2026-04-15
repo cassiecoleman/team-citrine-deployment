@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { CarFront, PauseCircle, RadioTower } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import { SignOutButton } from "@/features/auth/components/SignOutButton";
 import type { DriverShiftSummary } from "../types";
 
 export function DriverShiftBoard({
@@ -129,6 +130,16 @@ export function DriverShiftBoard({
           Current trip ID {summary.activeTripId} stays one tap away while you
           review your shift.
         </p>
+      </section>
+
+      <section className="rounded-xl border border-border bg-card p-4">
+        <p className="text-sm font-semibold">Account</p>
+        <p className="mt-1 text-xs text-muted">
+          Sign out ends your session across driver, queue, and trip pages.
+        </p>
+        <div className="mt-3">
+          <SignOutButton />
+        </div>
       </section>
     </div>
   );
