@@ -97,4 +97,34 @@ describe("confirmPassPurchase", () => {
     if (result.success) return;
     expect(result.error).toMatch(/not succeeded/i);
   });
+
+  it("returns the same pass when confirmPassPurchase is called twice for the same PaymentIntent", async () => {
+    const { riderId } = await createTestRider();
+
+    retrievePaymentIntentMock.mockResolvedValue({
+      id: "pi_test_idempotent",
+      status: "succeeded",
+      amount: 7500,
+      currency: "usd",
+      metadata: { kind: "ride_pass", planId: "plan-5", riderId },
+    });
+
+    const firstResult = await confirmPassPurchase({ paymentIntentId: "pi_test_idempotent" });
+    expect(firstResult.success).toBe(true);
+    if (!firstResult.success) return;
+    passIds.push(firstResult.data.passId);
+
+    const secondResult = await confirmPassPurchase({ paymentIntentId: "pi_test_idempotent" });
+    expect(secondResult.success).toBe(true);
+    if (!secondResult.success) return;
+    expect(secondResult.data.passId).toBe(firstResult.data.passId);
+
+    const { count, error } = await supabase
+      .from("ride_passes")
+      .select("id", { count: "exact", head: true })
+      .eq("stripe_subscription_id", "pi_test_idempotent");
+
+    expect(error).toBeNull();
+    expect(count).toBe(1);
+  });
 });
