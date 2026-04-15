@@ -8,6 +8,80 @@ export type PaymentActionResult<T> =
   | { success: true; data: T }
   | { success: false; error: string };
 
+export interface EnsureStripeCustomerResult {
+  stripeCustomerId: string;
+}
+
+/**
+ * Return the rider's Stripe Customer id, creating a Stripe Customer on the
+ * first call. Idempotent — subsequent calls return the existing id without
+ * hitting the Stripe API.
+ *
+ * Callers must pass the rider row id (not the auth user id). Resolve it
+ * server-side from the Supabase session (Pre-M2 auth pattern).
+ */
+export async function ensureStripeCustomer(
+  riderId: string
+): Promise<PaymentActionResult<EnsureStripeCustomerResult>> {
+  const supabase = createServiceRoleClient();
+
+  const riderResult = await supabase
+    .from("riders")
+    .select("id, name, user_id, stripe_customer_id")
+    .eq("id", riderId)
+    .single();
+
+  if (riderResult.error || !riderResult.data) {
+    return { success: false, error: "Rider not found." };
+  }
+
+  if (riderResult.data.stripe_customer_id) {
+    return {
+      success: true,
+      data: { stripeCustomerId: riderResult.data.stripe_customer_id },
+    };
+  }
+
+  // Look up the auth user's email so the Stripe dashboard shows a
+  // recognizable customer row.
+  const authResult = await supabase.auth.admin.getUserById(
+    riderResult.data.user_id
+  );
+  const email = authResult.data?.user?.email ?? undefined;
+
+  try {
+    const stripe = getStripeClient();
+    const customer = await stripe.customers.create({
+      email,
+      name: riderResult.data.name,
+      metadata: { riderId },
+    });
+
+    const updateResult = await supabase
+      .from("riders")
+      .update({ stripe_customer_id: customer.id })
+      .eq("id", riderId);
+
+    if (updateResult.error) {
+      return {
+        success: false,
+        error: `Failed to persist Stripe customer id: ${updateResult.error.message}`,
+      };
+    }
+
+    return {
+      success: true,
+      data: { stripeCustomerId: customer.id },
+    };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    return {
+      success: false,
+      error: `Unable to create Stripe Customer: ${message}`,
+    };
+  }
+}
+
 export interface CreatePassPaymentIntentInput {
   planId: string;
   userId?: string;
