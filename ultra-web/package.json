@@ -13,7 +13,9 @@
     "test:e2e:ui": "playwright test --ui",
     "db:types": "npx supabase gen types typescript --project-id mcxgvblnfuedzlojspba > src/types/supabase.ts",
     "db:push": "npx supabase db push",
-    "db:migration:new": "npx supabase migration new"
+    "db:migration:new": "npx supabase migration new",
+    "demo:clear-pending": "npx tsx scripts/clear-pending-rides.ts",
+    "demo:clear-incomplete": "npx tsx scripts/clear-incomplete-rides.ts"
   },
   "dependencies": {
     "@stripe/react-stripe-js": "^6.2.0",
