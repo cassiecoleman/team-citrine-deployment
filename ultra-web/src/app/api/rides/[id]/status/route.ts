@@ -27,6 +27,15 @@ export async function GET(
     }
   }
 
+  const url = new URL(_request.url);
+  if (url.searchParams.get("full") === "1") {
+    return NextResponse.json({
+      id: ride.id,
+      status: ride.status,
+      driver: ride.driver,
+    });
+  }
+
   return NextResponse.json({
     id: ride.id,
     status: ride.status,

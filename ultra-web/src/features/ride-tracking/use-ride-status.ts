@@ -39,15 +39,48 @@ export function useRideStatus({ rideId, initialRide }: UseRideStatusInput): {
       }, 1000);
     };
 
+    const refetchFullRide = async () => {
+      try {
+        const response = await fetch(`/api/rides/${rideId}/status?full=1`, {
+          cache: "no-store",
+        });
+        if (!response.ok) return;
+        const payload = await response.json();
+        if (payload.driver) {
+          setRide((prev) => ({
+            ...prev,
+            status: buildRideViewModel(prev, { status: payload.status }).status,
+            driver: {
+              ...prev.driver,
+              id: payload.driver.id ?? prev.driver.id,
+              name: payload.driver.name ?? prev.driver.name,
+              rating: payload.driver.rating ?? prev.driver.rating,
+              vehicle: payload.driver.vehicle ?? prev.driver.vehicle,
+              licensePlate: payload.driver.licensePlate ?? prev.driver.licensePlate,
+            },
+          }));
+          return;
+        }
+      } catch {
+        // fall through to simple status update
+      }
+    };
+
     const connect = () => {
       channel = supabase
         .channel(`ride-status:${rideId}`)
         .on("postgres_changes", { event: "UPDATE", schema: "public", table: "rides", filter: `id=eq.${rideId}` }, (payload) => {
-          setRide((previousRide) =>
-            buildRideViewModel(previousRide, {
-              status: (payload.new as { status?: string }).status,
-            }),
-          );
+          const newStatus = (payload.new as { status?: string }).status;
+          const newDriverId = (payload.new as { driver_id?: string }).driver_id;
+
+          // If driver was just assigned, refetch to get full driver info
+          if (newDriverId || (newStatus && newStatus !== "matching" && newStatus !== "requested")) {
+            void refetchFullRide();
+          } else {
+            setRide((previousRide) =>
+              buildRideViewModel(previousRide, { status: newStatus }),
+            );
+          }
         })
         .subscribe((status) => {
           if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
