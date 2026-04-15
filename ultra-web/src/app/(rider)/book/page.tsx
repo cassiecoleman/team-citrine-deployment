@@ -1,15 +1,27 @@
 import { getFareEstimate } from "@/features/fare-split/actions";
 import { createRide } from "@/features/ride-scheduling/actions";
+import { createServerAuthClient } from "@/lib/supabase-server";
 import { homeLocation, hospitalLocation } from "@/lib/mock-data";
 import { redirect } from "next/navigation";
 import { BookingClient } from "./BookingClient";
 
 export default async function BookingPage() {
   const estimate = await getFareEstimate();
-  const defaultUserId = process.env.ULTRA_DEFAULT_USER_ID;
 
   async function requestRideAction(formData: FormData) {
     "use server";
+
+    // Get logged-in user from session
+    let userId: string | undefined;
+    try {
+      const supabase = await createServerAuthClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      userId = user?.id;
+    } catch {
+      // no session
+    }
+    // Fall back to env var for dev
+    userId = userId ?? process.env.ULTRA_DEFAULT_USER_ID;
 
     const pickup = {
       lat: Number(formData.get("pickupLat")) || homeLocation.lat,
@@ -30,7 +42,7 @@ export default async function BookingPage() {
             pickup,
             dropoff,
           },
-          defaultUserId,
+          userId,
         ),
         new Promise<Awaited<ReturnType<typeof createRide>>>((resolve) =>
           setTimeout(
