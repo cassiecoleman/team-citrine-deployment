@@ -4,6 +4,8 @@
 
 The fare split system lets a rider invite another rider to split a ride fare 50/50. The invitee can accept or decline within a 30-minute window.
 
+> **Payments update (issue #37):** Invitee's portion of the split will be charged via **Stripe Payment Element** when they accept the split — inline on the accept page, using the invitee's saved default card if available (see US29). See [`documentation/stripe-payments.md`](./stripe-payments.md) for the Elements architecture.
+
 ## Auth Model (Pre-M2)
 
 Authenticated actions accept an optional `userId` parameter. This is a **transitional pattern** — `userId` must be derived server-side by the caller, never from raw client input. When M2 auth (#17–#19) ships, these actions will be migrated to derive identity from the Supabase session/JWT internally. See `MASTER_PROMPT.md` "Server Action Auth Pattern" for details.

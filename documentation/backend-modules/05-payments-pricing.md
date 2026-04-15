@@ -1,5 +1,7 @@
 # Module 5: Payments & Pricing
 
+> **Architecture update (post issue #31 rescope):** Stripe integration uses **Stripe Elements** (embedded iframes inside Ultra pages), not **Stripe Checkout** (hosted redirect). See [`documentation/stripe-payments.md`](../stripe-payments.md) for the full Elements architecture, Stripe Customer lifecycle (lazy creation on first saved card), Payment Intent vs Setup Intent usage, and the related issue breakdown (#31–#38). Any references below to "Stripe Checkout session" are superseded — ride pass purchases, ride fare capture, and fare split invitee payment all use Payment Element inline on existing Ultra pages.
+
 ## 1. Module Features
 
 ### What This Module Does

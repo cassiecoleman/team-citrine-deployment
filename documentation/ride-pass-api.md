@@ -4,6 +4,8 @@
 
 The ride pass system lets riders purchase weekly ride bundles at a discounted rate. Plans are static (not stored in DB); purchased passes are tracked in the `ride_passes` table.
 
+> **Payments update (issue #31):** Ride pass purchase is billed via **Stripe Payment Element** (one-time payment per week, not a Stripe Subscription). The Subscribe button on `/passes/review` creates a PaymentIntent server-side and mounts `<PaymentElement />` inline; the rider never leaves Ultra. See [`documentation/stripe-payments.md`](./stripe-payments.md) for the full Elements architecture. The legacy mock `subscribeToPlan()` action is being replaced by `createPaymentIntent()` + `recordPaymentSuccess()`.
+
 ## Auth Model (Pre-M2)
 
 Authenticated actions accept an optional `userId` parameter. This is a **transitional pattern** — `userId` must be derived server-side by the caller, never from raw client input. When M2 auth (#17–#19) ships, these actions will be migrated to derive identity from the Supabase session/JWT internally. See `MASTER_PROMPT.md` "Server Action Auth Pattern" for details.

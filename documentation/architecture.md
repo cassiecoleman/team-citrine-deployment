@@ -115,17 +115,21 @@ Purpose:
 - manage predictable pricing options
 
 ### Payment API
-- `POST /api/payment/create-session`
-- `GET /api/payment/verify`
+
+> **Architecture update (post issue #31 rescope):** The payment integration was moved from **Stripe Checkout (hosted redirect)** to **Stripe Elements (embedded)**. See [`stripe-payments.md`](./stripe-payments.md) for the full Elements architecture. The endpoints listed below are legacy Checkout-mode; the current implementation uses Next.js Server Actions (`createPaymentIntent`, `recordPaymentSuccess`, `createSetupIntent`, `listPaymentMethods`, etc.) rather than REST endpoints.
+
+- `POST /api/payment/create-session` *(legacy — superseded by server actions)*
+- `GET /api/payment/verify` *(legacy — superseded by server actions)*
+- `POST /api/webhooks/stripe` *(issue #38 — production webhook handler)*
 
 Used by:
 - Rider Mobile App
 - Admin Web Portal
 
 Purpose:
-- create Stripe Checkout sessions for subscription and ride payments
-- verify payment session status after user returns from Stripe hosted form
-- handle payment records and Stripe webhook events
+- create Stripe Payment Intents and Setup Intents via server actions
+- mount `<PaymentElement />` inline on `/passes/review`, `/ride/[id]/complete`, `/profile/payment-methods/add`, and the fare-split accept page
+- record payment success client-side after `stripe.confirmPayment()` resolves; webhook-driven DB updates land with issue #38
 
 Details:
 
