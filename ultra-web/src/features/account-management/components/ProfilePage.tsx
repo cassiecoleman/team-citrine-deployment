@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { SignOutButton } from "@/features/auth/components/SignOutButton";
 import {
   User,
   Plus,
@@ -10,7 +11,6 @@ import {
   Shield,
   Bell,
   CreditCard,
-  LogOut,
   ChevronRight,
   Trash2,
   Check,
@@ -62,10 +62,7 @@ export function ProfilePage({ account, children }: ProfilePageProps) {
           <span className="text-sm flex-1">Payment Methods</span>
           <ChevronRight size={16} className="text-muted" />
         </Link>
-        <button className="flex items-center gap-3 px-4 py-3 w-full text-red-500">
-          <LogOut size={18} />
-          <span className="text-sm">Sign Out</span>
-        </button>
+        <SignOutButton variant="row" />
       </div>
     </div>
   );
