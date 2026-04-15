@@ -1,5 +1,6 @@
 import AdminDataTable from '@/features/admin-dashboard/components/AdminDataTable'
 import AdminPageShell from '@/features/admin-dashboard/components/AdminPageShell'
+import { AdminRidesLiveRefresh } from '@/features/admin-dashboard/components/AdminRidesLiveRefresh'
 import { adminRequests } from '@/features/admin-dashboard/constants'
 import { fetchAdminRequests } from '@/features/admin-dashboard/requests-actions'
 import {
@@ -72,6 +73,7 @@ export default async function AdminRequestsPage({
       title="Pending Ride Requests"
       description="US22/US25: review pending requests with real backend search, filter, and sorting."
     >
+      <AdminRidesLiveRefresh />
       <form className="mb-4 grid gap-3 md:grid-cols-2 lg:grid-cols-5" method="GET">
         <input
           aria-label="Search ride requests"

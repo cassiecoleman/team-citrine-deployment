@@ -1,5 +1,6 @@
 import AdminDataTable from '@/features/admin-dashboard/components/AdminDataTable'
 import AdminPageShell from '@/features/admin-dashboard/components/AdminPageShell'
+import { AdminRidesLiveRefresh } from '@/features/admin-dashboard/components/AdminRidesLiveRefresh'
 import { adminRides } from '@/features/admin-dashboard/constants'
 import { getActiveRides } from '@/features/admin-dashboard/rides-actions'
 import {
@@ -58,6 +59,7 @@ export default async function AdminRidesPage({
 
   return (
     <AdminPageShell title="Active Rides" description="US23: track in-progress rides with real backend search and sorting.">
+      <AdminRidesLiveRefresh />
       <form className="mb-4 grid gap-3 md:grid-cols-2 lg:grid-cols-5" method="GET">
         <input
           aria-label="Search active rides"
