@@ -162,6 +162,24 @@ export async function confirmPassPurchase(
   }
 
   const supabase = createServiceRoleClient();
+  const existingPassResult = await supabase
+    .from("ride_passes")
+    .select("id")
+    .eq("stripe_subscription_id", intent.id)
+    .limit(1)
+    .maybeSingle();
+
+  if (existingPassResult.error) {
+    return {
+      success: false,
+      error: `Unable to check existing pass purchase: ${existingPassResult.error.message}.`,
+    };
+  }
+
+  if (existingPassResult.data) {
+    return { success: true, data: { passId: existingPassResult.data.id } };
+  }
+
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + 7);
 
