@@ -60,18 +60,13 @@ async function buildDemoFlowRide(id: string, fallbackRide: RideDetail): Promise<
 
 export async function getRideStatus(id: string): Promise<RideDetail> {
   const fallbackRide = buildFallbackRide(id);
-  const existingDemoStatus = await getDemoRideStatus(id);
-  const shouldUseDemoFlow = id === "new-ride" || Boolean(existingDemoStatus);
-
-  if (shouldUseDemoFlow) {
-    return buildDemoFlowRide(id, fallbackRide);
-  }
 
   const hasSupabaseConfig =
     Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL) &&
     Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY);
 
-  if (!hasSupabaseConfig) {
+  // Try real DB first if configured and not the hardcoded demo ID
+  if (!hasSupabaseConfig || id === "new-ride") {
     return buildDemoFlowRide(id, fallbackRide);
   }
 
@@ -85,8 +80,8 @@ export async function getRideStatus(id: string): Promise<RideDetail> {
     .single();
 
   if (rideResult.error || !rideResult.data) {
-    await mockDelay();
-    return fallbackRide;
+    // Ride not in DB — fall back to demo state if available
+    return buildDemoFlowRide(id, fallbackRide);
   }
 
   const row = rideResult.data as RideStatusRow;
