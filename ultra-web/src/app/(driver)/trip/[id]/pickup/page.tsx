@@ -1,10 +1,12 @@
 import {
+  completeTrip,
   confirmPickup,
   getActiveDriverTrip,
   getRuntimeDriverUserId,
   setDemoRideStatusForDriverFlow,
 } from "@/features/driver-trips/actions";
 import { PickupConfirmationCard } from "@/features/driver-trips/components/PickupConfirmationCard";
+import { SimulationButtons } from "@/features/driver-trips/components/SimulationButtons";
 
 export default async function DriverPickupPage({
   params,
@@ -54,5 +56,30 @@ export default async function DriverPickupPage({
 
   const trip = await getActiveDriverTrip(id, driverUserId);
 
-  return <PickupConfirmationCard trip={trip} isPickupConfirmed={isPickupConfirmed} />;
+  async function handleNoOp() {
+    "use server";
+    return { success: false, error: "Not applicable" };
+  }
+
+  async function handleComplete() {
+    "use server";
+    if (!driverUserId) return { success: false, error: "No driver session" };
+    return completeTrip({ rideId: id, driverUserId, fareFinal: trip.offeredFare });
+  }
+
+  return (
+    <div>
+      <PickupConfirmationCard trip={trip} isPickupConfirmed={isPickupConfirmed} />
+      {isPickupConfirmed && (
+        <div className="px-4 pb-6">
+          <SimulationButtons
+            rideId={id}
+            rideStatus="in_progress"
+            arriveAction={handleNoOp}
+            completeAction={handleComplete}
+          />
+        </div>
+      )}
+    </div>
+  );
 }

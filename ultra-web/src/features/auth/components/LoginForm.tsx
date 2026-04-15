@@ -2,7 +2,13 @@
 
 import { useActionState } from 'react'
 import { useRouter } from 'next/navigation'
-import { signIn } from '../actions'
+import { signIn, getUserRole } from '../actions'
+
+const ROLE_HOME: Record<string, string> = {
+  rider: '/',
+  driver: '/driver',
+  admin: '/admin',
+}
 
 type LoginFormState = {
   success: boolean
@@ -42,9 +48,16 @@ export function LoginForm() {
 
     const result = await signIn({ email, password })
 
-    if (result.success) {
-      // Keep event-driven navigation in the submit handler (no effect-based redirect).
-      router.push('/')
+    if (result.success && 'data' in result) {
+      // Redirect to role-appropriate home page
+      const session = result.data?.session as { user?: { id?: string } } | undefined
+      const userId = session?.user?.id
+      let dest = '/'
+      if (userId) {
+        const role = await getUserRole(userId)
+        if (role && ROLE_HOME[role]) dest = ROLE_HOME[role]
+      }
+      router.push(dest)
       return { success: true, error: null }
     }
 

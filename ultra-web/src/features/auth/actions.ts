@@ -235,3 +235,23 @@ export async function getCurrentUser(): Promise<AuthResponse<{ user: unknown }>>
     return { success: false, error: `Get user error: ${message}` }
   }
 }
+
+/**
+ * Get the role for a given user ID (rider/driver/admin)
+ */
+export async function getUserRole(userId: string): Promise<string | null> {
+  try {
+    const supabase = createServiceRoleClient()
+    const { data, error } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', userId)
+      .is('deleted_at', null)
+      .single()
+
+    if (error || !data) return null
+    return data.role
+  } catch {
+    return null
+  }
+}

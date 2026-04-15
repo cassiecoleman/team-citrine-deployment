@@ -5,7 +5,7 @@ import {
   setDemoRideStatus,
 } from "@/lib/demo-ride-state";
 import { mockDelay } from "@/lib/mock-delay";
-import { createServiceRoleClient } from "@/lib/supabase-server";
+import { createServerAuthClient, createServiceRoleClient } from "@/lib/supabase-server";
 import { z } from "zod";
 import type {
   ActiveDriverTrip,
@@ -76,11 +76,33 @@ const activeTrip: ActiveDriverTrip = {
 export async function getRuntimeDriverUserId(
   driverUserId?: string,
 ): Promise<string | undefined> {
+  // 1. Explicit parameter or env var
   const configuredDriverUserId = resolveConfiguredDriverUserId(driverUserId);
   if (configuredDriverUserId) {
     return configuredDriverUserId;
   }
 
+  // 2. Try logged-in session
+  try {
+    const authClient = await createServerAuthClient();
+    const { data: { user } } = await authClient.auth.getUser();
+    if (user) {
+      // Verify this user is actually a driver
+      const supabase = createServiceRoleClient();
+      const { data: driver } = await supabase
+        .from("drivers")
+        .select("user_id")
+        .eq("user_id", user.id)
+        .single();
+      if (driver) {
+        return user.id;
+      }
+    }
+  } catch {
+    // Session not available (e.g. no cookies in this context)
+  }
+
+  // 3. Fallback: first driver in DB (dev convenience)
   const hasSupabaseConfig =
     Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL) &&
     Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY);
@@ -113,7 +135,7 @@ function resolveConfiguredDriverUserId(driverUserId?: string): string | undefine
 export async function getDriverShiftSummary(
   driverUserId?: string,
 ): Promise<DriverShiftSummary> {
-  const resolvedUserId = resolveConfiguredDriverUserId(driverUserId);
+  const resolvedUserId = driverUserId ?? resolveConfiguredDriverUserId();
   if (!resolvedUserId) {
     await mockDelay();
     return shiftSummary;
@@ -137,39 +159,38 @@ export async function getDriverShiftSummary(
   };
 }
 
-export async function getQueuedTrip(driverUserId?: string): Promise<TripAssignment> {
+export async function getQueuedTrip(driverUserId?: string): Promise<TripAssignment | null> {
+  const resolvedUserId = driverUserId ?? resolveConfiguredDriverUserId();
+
+  if (resolvedUserId) {
+    const assignedTripsResult = await getMatchingQueue(resolvedUserId);
+    if (assignedTripsResult.success && assignedTripsResult.data.length > 0) {
+      return assignedTripsResult.data[0];
+    }
+  }
+
+  // Check demo state as fallback
   const demoQueueRideId = await getDemoQueueRideId();
   if (demoQueueRideId) {
     await mockDelay();
-    return {
-      ...queuedTrip,
-      id: demoQueueRideId,
-    };
+    return { ...queuedTrip, id: demoQueueRideId };
   }
 
-  const resolvedUserId = resolveConfiguredDriverUserId(driverUserId);
-  if (!resolvedUserId) {
-    await mockDelay();
-    return {
-      ...queuedTrip,
-      id: queuedTrip.id,
-    };
+  // No real rides and no demo state — return null for empty queue
+  if (resolvedUserId) {
+    return null;
   }
 
-  const assignedTripsResult = await getMatchingQueue(resolvedUserId);
-  if (!assignedTripsResult.success || assignedTripsResult.data.length === 0) {
-    await mockDelay();
-    return queuedTrip;
-  }
-
-  return assignedTripsResult.data[0] ?? queuedTrip;
+  // No auth at all — return mock for dev
+  await mockDelay();
+  return queuedTrip;
 }
 
 export async function getActiveDriverTrip(
   id: string,
   driverUserId?: string,
 ): Promise<ActiveDriverTrip> {
-  const resolvedUserId = resolveConfiguredDriverUserId(driverUserId);
+  const resolvedUserId = driverUserId ?? resolveConfiguredDriverUserId();
   if (!resolvedUserId) {
     await mockDelay();
     return { ...activeTrip, id };
@@ -416,6 +437,52 @@ export async function rejectTrip(input: {
       status: "matching",
     },
   };
+}
+
+export async function arriveAtPickup(input: {
+  rideId: string;
+  driverUserId: string;
+}): Promise<
+  | { success: true; data: { id: string; status: "arrived" } }
+  | { success: false; error: string }
+> {
+  const supabase = createServiceRoleClient();
+  const driverResult = await supabase
+    .from("drivers")
+    .select("id")
+    .eq("user_id", input.driverUserId)
+    .single();
+
+  if (driverResult.error || !driverResult.data) {
+    return { success: false, error: "Driver account was not found." };
+  }
+
+  const rideResult = await supabase
+    .from("rides")
+    .update({
+      status: "arrived",
+      driver_arrived_at: new Date().toISOString(),
+    })
+    .eq("id", input.rideId)
+    .eq("driver_id", driverResult.data.id)
+    .eq("status", "driver_en_route")
+    .select("id,status")
+    .single();
+
+  if (rideResult.error || !rideResult.data) {
+    return { success: false, error: "Unable to mark arrival — ride may not be en route." };
+  }
+
+  await supabase.from("ride_status_history").insert({
+    ride_id: input.rideId,
+    from_status: "driver_en_route",
+    to_status: "arrived",
+    changed_by: input.driverUserId,
+    change_source: "driver",
+    change_reason: "Driver arrived at pickup (simulated)",
+  });
+
+  return { success: true, data: { id: rideResult.data.id, status: "arrived" } };
 }
 
 export async function confirmPickup(input: {
