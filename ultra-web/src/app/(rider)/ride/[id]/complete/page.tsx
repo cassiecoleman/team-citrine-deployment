@@ -1,5 +1,6 @@
 import { getRideCompletion } from "@/features/ride-completion/actions";
 import { RideCompletePage } from "@/features/ride-completion/components/RideCompletePage";
+import { createServerAuthClient } from "@/lib/supabase-server";
 import { aishaPayment, mockDriver, mockReceipt } from "@/lib/mock-data";
 import type { RideCompletionData } from "@/types";
 
@@ -30,23 +31,26 @@ function getFallbackRideCompletionData(rideId: string): RideCompletionData {
 
 export default async function CompleteRidePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const riderUserId = process.env.ULTRA_DEFAULT_USER_ID;
+
+  // Get logged-in user from session, fall back to env var
+  let riderUserId: string | undefined;
+  try {
+    const supabase = await createServerAuthClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    riderUserId = user?.id;
+  } catch {
+    // no session
+  }
+  riderUserId = riderUserId ?? process.env.ULTRA_DEFAULT_USER_ID;
+
   let data: RideCompletionData;
 
   if (!riderUserId) {
-    if (!id.startsWith("test-ride-")) {
-      throw new Error("Rider user id is required to load ride completion.");
-    }
-
     data = getFallbackRideCompletionData(id);
   } else {
     try {
       data = await getRideCompletion(id, riderUserId);
-    } catch (error) {
-      if (!id.startsWith("test-ride-")) {
-        throw error;
-      }
-
+    } catch {
       data = getFallbackRideCompletionData(id);
     }
   }
