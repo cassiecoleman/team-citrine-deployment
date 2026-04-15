@@ -146,6 +146,34 @@ on file ever becomes a product requirement.
 Stripe Customer. This keeps the Stripe dashboard clean during the M5
 demo when only some riders use saved cards.
 
+## Runbook: Listing saved payment methods (issue #55)
+
+Rider views `/profile/payment-methods`.
+
+```
+1. Server action: listPaymentMethods(riderId)
+     - Reads riders.stripe_customer_id. If null, returns { methods: [] }
+       without calling Stripe.
+     - Else, runs in parallel:
+         stripe.paymentMethods.list({ customer, type: "card" })
+         stripe.customers.retrieve(customer)
+       and maps each card to:
+         { id, brand, last4, expMonth, expYear, isDefault }
+       where isDefault is driven by
+       customer.invoice_settings.default_payment_method.
+
+2. Page /profile/payment-methods renders the list:
+     - Empty state: CTA to /profile/payment-methods/add
+     - Populated: card rows with brand + ····last4 + expiry + "Default"
+       tag on the default card, plus an "+ Add" button in the header.
+```
+
+**Stripe is the source of truth.** No local `payment_methods` table —
+we always query Stripe on render. For the M5 scale target (~30 riders)
+this is fine (round-trip latency is negligible). If audit logging or
+offline display becomes a requirement, a local cache + webhook sync
+(issue #60) can be added without changing this action's shape.
+
 ## Related issues
 
 | Issue | Scope |
