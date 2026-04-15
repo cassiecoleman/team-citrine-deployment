@@ -101,6 +101,51 @@ Any future expiration, any 3-digit CVC, any postal code.
 +------------------+
 ```
 
+## Runbook: Saving a payment method (issue #54)
+
+Rider taps "Add payment method" and lands on `/profile/payment-methods/add`.
+
+```
+1. Server action: ensureStripeCustomer(riderId)
+     - If riders.stripe_customer_id exists, return it.
+     - Else, stripe.customers.create({ email, name, metadata: { riderId } })
+       and persist the returned id on the rider row.
+
+2. Server action: createSetupIntent(riderId)
+     - stripe.setupIntents.create({ customer, payment_method_types: ["card"],
+       usage: "off_session", metadata: { riderId } })
+     - Returns { clientSecret, setupIntentId }
+
+3. Client: SavePaymentMethodForm mounts <Elements> + <PaymentElement />
+   with options:
+     - fields.billingDetails.address: "never"
+     - layout.defaultCollapsed: false
+     - wallets: { applePay: "never", googlePay: "never" }
+
+4. Rider enters card, clicks "Save card".
+
+5. Client: stripe.confirmSetup({ elements, confirmParams: {
+     payment_method_data: { billing_details: { address: <stub> } }
+   }, redirect: "if_required" })
+
+6. On succeeded: recordSavedPaymentMethod(paymentMethodId) — no-op today;
+   reserved for future local caching. UI swaps to "Card saved"
+   confirmation. Issue #55 replaces this with a list page link.
+```
+
+**`usage: "off_session"`** is important: it tells Stripe the saved card
+may be used later without the rider present (e.g., auto-renewing ride
+passes), which is required for issue #57's saved-default path.
+
+**No address collection:** `fields.billingDetails.address: "never"` means
+the rider doesn't see postal/country/etc. fields — we stub them in
+`confirmParams` per Stripe's API requirement. Flip to `"auto"` if address
+on file ever becomes a product requirement.
+
+**Customer creation is lazy.** Riders who never save a card never have a
+Stripe Customer. This keeps the Stripe dashboard clean during the M5
+demo when only some riders use saved cards.
+
 ## Related issues
 
 | Issue | Scope |
