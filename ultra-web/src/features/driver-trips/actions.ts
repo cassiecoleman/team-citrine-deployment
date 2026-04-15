@@ -289,6 +289,23 @@ export async function acceptTrip(input: {
     return { success: false, error: "Driver account was not found." };
   }
 
+  // Prevent the same driver from accepting more than one active ride at a
+  // time. Any ride already assigned to them in an in-progress status
+  // (driver_en_route, arrived, in_progress) blocks further accepts.
+  const busyRideResult = await supabase
+    .from("rides")
+    .select("id")
+    .eq("driver_id", driverResult.data.id)
+    .in("status", ["driver_en_route", "arrived", "in_progress"])
+    .maybeSingle();
+
+  if (busyRideResult.data) {
+    return {
+      success: false,
+      error: "You already have an active trip. Complete it before accepting another.",
+    };
+  }
+
   const currentRideResult = await supabase
     .from("rides")
     .select("id,status,version")
