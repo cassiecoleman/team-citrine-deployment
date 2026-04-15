@@ -135,12 +135,85 @@ export async function createSetupIntent(
 /**
  * Client-called after stripe.confirmSetup() resolves. Placeholder today:
  * Stripe is the source of truth for saved methods, so there's nothing to
- * record locally. Reserved for future audit caching (issue #55).
+ * record locally. Reserved for future audit caching.
  */
 export async function recordSavedPaymentMethod(
   paymentMethodId: string
 ): Promise<PaymentActionResult<{ paymentMethodId: string }>> {
   return { success: true, data: { paymentMethodId } };
+}
+
+export interface SavedPaymentMethod {
+  id: string;
+  brand: string;
+  last4: string;
+  expMonth: number;
+  expYear: number;
+  isDefault: boolean;
+}
+
+export interface ListPaymentMethodsResult {
+  methods: SavedPaymentMethod[];
+}
+
+/**
+ * List the rider's saved cards from Stripe. Returns an empty array if
+ * the rider has no Stripe Customer yet (never added a payment method).
+ * Marks the rider's default card based on
+ * customer.invoice_settings.default_payment_method.
+ */
+export async function listPaymentMethods(
+  riderId: string
+): Promise<PaymentActionResult<ListPaymentMethodsResult>> {
+  const supabase = createServiceRoleClient();
+  const riderResult = await supabase
+    .from("riders")
+    .select("stripe_customer_id")
+    .eq("id", riderId)
+    .single();
+
+  if (riderResult.error || !riderResult.data) {
+    return { success: false, error: "Rider not found." };
+  }
+
+  const customerId = riderResult.data.stripe_customer_id;
+  if (!customerId) {
+    return { success: true, data: { methods: [] } };
+  }
+
+  try {
+    const stripe = getStripeClient();
+    const [list, customer] = await Promise.all([
+      stripe.paymentMethods.list({ customer: customerId, type: "card" }),
+      stripe.customers.retrieve(customerId),
+    ]);
+
+    const defaultId =
+      !("deleted" in customer) && customer.invoice_settings?.default_payment_method
+        ? typeof customer.invoice_settings.default_payment_method === "string"
+          ? customer.invoice_settings.default_payment_method
+          : customer.invoice_settings.default_payment_method.id
+        : null;
+
+    const methods: SavedPaymentMethod[] = list.data
+      .filter((pm) => pm.card)
+      .map((pm) => ({
+        id: pm.id,
+        brand: pm.card!.brand,
+        last4: pm.card!.last4,
+        expMonth: pm.card!.exp_month,
+        expYear: pm.card!.exp_year,
+        isDefault: pm.id === defaultId,
+      }));
+
+    return { success: true, data: { methods } };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    return {
+      success: false,
+      error: `Unable to list saved cards: ${message}`,
+    };
+  }
 }
 
 export interface CreatePassPaymentIntentInput {
