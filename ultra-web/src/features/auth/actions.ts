@@ -51,7 +51,7 @@ export async function signUp(
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email,
       password,
-      email_confirm: false, // Require email verification
+      email_confirm: true, // Auto-confirm for dev/demo; switch to false when email service is configured
       user_metadata: { role },
     })
 
