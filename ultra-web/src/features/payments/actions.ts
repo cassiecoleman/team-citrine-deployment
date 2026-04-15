@@ -8,6 +8,214 @@ export type PaymentActionResult<T> =
   | { success: true; data: T }
   | { success: false; error: string };
 
+export interface EnsureStripeCustomerResult {
+  stripeCustomerId: string;
+}
+
+/**
+ * Return the rider's Stripe Customer id, creating a Stripe Customer on the
+ * first call. Idempotent — subsequent calls return the existing id without
+ * hitting the Stripe API.
+ *
+ * Callers must pass the rider row id (not the auth user id). Resolve it
+ * server-side from the Supabase session (Pre-M2 auth pattern).
+ */
+export async function ensureStripeCustomer(
+  riderId: string
+): Promise<PaymentActionResult<EnsureStripeCustomerResult>> {
+  const supabase = createServiceRoleClient();
+
+  const riderResult = await supabase
+    .from("riders")
+    .select("id, name, user_id, stripe_customer_id")
+    .eq("id", riderId)
+    .single();
+
+  if (riderResult.error || !riderResult.data) {
+    return { success: false, error: "Rider not found." };
+  }
+
+  if (riderResult.data.stripe_customer_id) {
+    return {
+      success: true,
+      data: { stripeCustomerId: riderResult.data.stripe_customer_id },
+    };
+  }
+
+  // Look up the auth user's email so the Stripe dashboard shows a
+  // recognizable customer row.
+  const authResult = await supabase.auth.admin.getUserById(
+    riderResult.data.user_id
+  );
+  const email = authResult.data?.user?.email ?? undefined;
+
+  try {
+    const stripe = getStripeClient();
+    const customer = await stripe.customers.create({
+      email,
+      name: riderResult.data.name,
+      metadata: { riderId },
+    });
+
+    const updateResult = await supabase
+      .from("riders")
+      .update({ stripe_customer_id: customer.id })
+      .eq("id", riderId);
+
+    if (updateResult.error) {
+      return {
+        success: false,
+        error: `Failed to persist Stripe customer id: ${updateResult.error.message}`,
+      };
+    }
+
+    return {
+      success: true,
+      data: { stripeCustomerId: customer.id },
+    };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    return {
+      success: false,
+      error: `Unable to create Stripe Customer: ${message}`,
+    };
+  }
+}
+
+export interface CreateSetupIntentResult {
+  clientSecret: string;
+  setupIntentId: string;
+}
+
+/**
+ * Create a Stripe SetupIntent so the rider can save a payment method for
+ * future use (US26 / issue #54). Lazily creates the Stripe Customer via
+ * ensureStripeCustomer, then binds the SetupIntent to that customer with
+ * `usage: "off_session"` so the saved card can charge without the rider
+ * present (e.g., recurring ride fares).
+ */
+export async function createSetupIntent(
+  riderId: string
+): Promise<PaymentActionResult<CreateSetupIntentResult>> {
+  const customer = await ensureStripeCustomer(riderId);
+  if (!customer.success) return customer;
+
+  try {
+    const stripe = getStripeClient();
+    const intent = await stripe.setupIntents.create({
+      customer: customer.data.stripeCustomerId,
+      payment_method_types: ["card"],
+      usage: "off_session",
+      metadata: { riderId },
+    });
+
+    if (!intent.client_secret) {
+      return {
+        success: false,
+        error: "Stripe did not return a client_secret for the SetupIntent.",
+      };
+    }
+
+    return {
+      success: true,
+      data: {
+        clientSecret: intent.client_secret,
+        setupIntentId: intent.id,
+      },
+    };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    return {
+      success: false,
+      error: `Unable to start saved-card setup: ${message}`,
+    };
+  }
+}
+
+/**
+ * Client-called after stripe.confirmSetup() resolves. Placeholder today:
+ * Stripe is the source of truth for saved methods, so there's nothing to
+ * record locally. Reserved for future audit caching.
+ */
+export async function recordSavedPaymentMethod(
+  paymentMethodId: string
+): Promise<PaymentActionResult<{ paymentMethodId: string }>> {
+  return { success: true, data: { paymentMethodId } };
+}
+
+export interface SavedPaymentMethod {
+  id: string;
+  brand: string;
+  last4: string;
+  expMonth: number;
+  expYear: number;
+  isDefault: boolean;
+}
+
+export interface ListPaymentMethodsResult {
+  methods: SavedPaymentMethod[];
+}
+
+/**
+ * List the rider's saved cards from Stripe. Returns an empty array if
+ * the rider has no Stripe Customer yet (never added a payment method).
+ * Marks the rider's default card based on
+ * customer.invoice_settings.default_payment_method.
+ */
+export async function listPaymentMethods(
+  riderId: string
+): Promise<PaymentActionResult<ListPaymentMethodsResult>> {
+  const supabase = createServiceRoleClient();
+  const riderResult = await supabase
+    .from("riders")
+    .select("stripe_customer_id")
+    .eq("id", riderId)
+    .single();
+
+  if (riderResult.error || !riderResult.data) {
+    return { success: false, error: "Rider not found." };
+  }
+
+  const customerId = riderResult.data.stripe_customer_id;
+  if (!customerId) {
+    return { success: true, data: { methods: [] } };
+  }
+
+  try {
+    const stripe = getStripeClient();
+    const [list, customer] = await Promise.all([
+      stripe.paymentMethods.list({ customer: customerId, type: "card" }),
+      stripe.customers.retrieve(customerId),
+    ]);
+
+    const defaultId =
+      !("deleted" in customer) && customer.invoice_settings?.default_payment_method
+        ? typeof customer.invoice_settings.default_payment_method === "string"
+          ? customer.invoice_settings.default_payment_method
+          : customer.invoice_settings.default_payment_method.id
+        : null;
+
+    const methods: SavedPaymentMethod[] = list.data
+      .filter((pm) => pm.card)
+      .map((pm) => ({
+        id: pm.id,
+        brand: pm.card!.brand,
+        last4: pm.card!.last4,
+        expMonth: pm.card!.exp_month,
+        expYear: pm.card!.exp_year,
+        isDefault: pm.id === defaultId,
+      }));
+
+    return { success: true, data: { methods } };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    return {
+      success: false,
+      error: `Unable to list saved cards: ${message}`,
+    };
+  }
+}
+
 export interface CreatePassPaymentIntentInput {
   planId: string;
   userId?: string;

@@ -101,6 +101,79 @@ Any future expiration, any 3-digit CVC, any postal code.
 +------------------+
 ```
 
+## Runbook: Saving a payment method (issue #54)
+
+Rider taps "Add payment method" and lands on `/profile/payment-methods/add`.
+
+```
+1. Server action: ensureStripeCustomer(riderId)
+     - If riders.stripe_customer_id exists, return it.
+     - Else, stripe.customers.create({ email, name, metadata: { riderId } })
+       and persist the returned id on the rider row.
+
+2. Server action: createSetupIntent(riderId)
+     - stripe.setupIntents.create({ customer, payment_method_types: ["card"],
+       usage: "off_session", metadata: { riderId } })
+     - Returns { clientSecret, setupIntentId }
+
+3. Client: SavePaymentMethodForm mounts <Elements> + <PaymentElement />
+   with options:
+     - fields.billingDetails.address: "never"
+     - layout.defaultCollapsed: false
+     - wallets: { applePay: "never", googlePay: "never" }
+
+4. Rider enters card, clicks "Save card".
+
+5. Client: stripe.confirmSetup({ elements, confirmParams: {
+     payment_method_data: { billing_details: { address: <stub> } }
+   }, redirect: "if_required" })
+
+6. On succeeded: recordSavedPaymentMethod(paymentMethodId) — no-op today;
+   reserved for future local caching. UI swaps to "Card saved"
+   confirmation. Issue #55 replaces this with a list page link.
+```
+
+**`usage: "off_session"`** is important: it tells Stripe the saved card
+may be used later without the rider present (e.g., auto-renewing ride
+passes), which is required for issue #57's saved-default path.
+
+**No address collection:** `fields.billingDetails.address: "never"` means
+the rider doesn't see postal/country/etc. fields — we stub them in
+`confirmParams` per Stripe's API requirement. Flip to `"auto"` if address
+on file ever becomes a product requirement.
+
+**Customer creation is lazy.** Riders who never save a card never have a
+Stripe Customer. This keeps the Stripe dashboard clean during the M5
+demo when only some riders use saved cards.
+
+## Runbook: Listing saved payment methods (issue #55)
+
+Rider views `/profile/payment-methods`.
+
+```
+1. Server action: listPaymentMethods(riderId)
+     - Reads riders.stripe_customer_id. If null, returns { methods: [] }
+       without calling Stripe.
+     - Else, runs in parallel:
+         stripe.paymentMethods.list({ customer, type: "card" })
+         stripe.customers.retrieve(customer)
+       and maps each card to:
+         { id, brand, last4, expMonth, expYear, isDefault }
+       where isDefault is driven by
+       customer.invoice_settings.default_payment_method.
+
+2. Page /profile/payment-methods renders the list:
+     - Empty state: CTA to /profile/payment-methods/add
+     - Populated: card rows with brand + ····last4 + expiry + "Default"
+       tag on the default card, plus an "+ Add" button in the header.
+```
+
+**Stripe is the source of truth.** No local `payment_methods` table —
+we always query Stripe on render. For the M5 scale target (~30 riders)
+this is fine (round-trip latency is negligible). If audit logging or
+offline display becomes a requirement, a local cache + webhook sync
+(issue #60) can be added without changing this action's shape.
+
 ## Related issues
 
 | Issue | Scope |
