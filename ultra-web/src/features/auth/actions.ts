@@ -75,6 +75,24 @@ export async function signUp(
       return { success: false, error: `Role setup failed: ${rolesError.message}` }
     }
 
+    // Create riders row so downstream features (rides, passes, splits) can look up rider_id
+    if (role === 'rider') {
+      const nameFromEmail = email.split('@')[0]
+      const { error: riderError } = await supabase
+        .from('riders')
+        .insert({
+          user_id: userId,
+          name: nameFromEmail,
+        })
+
+      if (riderError) {
+        // Clean up: remove role and auth user
+        await supabase.from('user_roles').delete().eq('user_id', userId)
+        await supabase.auth.admin.deleteUser(userId)
+        return { success: false, error: `Rider profile setup failed: ${riderError.message}` }
+      }
+    }
+
     return {
       success: true,
       data: { userId, email, role },
