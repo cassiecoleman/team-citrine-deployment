@@ -1,5 +1,11 @@
 import { defineConfig, devices } from "@playwright/test";
 
+// Port override lets parallel worktrees each run their own dev server so
+// a test run on one branch doesn't pick up stale code from another
+// worktree's dev server listening on 3000.
+const port = Number(process.env.PLAYWRIGHT_PORT ?? 3000);
+const baseURL = `http://localhost:${port}`;
+
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: false,
@@ -8,7 +14,7 @@ export default defineConfig({
   workers: 1,
   reporter: "html",
   use: {
-    baseURL: "http://localhost:3000",
+    baseURL,
     trace: "on-first-retry",
   },
   projects: [
@@ -18,8 +24,8 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "npm run dev",
-    url: "http://localhost:3000",
+    command: `PORT=${port} npm run dev`,
+    url: baseURL,
     reuseExistingServer: !process.env.CI,
   },
 });

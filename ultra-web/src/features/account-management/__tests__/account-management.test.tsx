@@ -19,6 +19,29 @@ vi.mock("next/link", () => ({
   ),
 }));
 
+// The updated ProfilePage uses useRouter().refresh() after mutations.
+// In jsdom component tests, stub it so the app-router invariant is satisfied.
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({
+    refresh: vi.fn(),
+    push: vi.fn(),
+    back: vi.fn(),
+  }),
+}));
+
+// Server actions are called from event handlers (not during render); tests
+// here exercise render output, so a simple stub keeps them isolated.
+vi.mock("../actions", async () => {
+  const actual = await vi.importActual<typeof import("../actions")>("../actions");
+  return {
+    ...actual,
+    updateParentAccount: vi.fn(async () => ({ success: true })),
+    createChildProfile: vi.fn(async () => ({ success: true })),
+    updateChildProfile: vi.fn(async () => ({ success: true })),
+    deleteChildProfile: vi.fn(async () => ({ success: true })),
+  };
+});
+
 const mockAccount: ParentAccount = {
   id: "u1",
   name: "Maria Johnson",
