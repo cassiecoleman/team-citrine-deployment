@@ -14,17 +14,21 @@ test.describe("admin workflows", () => {
     await expect(page.getByText("Maria Lopez")).toBeVisible();
   });
 
-  test("renders the requests, rides, and completed tables without crashing", async ({ page }) => {
+  test("admin can view active rides, completed rides, and search results", async ({ page }) => {
     await page.goto("/admin/requests");
     await expect(page.getByRole("heading", { name: "Pending Ride Requests" })).toBeVisible();
     await expect(page.getByText("Maya Brooks")).toBeVisible();
 
     await page.goto("/admin/rides");
     await expect(page.getByRole("heading", { name: "Active Rides" })).toBeVisible();
+    await page.getByRole("searchbox", { name: "Search active rides" }).fill("Carlos");
+    await page.getByRole("button", { name: "Apply" }).click();
     await expect(page.getByText("Carlos Vega")).toBeVisible();
 
     await page.goto("/admin/completed");
     await expect(page.getByRole("heading", { name: "Completed Rides" })).toBeVisible();
+    await page.getByRole("searchbox", { name: "Search completed rides" }).fill("Maya");
+    await page.getByRole("button", { name: "Apply" }).click();
     await expect(page.getByText("Maya Brooks")).toBeVisible();
   });
 });

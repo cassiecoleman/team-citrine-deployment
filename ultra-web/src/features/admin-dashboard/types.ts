@@ -20,6 +20,8 @@ export interface AdminRide {
   driverName: string;
   origin: string;
   status: string;
+  startedAt: string | null;
+  fare: number | null;
 }
 
 export interface AdminCompletedRide {
@@ -28,6 +30,8 @@ export interface AdminCompletedRide {
   driverName: string;
   distance: string;
   status: string;
+  completedAt: string | null;
+  fare: number | null;
 }
 
 export type DateRange = "Today" | "Yesterday" | "Last 7 Days";
