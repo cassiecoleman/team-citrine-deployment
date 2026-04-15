@@ -36,6 +36,16 @@ export default async function AdminRequestsPage({
     sort: getValue(params.sort),
   }
 
+  // TODO(security): the catch block currently swallows *all* errors —
+  // including Forbidden from requireAdminRole() and Supabase outages —
+  // and silently renders mock admin data. The /admin/* routes rely on
+  // the Next.js middleware (issue #18) to keep non-admins out, but
+  // defense-in-depth should differentiate:
+  //   - env vars missing (local/e2e): ok to fall back to mocks
+  //   - real auth failure: propagate to error boundary
+  //   - real Supabase outage: propagate / surface clearly
+  // Left as-is for this PR to keep the existing e2e passing; worth a
+  // follow-up that also adds session injection to the admin e2e.
   let requests = adminRequests
   try {
     requests = await fetchAdminRequests(query)
