@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
-import { createServerClient } from '@supabase/ssr'
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import type { NextRequest, NextResponse } from 'next/server'
 import type { Database } from '@/types/supabase'
 
 export function createServiceRoleClient() {
@@ -38,6 +39,35 @@ export async function createServerAuthClient() {
           } catch {
             // Ignore cookie set errors in server actions.
           }
+        },
+      },
+    }
+  )
+}
+
+/**
+ * Create a Supabase client for use in Next.js middleware.
+ * Reads from request cookies and writes to both request and response cookies.
+ */
+export function createMiddlewareAuthClient(
+  request: NextRequest,
+  response: NextResponse
+) {
+  return createServerClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll()
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(
+            ({ name, value, options }: { name: string; value: string; options?: CookieOptions }) => {
+              request.cookies.set(name, value)
+              response.cookies.set(name, value, options)
+            }
+          )
         },
       },
     }
