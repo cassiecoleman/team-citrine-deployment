@@ -9,9 +9,13 @@ export interface AdminDriver {
 export interface AdminRequest {
   requestId: string;
   riderName: string;
-  partnerName: string;
-  destination: string;
+  pickupAddress: string;
+  dropoffAddress: string;
   status: string;
+  requestType: "Immediate" | "Scheduled";
+  requestedAt: string;
+  scheduledFor: string | null;
+  childSafeRequired: boolean;
 }
 
 export interface AdminRide {

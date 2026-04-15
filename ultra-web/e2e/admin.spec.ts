@@ -17,7 +17,15 @@ test.describe("admin workflows", () => {
   test("renders the requests, rides, and completed tables without crashing", async ({ page }) => {
     await page.goto("/admin/requests");
     await expect(page.getByRole("heading", { name: "Pending Ride Requests" })).toBeVisible();
-    await expect(page.getByText("Maya Brooks")).toBeVisible();
+    await expect(
+      page.getByRole("searchbox", { name: "Search ride requests" }),
+    ).toBeVisible();
+    await expect(page.getByRole("button", { name: "Apply" })).toBeVisible();
+    await expect(
+      page
+        .getByRole("columnheader", { name: "Request ID" })
+        .or(page.getByText("No pending requests match your search and filters.")),
+    ).toBeVisible();
 
     await page.goto("/admin/rides");
     await expect(page.getByRole("heading", { name: "Active Rides" })).toBeVisible();

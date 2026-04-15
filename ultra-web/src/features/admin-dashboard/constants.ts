@@ -7,9 +7,39 @@ export const adminDrivers: AdminDriver[] = [
 ];
 
 export const adminRequests: AdminRequest[] = [
-  { requestId: "R-4401", riderName: "Maya Brooks", partnerName: "Jonah Reid", destination: "Ward High", status: "Pending" },
-  { requestId: "R-4410", riderName: "Derek Yuan", partnerName: "Maria Lopez", destination: "Downtown Plaza", status: "Accepted" },
-  { requestId: "R-4412", riderName: "Elena Kim", partnerName: "Preeti Sharma", destination: "Court Square", status: "Cancelled" },
+  {
+    requestId: "R-4401",
+    riderName: "Maya Brooks",
+    pickupAddress: "Community Clinic",
+    dropoffAddress: "Ward High",
+    status: "Pending",
+    requestType: "Immediate",
+    requestedAt: "2026-04-14T14:00:00.000Z",
+    scheduledFor: null,
+    childSafeRequired: false,
+  },
+  {
+    requestId: "R-4410",
+    riderName: "Derek Yuan",
+    pickupAddress: "South Parkway",
+    dropoffAddress: "Downtown Plaza",
+    status: "Matching",
+    requestType: "Scheduled",
+    requestedAt: "2026-04-14T15:00:00.000Z",
+    scheduledFor: "2026-04-15T10:30:00.000Z",
+    childSafeRequired: true,
+  },
+  {
+    requestId: "R-4412",
+    riderName: "Elena Kim",
+    pickupAddress: "Court Square",
+    dropoffAddress: "Children's Museum",
+    status: "Assigned",
+    requestType: "Immediate",
+    requestedAt: "2026-04-14T16:00:00.000Z",
+    scheduledFor: null,
+    childSafeRequired: false,
+  },
 ];
 
 export const adminRides: AdminRide[] = [
