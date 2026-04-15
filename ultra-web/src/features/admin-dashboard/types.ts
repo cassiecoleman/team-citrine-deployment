@@ -38,4 +38,17 @@ export interface AdminCompletedRide {
   fare: number | null;
 }
 
+export interface AdminDriverFlag {
+  flagId: string;
+  driverName: string;
+  reporterName: string;
+  reason: string;
+  details: string | null;
+  status: string;
+  rideId: string | null;
+  createdAt: string;
+  reviewedAt: string | null;
+  adminNotes: string | null;
+}
+
 export type DateRange = "Today" | "Yesterday" | "Last 7 Days";

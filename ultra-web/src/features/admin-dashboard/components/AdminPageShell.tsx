@@ -27,6 +27,9 @@ export default function AdminPageShell({ title, description, children }: AdminPa
           <Link href="/admin/completed" className="block rounded-lg px-3 py-2 hover:bg-primary-light/30">
             Completed
           </Link>
+          <Link href="/admin/flags" className="block rounded-lg px-3 py-2 hover:bg-primary-light/30">
+            Driver Flags
+          </Link>
         </nav>
       </aside>
       <main className="flex-1 p-6">

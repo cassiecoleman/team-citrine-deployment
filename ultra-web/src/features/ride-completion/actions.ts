@@ -281,25 +281,44 @@ export async function flagDriver(
     return { success: false, error: rideResult.error };
   }
 
-  // TODO(#42): move issue report persistence to a dedicated driver_flags table.
-  const issueReportPayload = JSON.stringify({
-    category: parsed.data.category,
-    details: parsed.data.details,
-    reported_by: riderUserId,
-  });
+  // Map UI category to driver_flags reason enum
+  const categoryToReason: Record<string, string> = {
+    "Unsafe driving": "safety",
+    "Driver was rude": "behavior",
+    "Wrong route taken": "behavior",
+    "Vehicle condition": "vehicle",
+    "Safety concern for my child": "safety",
+    "Other": "other",
+  };
 
   const supabase = createServiceRoleClient();
-  const historyInsert = await supabase.from("ride_status_history").insert({
+
+  // Write to driver_flags table (#42)
+  const flagInsert = await supabase.from("driver_flags").insert({
+    driver_id: rideResult.data.driver_id,
+    reporter_id: rideResult.data.rider_id,
+    ride_id: parsed.data.rideId,
+    reason: categoryToReason[parsed.data.category] ?? "other",
+    details: parsed.data.details || null,
+    created_by: riderUserId,
+  });
+
+  if (flagInsert.error) {
+    return { success: false, error: "Unable to submit issue report right now." };
+  }
+
+  // Also keep audit trail in ride_status_history
+  await supabase.from("ride_status_history").insert({
     ride_id: parsed.data.rideId,
     from_status: rideResult.data.status,
     to_status: rideResult.data.status,
     change_source: "rider",
-    change_reason: issueReportPayload,
+    change_reason: JSON.stringify({
+      category: parsed.data.category,
+      details: parsed.data.details,
+      reported_by: riderUserId,
+    }),
   });
-
-  if (historyInsert.error) {
-    return { success: false, error: "Unable to submit issue report right now." };
-  }
 
   return {
     success: true,
