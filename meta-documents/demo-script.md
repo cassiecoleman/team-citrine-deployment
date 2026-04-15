@@ -1,124 +1,159 @@
-# Ultra Demo Script — Team Citrine
+# Ultra P3 Backend — Demo Script
 
-## Setup Before Demo
+**Format:** Teams meeting, webcams on, screen share. One person drives the demo (~8 min), then all three present reflections.
 
-**Three browsers open:**
-- **Chrome** — Rider (Jacob): `djacobmoore@icloud.com`
-- **Safari** — Driver (Cassie): `driver1@ultra-app.test` / `UltraDriver2026!`
-- **Chrome Incognito** — Admin (Derron): `admin1@ultra-app.test` / `UltraAdmin2026!`
-
-Make sure `npm run dev` is running in `ultra-web/`.
+**Slides:** `meta-documents/ultra-p3-demo.pptx` (13 slides)
 
 ---
 
-## Part 1: Jacob — Rider Backend (3 min)
+## Setup Before Recording
 
-**Jacob talks while demoing on Chrome.**
+**Three browsers ready:**
+- **Chrome** — Rider: `djacobmoore@icloud.com`
+- **Safari** — Driver: `driver1@ultra-app.test` / `UltraDriver2026!`
+- **Chrome Incognito** — Admin: `admin1@ultra-app.test` / `UltraAdmin2026!`
 
-> "I'm going to walk through the rider experience. Everything you're about to see hits a real Supabase PostgreSQL database — no mock data."
+Dev server running: `cd ultra-web && npm run dev`
 
-### 1. Registration & Login
-- Go to `/register` (show the page briefly)
-> "We built email/password auth with Supabase Auth. When a rider registers, we create their auth account, assign the rider role, and provision a riders row in one transaction — so every downstream feature has a profile to work with."
-- Go to `/login`, sign in
-> "The middleware checks your session cookie on every request and redirects you to the right dashboard based on your role — riders land here, drivers go to /driver, admins to /admin."
+Have the slides open in a separate window to share between demo sections.
 
-### 2. Profile Management
+---
+
+## Part 1: Backend Demo (~8 min)
+
+**Jacob drives the screen share. Cassie and Derron chime in on their sections.**
+
+### Slide 1-3: Intro (30 sec)
+
+Share slides. Show title, tech stack, architecture.
+
+> **Jacob:** "We're Team Citrine. We built Ultra, a ride-sharing app. I'll walk through the full backend — everything hits a real Supabase PostgreSQL database, no mock data. The frontend was already built; our job was replacing mocks with real server actions."
+
+### Slide 4: Rider Flow (2.5 min)
+
+Switch to Chrome (rider browser).
+
+**Registration & Login**
+- Show `/login` page briefly
+> "Supabase Auth with email/password. Middleware checks your session cookie and routes you by role."
+
+**Profile**
 - Go to `/profile`
-> "This is real data — that's my name and email pulled from the riders table and auth session. I can edit my name and phone inline."
-- Click **Edit**, change phone to something, click **Save**
-> "That just updated the riders table in Supabase via a server action."
-- Click **Add Rider Profile**, add a child named "Emma", emergency contact "Rosa M."
-> "This creates a rider_profiles row with is_child=true. Parents can manage multiple child profiles for child-safe rides."
+> "Real data — my name from the riders table, email from auth. I can edit inline."
+- Click Edit, change phone, Save
+> "Server action updates the riders table."
+- Click Add Rider Profile, add "Emma", emergency "Rosa M."
+> "Creates a rider_profiles row for child-safe rides."
 
-### 3. Request a Ride
-- Go to `/book`
-> "The booking page uses Leaflet maps with OpenStreetMap tiles and Nominatim geocoding. The fare estimate is displayed before you commit."
-- Click **Request Ride**
-> "That just inserted a ride into Supabase with status 'matching'. The rider page now subscribes to Supabase Realtime — when the driver accepts, this page updates live without refreshing."
-- **Leave this tab open** — it should show "Finding your driver..."
+**Request a Ride**
+- Go to `/book`, click Request Ride
+> "Inserts a ride with status 'matching'. This page subscribes to Supabase Realtime — watch it update live when the driver acts."
+- Leave tab open showing "Finding your driver..."
 
-### 4. Ride Passes & Payments
-> "We also built ride pass subscriptions. Let me show that real quick."
-- Open a new tab to `/passes`
-> "These are two plans — weekly-5 and weekly-10. The purchase flow goes through Stripe in test mode."
-- Click a plan, show the Stripe checkout form (don't need to complete)
-> "And on the profile page, riders can manage their saved payment methods through Stripe."
+**Ride Passes** (quick)
+- Open `/passes` in a new tab
+> "Two subscription plans. Purchase goes through Stripe test mode."
+- Show the Stripe form briefly, don't submit
 
-**Jacob says:** "I'll hand it to Cassie for the driver side — watch my rider screen update in real time."
+### Slide 5: Driver Flow (2 min)
 
----
+Switch to Safari (driver browser).
 
-## Part 2: Cassie — Driver Backend (3 min)
+> **Cassie** (or Jacob narrates): "Now the driver side."
 
-**Cassie talks while demoing on Safari.**
+**Login & Queue**
+- Already logged in. Go to `/queue`
+> "Here's Jacob's ride — real data from Supabase. Pickup, destination, fare."
+- Point out rider's screen still says "Finding your driver..."
+- Click Accept Trip
+> "Watch the rider screen..."
+- **Rider screen updates live to "Driver En Route"**
+> "That's Supabase Realtime — no page refresh."
 
-### 5. Driver Login
-- Already logged in as driver. Go to `/driver`
-> "When a driver logs in, the middleware routes them to the driver dashboard. The session cookie tells the system who I am — no environment variables or hardcoded IDs."
+**Complete the Ride**
+- Click "Simulate Drive to Rider"
+- Click "Arrived at Pickup" → check both identity boxes → "Confirm Pickup"
+- Click "Simulate Trip Completion"
+> "Driver's back to the queue, ready for the next ride."
+- **Rider screen shows completion page**
 
-### 6. View Queue & Accept Ride
-- Go to `/queue`
-> "Here's the ride Jacob just requested — real data from Supabase. His pickup address, destination, and fare estimate."
-- **Point to Jacob's rider screen** — should still say "Finding your driver..."
-- Click **Accept Trip**
-> "That updated the ride status to driver_en_route and assigned my driver ID. Watch Jacob's screen..."
-- **Jacob's screen should update to show "Driver En Route" with Cassie's driver info**
-> "That update happened through Supabase Realtime — no page refresh needed on the rider side."
+**Flag the Driver**
+- Switch to Chrome rider, click "Report an Issue"
+- Select "Unsafe driving", add "Ran a red light", submit
+> "That just wrote to the driver_flags table. Let's see it from admin."
 
-### 7. Complete the Ride Flow
-- On the trip page, click **"Simulate Drive to Rider"**
-> "Since we don't have real GPS in the demo, we built simulation buttons that advance the ride through each status."
-- Click **"Arrived at Pickup"** → confirm identity checks → **"Confirm Pickup"**
-> "The pickup confirmation has a two-step identity verification — the driver confirms the rider's name and a pickup PIN."
-- Click **"Simulate Trip Completion"**
-> "The ride is now complete. The driver's status goes back to 'available' and I'm returned to the queue, ready for the next ride."
-- **Jacob's screen should show the completion page**
+### Slide 6: Admin Panels (1.5 min)
 
-### 8. Flag the Driver (Jacob)
-**Jacob quickly does this part:**
-- On the completion page, click **Report an Issue**
-- Select "Unsafe driving", add details, submit
-> "That just wrote to the driver_flags table in Supabase. Let's see it from the admin side."
+Switch to Chrome Incognito (admin browser).
 
-**Cassie says:** "Derron, take it from here with the admin view."
+> **Derron** (or Jacob narrates): "Admin dashboard — all real Supabase data."
 
----
+- `/admin/drivers` — "Driver fleet. Search, filter by status."
+- `/admin/requests` — "Pending ride requests with status and type filters."
+- `/admin/rides` — "Active rides in progress."
+- `/admin/completed` — "Ride history."
+- `/admin/flags` — "Here's the flag Jacob just submitted."
+- Click Resolve on the flag
+> "Resolved with timestamp and admin notes."
 
-## Part 3: Derron — Admin Panels (2-3 min)
+### Slide 7-8: Edge Cases (1 min)
 
-**Derron talks while demoing on Chrome Incognito.**
+Share slides, talk through a few highlights:
 
-### 9. Admin Dashboard
-- Go to `/admin`
-> "The admin dashboard gives a bird's-eye view of the whole system. Let me walk through the data tables — all of these query real Supabase data."
+> "We handled race conditions with optimistic locking — if two drivers try to accept the same ride, only one wins. Fare split amounts are protected by a database trigger. All inputs go through Zod validation server-side."
 
-### 10. Drivers Table
-- Go to `/admin/drivers`
-> "Here's our driver fleet. We can search by name, filter by status — available, offline, on a trip. This is the drivers table with real data."
+**Live edge case demos** (pick 2-3):
+- Open a private window, go to `/book` without logging in → redirected to `/login`
+- Show empty driver queue when no rides are pending → "No ride requests right now"
+- (Optional) Run tests live:
 
-### 11. Ride Requests
-- Go to `/admin/requests`
-> "Pending ride requests. Admins can filter by status, request type — immediate vs scheduled — and child-safe requirements."
+```bash
+cd ultra-web && npx vitest run --reporter=verbose 2>&1 | tail -20
+```
 
-### 12. Active & Completed Rides
-- Go to `/admin/rides`
-> "Active rides currently in progress. This table shows rider, driver, origin, and status."
-- Go to `/admin/completed`
-> "Completed ride history. You can see the ride Jacob and Cassie just finished."
+### Slide 9: Testing (30 sec)
 
-### 13. Driver Flags
-- Go to `/admin/flags`
-> "And here's the flag Jacob just submitted — the complaint about the driver. I can filter by status and reason category."
-- Click **Resolve** on the flag
-> "Resolved. The admin can add notes and the flag gets timestamped with who reviewed it."
+> "190+ unit tests with Vitest, 30+ E2E tests with Playwright. TDD workflow — every test failed before we wrote the code."
 
 ---
 
-## Wrap-up (30 sec)
+## Part 2: Reflections (~5 min)
 
-**Jacob:**
-> "To summarize — we built the full backend for Ultra using Next.js server actions and Supabase. The rider can register, book rides, manage profiles and payment methods. The driver sees real ride requests and can accept and complete them. The admin monitors everything in real time. All of this is backed by PostgreSQL with row-level security, and the frontend updates live through Supabase Realtime."
+Share slides for each question. Each person presents one.
+
+### Slide 10: Jacob — "How effective was the LLM?"
+
+> "Really effective for the repetitive parts — Supabase queries, Zod schemas, RLS policies, type mappings. Claude generated all of that correctly on the first try most of the time."
+>
+> "The TDD cycle worked especially well. I'd tell Claude to write a failing test, confirm it failed, then it would write the minimum code to pass. That kept things focused."
+>
+> "Once we had one feature working — like ride scheduling — every subsequent feature followed the same pattern. Claude picked up on that and replicated it consistently."
+>
+> "In two weeks, it generated 8 database migrations, over 50 server actions, and 190+ tests."
+
+### Slide 11: Cassie — "What was wrong? What was hard to fix?"
+
+> "The biggest issue was the auth model. Claude kept accepting userId as a function parameter instead of reading from the session cookie. That's an identity spoofing risk. It took us several PRs to fix it everywhere — booking page, driver pages, ride completion."
+>
+> "Easier fixes: missing npm packages — leaflet and Stripe were referenced but never installed. Just needed `npm install`."
+>
+> "There was a race condition in fare split acceptance — it would read 'pending' status, then update by ID without rechecking. We fixed it with atomic WHERE predicates in the UPDATE."
+>
+> "The sneakiest bug was a demo state file that cached stale ride statuses. The completion page would show 'in progress' forever because it read from a temp file instead of the database."
+
+### Slide 12: Derron — "How did you verify completeness?"
+
+> "We mapped every user story to a GitHub issue and tracked them through PRs. Each PR got a code review — sometimes from us, sometimes from Claude."
+>
+> "The TDD workflow was key. Every behavior has a test that failed first. If it didn't fail, we rewrote the test."
+>
+> "We actually used Claude to write PR reviews too. It caught things like missing unit tests in the login PR, missing E2E tests in the middleware PR, and the auth model issues."
+>
+> "And tonight's demo proves it end-to-end — a rider can register, book a ride, a driver can accept and complete it, and an admin can monitor and resolve complaints. All against live Supabase."
+
+### Slide 13: Thank You
+
+> "That's Ultra — predictable, affordable rides. Thanks for watching."
 
 ---
 
@@ -130,9 +165,10 @@ Make sure `npm run dev` is running in `ultra-web/`.
 | Driver | driver1@ultra-app.test | UltraDriver2026! |
 | Admin | admin1@ultra-app.test | UltraAdmin2026! |
 
-## If Something Goes Wrong
+## Troubleshooting
 
-- **Ride stuck in "matching"**: Driver browser → `/queue` → refresh
-- **Page shows mock data**: Restart dev server (`npm run dev`)
-- **"No rider profile found"**: The user's `riders` row is missing — re-register
-- **Stripe form errors**: Use card `4242 4242 4242 4242`, exp `12/34`, CVC `123`
+- **Ride stuck in "matching"**: Driver → `/queue` → refresh
+- **Page shows mock data**: Restart `npm run dev`
+- **"No rider profile found"**: Re-register the account
+- **Stripe form**: Card `4242 4242 4242 4242`, exp `12/34`, CVC `123`
+- **Admin can't see flags**: Make sure you flagged a driver after ride completion
