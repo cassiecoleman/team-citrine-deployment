@@ -33,6 +33,12 @@ export default async function AdminRidesPage({
     sort: getValue(params.sort),
   }
 
+  // TODO(security): catch swallows all errors including Forbidden from
+  // requireAdminRole() and real Supabase outages. Non-admins can't reach
+  // this route today because middleware (#18) redirects them, so the
+  // fallback is a local-dev/demo convenience rather than a production
+  // vector — but worth differentiating env-missing vs real failure in
+  // a follow-up. Same pattern as /admin/requests (PR #73).
   let rides = adminRides
   try {
     rides = await getActiveRides(query)

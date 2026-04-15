@@ -38,6 +38,11 @@ export default async function AdminCompletedRidesPage({
     pageSize: '10',
   }
 
+  // TODO(security): same silent-fallback pattern as /admin/rides and
+  // /admin/requests — catch masks Forbidden + real outages. Middleware
+  // (#18) is the current trust boundary for /admin/*. Follow-up:
+  // surface real failures and differentiate env-missing from auth
+  // failure.
   let rides = adminCompletedRides
   let page = 1
   let totalPages = 0
