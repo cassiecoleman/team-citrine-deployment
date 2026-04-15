@@ -82,6 +82,67 @@ export async function ensureStripeCustomer(
   }
 }
 
+export interface CreateSetupIntentResult {
+  clientSecret: string;
+  setupIntentId: string;
+}
+
+/**
+ * Create a Stripe SetupIntent so the rider can save a payment method for
+ * future use (US26 / issue #54). Lazily creates the Stripe Customer via
+ * ensureStripeCustomer, then binds the SetupIntent to that customer with
+ * `usage: "off_session"` so the saved card can charge without the rider
+ * present (e.g., recurring ride fares).
+ */
+export async function createSetupIntent(
+  riderId: string
+): Promise<PaymentActionResult<CreateSetupIntentResult>> {
+  const customer = await ensureStripeCustomer(riderId);
+  if (!customer.success) return customer;
+
+  try {
+    const stripe = getStripeClient();
+    const intent = await stripe.setupIntents.create({
+      customer: customer.data.stripeCustomerId,
+      payment_method_types: ["card"],
+      usage: "off_session",
+      metadata: { riderId },
+    });
+
+    if (!intent.client_secret) {
+      return {
+        success: false,
+        error: "Stripe did not return a client_secret for the SetupIntent.",
+      };
+    }
+
+    return {
+      success: true,
+      data: {
+        clientSecret: intent.client_secret,
+        setupIntentId: intent.id,
+      },
+    };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    return {
+      success: false,
+      error: `Unable to start saved-card setup: ${message}`,
+    };
+  }
+}
+
+/**
+ * Client-called after stripe.confirmSetup() resolves. Placeholder today:
+ * Stripe is the source of truth for saved methods, so there's nothing to
+ * record locally. Reserved for future audit caching (issue #55).
+ */
+export async function recordSavedPaymentMethod(
+  paymentMethodId: string
+): Promise<PaymentActionResult<{ paymentMethodId: string }>> {
+  return { success: true, data: { paymentMethodId } };
+}
+
 export interface CreatePassPaymentIntentInput {
   planId: string;
   userId?: string;
