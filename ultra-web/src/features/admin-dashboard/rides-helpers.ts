@@ -103,9 +103,12 @@ export function filterAndSortActiveRides(
   rides: AdminRide[],
   query: ActiveRidesQuery
 ): AdminRide[] {
-  const normalizedSearch = query.search?.trim().toLowerCase() ?? ''
-  const normalizedStatus = query.status?.trim().toLowerCase() ?? 'all'
-  const sortMode = query.sort?.trim().toLowerCase() ?? 'started_desc'
+  // Use || not ?? here: missing URL params arrive as empty strings, and
+  // ?? only falls back on null/undefined. Empty status matched zero
+  // rides and rendered the page empty.
+  const normalizedSearch = (query.search?.trim() || '').toLowerCase()
+  const normalizedStatus = (query.status?.trim() || 'all').toLowerCase()
+  const sortMode = (query.sort?.trim() || 'started_desc').toLowerCase()
 
   const filtered = rides.filter((ride) => {
     const matchesSearch =
@@ -137,10 +140,11 @@ export function filterAndSortCompletedRides(
   rides: AdminCompletedRide[],
   query: CompletedRidesQuery
 ): AdminCompletedRide[] {
-  const normalizedSearch = query.search?.trim().toLowerCase() ?? ''
+  // Use || not ?? here (same reason as above).
+  const normalizedSearch = (query.search?.trim() || '').toLowerCase()
   const fareMin = query.fareMin ? Number(query.fareMin) : null
   const fareMax = query.fareMax ? Number(query.fareMax) : null
-  const sortMode = query.sort?.trim().toLowerCase() ?? 'completed_desc'
+  const sortMode = (query.sort?.trim() || 'completed_desc').toLowerCase()
 
   const filtered = rides.filter((ride) => {
     const matchesSearch =

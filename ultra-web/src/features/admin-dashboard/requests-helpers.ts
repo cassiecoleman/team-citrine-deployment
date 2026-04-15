@@ -71,13 +71,16 @@ export function applyAdminRequestFilters(
   requests: AdminRequest[],
   query: AdminRequestsQuery
 ): AdminRequest[] {
-  const normalizedSearch = query.search?.trim().toLowerCase() ?? ''
+  // Use || not ?? here: the page passes missing URL params as empty
+  // strings (not undefined), and ?? only falls back on null/undefined.
+  // An empty status would match no rides and render the page empty.
+  const normalizedSearch = (query.search?.trim() || '').toLowerCase()
   const normalizedStatus = normalizeStatusFilter(
-    query.status?.trim().toLowerCase() ?? 'all'
+    (query.status?.trim() || 'all').toLowerCase()
   )
-  const normalizedRequestType = query.requestType?.trim().toLowerCase() ?? 'all'
-  const normalizedChildSafe = query.childSafe?.trim().toLowerCase() ?? 'all'
-  const sortMode = query.sort?.trim().toLowerCase() ?? 'requested_desc'
+  const normalizedRequestType = (query.requestType?.trim() || 'all').toLowerCase()
+  const normalizedChildSafe = (query.childSafe?.trim() || 'all').toLowerCase()
+  const sortMode = (query.sort?.trim() || 'requested_desc').toLowerCase()
 
   const filtered = requests.filter((request) => {
     const matchesSearch =
