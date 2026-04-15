@@ -95,6 +95,9 @@ describe("driver trip operations", () => {
     mockLocationSelect.mockReset();
     mockLocationUpsertSelect.mockReset();
     mockHistoryInsert.mockResolvedValue({ error: null });
+    // Default: no busy ride for the driver (.in(...).maybeSingle() path
+    // in the new acceptTrip guard). Individual tests can override.
+    mockRideMaybeSingle.mockResolvedValue({ data: null, error: null });
     mockEq.mockClear();
     mockSelect.mockClear();
     mockRideUpdateEq.mockClear();

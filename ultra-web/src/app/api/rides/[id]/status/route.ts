@@ -1,7 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { matchDriver } from "@/features/ride-scheduling/actions";
 import { getRideStatus } from "@/features/ride-tracking/actions";
 import type { Database } from "@/types/supabase";
 
@@ -17,15 +16,11 @@ export async function GET(
 
   const ride = await getRideStatus(id);
 
-  if (ride.status === "matching") {
-    const matchResult = await matchDriver(id);
-    if (matchResult?.success) {
-      return NextResponse.json({
-        id: matchResult.data.id,
-        status: matchResult.data.status,
-      });
-    }
-  }
+  // Rides stay in `matching` status until a driver explicitly accepts via
+  // acceptTrip() from their /queue page. No server-side auto-matching —
+  // that was writing straight to `driver_en_route` and bypassing the
+  // driver-accept step, and let one driver get assigned to multiple
+  // simultaneous ride requests.
 
   const url = new URL(_request.url);
   if (url.searchParams.get("full") === "1") {
