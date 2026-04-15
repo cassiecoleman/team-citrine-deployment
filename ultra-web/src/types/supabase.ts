@@ -808,6 +808,7 @@ export type Database = {
           id: string
           name: string
           phone: string | null
+          stripe_customer_id: string | null
           updated_at: string
           updated_by: string | null
           user_id: string
@@ -821,6 +822,7 @@ export type Database = {
           id?: string
           name: string
           phone?: string | null
+          stripe_customer_id?: string | null
           updated_at?: string
           updated_by?: string | null
           user_id: string
@@ -834,6 +836,7 @@ export type Database = {
           id?: string
           name?: string
           phone?: string | null
+          stripe_customer_id?: string | null
           updated_at?: string
           updated_by?: string | null
           user_id?: string
