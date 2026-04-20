@@ -17,13 +17,21 @@ cd ultra-web
 npm install
 ```
 
-4. Start the development server:
+4. Copy `ultra-web/.env.local.example` to `ultra-web/.env.local`, then update
+   `.env.local` so it includes the full set of keys required by the app.
+   Keep it in sync with `.env.local.example` as new integrations land.
+
+   For the current backend and payment flows, that includes:
+   - Supabase keys: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_DB_URL`
+   - Stripe test keys: `STRIPE_SECRET_KEY`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
+
+5. Start the development server:
 
 ```bash
 npm run dev
 ```
 
-5. Open `http://localhost:3000` in your browser.
+6. Open `http://localhost:3000` in your browser.
 
 ## Available routes
 
@@ -58,6 +66,9 @@ npm run lint
 npm run test
 npm run test:e2e
 ```
+
+Stripe-backed pages and Playwright payment tests also require the Stripe test
+keys from `ultra-web/.env.local.example` to be present in `ultra-web/.env.local`.
 
 If Playwright asks for browser binaries on your machine, install them with:
 

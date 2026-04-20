@@ -4,6 +4,7 @@ import type { RideDetail } from "../types";
 import { useRideStatus } from "../use-ride-status";
 
 const removeChannel = vi.fn();
+const fetchMock = vi.fn();
 let realtimePayloadHandler: ((payload: { new: { status?: string } }) => void) | undefined;
 const subscribeStatusHandlers: Array<(status: string) => void> = [];
 const channels: Array<{
@@ -61,13 +62,25 @@ const baseRide: RideDetail = {
 afterEach(() => {
   realtimePayloadHandler = undefined;
   removeChannel.mockClear();
+  fetchMock.mockReset();
+  vi.unstubAllGlobals();
   subscribeStatusHandlers.length = 0;
   channels.length = 0;
   channelFactory.mockClear();
 });
 
 describe("useRideStatus", () => {
-  it("subscribes to ride updates and applies realtime status changes", () => {
+  it("subscribes to ride updates and applies realtime status changes", async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        id: "ride-1",
+        status: "driver_en_route",
+        driver: baseRide.driver,
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
     const { result, unmount } = renderHook(() =>
       useRideStatus({
         rideId: "ride-1",
@@ -79,11 +92,14 @@ describe("useRideStatus", () => {
     expect(channels[0]?.on).toHaveBeenCalledTimes(1);
     expect(channels[0]?.subscribe).toHaveBeenCalledTimes(1);
 
-    act(() => {
+    await act(async () => {
       realtimePayloadHandler?.({ new: { status: "driver_en_route" } });
     });
 
     expect(result.current.ride.status).toBe("en_route");
+    expect(fetchMock).toHaveBeenCalledWith("/api/rides/ride-1/status?full=1", {
+      cache: "no-store",
+    });
 
     unmount();
     expect(removeChannel).toHaveBeenCalledTimes(1);
