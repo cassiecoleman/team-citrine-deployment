@@ -100,6 +100,14 @@ Available seeded credentials after running those scripts:
 These scripts require `ultra-web/.env.local` to be populated with the
 Supabase values from `ultra-web/.env.local.example`.
 
+## Stripe Test Card
+
+For Stripe payment testing in test mode, use:
+
+- Visa: `4242424242424242`
+- CVC: any 3 digits
+- Expiration: any future date
+
 ## Notes
 
 - The driver screens are currently wireframes built inside the existing `ultra-web` app structure.
