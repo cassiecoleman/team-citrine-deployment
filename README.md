@@ -76,6 +76,30 @@ If Playwright asks for browser binaries on your machine, install them with:
 npx playwright install chromium
 ```
 
+## Seed Logins
+
+The repo includes Supabase seed scripts you can use to create known accounts
+for testing `/login`.
+
+From `ultra-web/`:
+
+```bash
+npx tsx scripts/seed-test-rider.ts
+npx tsx scripts/seed-test-driver.ts
+npx tsx scripts/seed-admins.ts
+```
+
+Available seeded credentials after running those scripts:
+
+- Rider: `rider1@ultra-app.test` / `UltraRider2026!`
+- Driver: `driver1@ultra-app.test` / `UltraDriver2026!`
+- Admin: `admin1@ultra-app.test` / `UltraAdmin2026!`
+- Admin: `admin2@ultra-app.test` / `UltraAdmin2026!`
+- Admin: `admin3@ultra-app.test` / `UltraAdmin2026!`
+
+These scripts require `ultra-web/.env.local` to be populated with the
+Supabase values from `ultra-web/.env.local.example`.
+
 ## Notes
 
 - The driver screens are currently wireframes built inside the existing `ultra-web` app structure.
