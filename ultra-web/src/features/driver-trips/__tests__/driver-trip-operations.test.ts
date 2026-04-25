@@ -3,6 +3,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   acceptTrip,
+  arriveAtPickup,
   completeTrip,
   confirmPickup,
   getAssignedTrips,
@@ -157,6 +158,130 @@ describe("driver trip operations", () => {
     );
   });
 
+  it("rejects acceptTrip when the payload is invalid", async () => {
+    const result = await acceptTrip({
+      rideId: "",
+      driverUserId: "",
+    });
+
+    expect(result).toEqual({
+      success: false,
+      error: "Invalid trip acceptance request.",
+    });
+  });
+
+  it("rejects acceptTrip when the driver account is missing", async () => {
+    mockSingle.mockResolvedValueOnce({
+      data: null,
+      error: { message: "missing driver" },
+    });
+
+    const result = await acceptTrip({
+      rideId: "ride-22",
+      driverUserId: "auth-user-1",
+    });
+
+    expect(result).toEqual({
+      success: false,
+      error: "Driver account was not found.",
+    });
+  });
+
+  it("rejects acceptTrip when the driver already has an active ride", async () => {
+    mockSingle.mockResolvedValueOnce({
+      data: { id: "driver-1" },
+      error: null,
+    });
+    mockRideMaybeSingle.mockResolvedValueOnce({
+      data: { id: "ride-busy" },
+      error: null,
+    });
+
+    const result = await acceptTrip({
+      rideId: "ride-22",
+      driverUserId: "auth-user-1",
+    });
+
+    expect(result).toEqual({
+      success: false,
+      error: "You already have an active trip. Complete it before accepting another.",
+    });
+  });
+
+  it("rejects acceptTrip when the target ride cannot be loaded", async () => {
+    mockSingle.mockResolvedValueOnce({
+      data: { id: "driver-1" },
+      error: null,
+    });
+    mockRideSelectSingle.mockResolvedValueOnce({
+      data: null,
+      error: { message: "missing ride" },
+    });
+
+    const result = await acceptTrip({
+      rideId: "ride-22",
+      driverUserId: "auth-user-1",
+    });
+
+    expect(result).toEqual({
+      success: false,
+      error: "Unable to find the trip to accept.",
+    });
+  });
+
+  it("rejects acceptTrip when the conditional update errors", async () => {
+    mockSingle.mockResolvedValueOnce({
+      data: { id: "driver-1" },
+      error: null,
+    });
+    mockRideSelectSingle.mockResolvedValueOnce({
+      data: { id: "ride-22", status: "matching", version: 4 },
+      error: null,
+    });
+    mockRideUpdateMaybeSingle.mockResolvedValueOnce({
+      data: null,
+      error: { message: "update failed" },
+    });
+
+    const result = await acceptTrip({
+      rideId: "ride-22",
+      driverUserId: "auth-user-1",
+    });
+
+    expect(result).toEqual({
+      success: false,
+      error: "Unable to accept this trip right now.",
+    });
+  });
+
+  it("rejects acceptTrip when history cannot be recorded", async () => {
+    mockSingle.mockResolvedValueOnce({
+      data: { id: "driver-1" },
+      error: null,
+    });
+    mockRideSelectSingle.mockResolvedValueOnce({
+      data: { id: "ride-22", status: "matching", version: 3 },
+      error: null,
+    });
+    mockRideUpdateMaybeSingle.mockResolvedValueOnce({
+      data: { id: "ride-22", status: "driver_en_route", driver_id: "driver-1" },
+      error: null,
+    });
+    mockHistoryInsert.mockResolvedValueOnce({
+      error: { message: "history failed" },
+    });
+
+    const result = await acceptTrip({
+      rideId: "ride-22",
+      driverUserId: "auth-user-1",
+    });
+
+    expect(result).toEqual({
+      success: false,
+      error: "Unable to record trip status history.",
+    });
+  });
+
   it("resolves a fallback driver user id when env defaults are not set", async () => {
     const originalDefaultDriverUserId = process.env.ULTRA_DEFAULT_DRIVER_USER_ID;
     const originalDefaultUserId = process.env.ULTRA_DEFAULT_USER_ID;
@@ -232,6 +357,37 @@ describe("driver trip operations", () => {
     );
   });
 
+  it("rejects updateDriverLocation when the payload is invalid", async () => {
+    const result = await updateDriverLocation({
+      driverUserId: "auth-user-1",
+      lat: 95,
+      lng: -90.05,
+    });
+
+    expect(result).toEqual({
+      success: false,
+      error: "Invalid driver location payload.",
+    });
+  });
+
+  it("rejects updateDriverLocation when the driver account is missing", async () => {
+    mockSingle.mockResolvedValueOnce({
+      data: null,
+      error: { message: "missing driver" },
+    });
+
+    const result = await updateDriverLocation({
+      driverUserId: "auth-user-1",
+      lat: 35.15,
+      lng: -90.05,
+    });
+
+    expect(result).toEqual({
+      success: false,
+      error: "Driver account was not found.",
+    });
+  });
+
   it("throttles driver location updates faster than 3 seconds", async () => {
     mockSingle.mockResolvedValueOnce({
       data: { id: "driver-1" },
@@ -262,6 +418,126 @@ describe("driver trip operations", () => {
       },
     });
     expect(mockLocationUpsert).not.toHaveBeenCalled();
+  });
+
+  it("continues location upsert when the latest-location lookup errors", async () => {
+    mockSingle.mockResolvedValueOnce({
+      data: { id: "driver-1" },
+      error: null,
+    });
+    mockLocationSelectMaybeSingle.mockResolvedValueOnce({
+      data: null,
+      error: { message: "lookup failed" },
+    });
+    mockLocationUpsert.mockReturnValueOnce({
+      select: mockLocationUpsertSelect,
+    });
+    mockLocationSelectSingle.mockResolvedValueOnce({
+      data: {
+        driver_id: "driver-1",
+        lat: 35.15,
+        lng: -90.05,
+        heading: null,
+        recorded_at: "2026-04-13T20:00:04.000Z",
+      },
+      error: null,
+    });
+
+    const result = await updateDriverLocation({
+      driverUserId: "auth-user-1",
+      lat: 35.15,
+      lng: -90.05,
+      recordedAt: "2026-04-13T20:00:04.000Z",
+    });
+
+    expect(result).toEqual({
+      success: true,
+      data: {
+        driverId: "driver-1",
+        lat: 35.15,
+        lng: -90.05,
+        heading: null,
+        recordedAt: "2026-04-13T20:00:04.000Z",
+        throttled: false,
+      },
+    });
+  });
+
+  it("uses a generated timestamp and null heading when optional location fields are omitted", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-04-13T20:00:10.000Z"));
+
+    mockSingle.mockResolvedValueOnce({
+      data: { id: "driver-1" },
+      error: null,
+    });
+    mockLocationSelectMaybeSingle.mockResolvedValueOnce({
+      data: null,
+      error: null,
+    });
+    mockLocationUpsert.mockReturnValueOnce({
+      select: mockLocationUpsertSelect,
+    });
+    mockLocationSelectSingle.mockResolvedValueOnce({
+      data: {
+        driver_id: "driver-1",
+        lat: 35.15,
+        lng: -90.05,
+        heading: null,
+        recorded_at: "2026-04-13T20:00:10.000Z",
+      },
+      error: null,
+    });
+
+    const result = await updateDriverLocation({
+      driverUserId: "auth-user-1",
+      lat: 35.15,
+      lng: -90.05,
+    });
+
+    expect(result).toEqual({
+      success: true,
+      data: {
+        driverId: "driver-1",
+        lat: 35.15,
+        lng: -90.05,
+        heading: null,
+        recordedAt: "2026-04-13T20:00:10.000Z",
+        throttled: false,
+      },
+    });
+
+    vi.useRealTimers();
+  });
+
+  it("rejects updateDriverLocation when the upsert fails", async () => {
+    mockSingle.mockResolvedValueOnce({
+      data: { id: "driver-1" },
+      error: null,
+    });
+    mockLocationSelectMaybeSingle.mockResolvedValueOnce({
+      data: null,
+      error: null,
+    });
+    mockLocationUpsert.mockReturnValueOnce({
+      select: mockLocationUpsertSelect,
+    });
+    mockLocationSelectSingle.mockResolvedValueOnce({
+      data: null,
+      error: { message: "upsert failed" },
+    });
+
+    const result = await updateDriverLocation({
+      driverUserId: "auth-user-1",
+      lat: 35.15,
+      lng: -90.05,
+      recordedAt: "2026-04-13T20:00:04.000Z",
+    });
+
+    expect(result).toEqual({
+      success: false,
+      error: "Unable to update driver location.",
+    });
   });
 
   it("rejects a trip by returning it to matching and clearing the assigned driver", async () => {
@@ -305,6 +581,238 @@ describe("driver trip operations", () => {
         change_source: "driver",
       }),
     );
+  });
+
+  it("rejects rejectTrip when the payload is invalid", async () => {
+    const result = await rejectTrip({
+      rideId: "",
+      driverUserId: "",
+    });
+
+    expect(result).toEqual({
+      success: false,
+      error: "Invalid trip rejection request.",
+    });
+  });
+
+  it("rejects rejectTrip when the driver account is missing", async () => {
+    mockSingle.mockResolvedValueOnce({
+      data: null,
+      error: { message: "missing driver" },
+    });
+
+    const result = await rejectTrip({
+      rideId: "ride-22",
+      driverUserId: "auth-user-1",
+    });
+
+    expect(result).toEqual({
+      success: false,
+      error: "Driver account was not found.",
+    });
+  });
+
+  it("rejects rejectTrip when the ride cannot be loaded", async () => {
+    mockSingle.mockResolvedValueOnce({
+      data: { id: "driver-1" },
+      error: null,
+    });
+    mockRideSelectSingle.mockResolvedValueOnce({
+      data: null,
+      error: { message: "missing ride" },
+    });
+
+    const result = await rejectTrip({
+      rideId: "ride-22",
+      driverUserId: "auth-user-1",
+    });
+
+    expect(result).toEqual({
+      success: false,
+      error: "Unable to find the trip to reject.",
+    });
+  });
+
+  it("rejects rejectTrip when the ride update fails", async () => {
+    mockSingle.mockResolvedValueOnce({
+      data: { id: "driver-1" },
+      error: null,
+    });
+    mockRideSelectSingle.mockResolvedValueOnce({
+      data: { id: "ride-22", status: "driver_en_route", driver_id: "driver-1" },
+      error: null,
+    });
+    mockRideUpdateSingle.mockResolvedValueOnce({
+      data: null,
+      error: { message: "update failed" },
+    });
+
+    const result = await rejectTrip({
+      rideId: "ride-22",
+      driverUserId: "auth-user-1",
+    });
+
+    expect(result).toEqual({
+      success: false,
+      error: "Unable to reject this trip right now.",
+    });
+  });
+
+  it("uses the default rejection reason when none is supplied", async () => {
+    mockSingle.mockResolvedValueOnce({
+      data: { id: "driver-1" },
+      error: null,
+    });
+    mockRideSelectSingle.mockResolvedValueOnce({
+      data: { id: "ride-22", status: "matching", driver_id: "driver-1" },
+      error: null,
+    });
+    mockRideUpdateSingle.mockResolvedValueOnce({
+      data: { id: "ride-22", status: "matching" },
+      error: null,
+    });
+
+    const result = await rejectTrip({
+      rideId: "ride-22",
+      driverUserId: "auth-user-1",
+    });
+
+    expect(result).toEqual({
+      success: true,
+      data: {
+        id: "ride-22",
+        status: "matching",
+      },
+    });
+    expect(mockHistoryInsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        change_reason: "Trip rejected by driver",
+      }),
+    );
+  });
+
+  it("rejects rejectTrip when history cannot be recorded", async () => {
+    mockSingle.mockResolvedValueOnce({
+      data: { id: "driver-1" },
+      error: null,
+    });
+    mockRideSelectSingle.mockResolvedValueOnce({
+      data: { id: "ride-22", status: "driver_en_route", driver_id: "driver-1" },
+      error: null,
+    });
+    mockRideUpdateSingle.mockResolvedValueOnce({
+      data: { id: "ride-22", status: "matching" },
+      error: null,
+    });
+    mockHistoryInsert.mockResolvedValueOnce({
+      error: { message: "history failed" },
+    });
+
+    const result = await rejectTrip({
+      rideId: "ride-22",
+      driverUserId: "auth-user-1",
+    });
+
+    expect(result).toEqual({
+      success: false,
+      error: "Unable to record trip status history.",
+    });
+  });
+
+  it("marks a driver_en_route ride as arrived and records history", async () => {
+    mockSingle.mockResolvedValueOnce({
+      data: { id: "driver-1" },
+      error: null,
+    });
+    mockRideUpdateSingle.mockResolvedValueOnce({
+      data: { id: "ride-22", status: "arrived" },
+      error: null,
+    });
+
+    const result = await arriveAtPickup({
+      rideId: "ride-22",
+      driverUserId: "auth-user-1",
+    });
+
+    expect(result).toEqual({
+      success: true,
+      data: {
+        id: "ride-22",
+        status: "arrived",
+      },
+    });
+    expect(mockHistoryInsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        ride_id: "ride-22",
+        from_status: "driver_en_route",
+        to_status: "arrived",
+      }),
+    );
+  });
+
+  it("rejects arriveAtPickup when the driver account is missing", async () => {
+    mockSingle.mockResolvedValueOnce({
+      data: null,
+      error: { message: "missing driver" },
+    });
+
+    const result = await arriveAtPickup({
+      rideId: "ride-22",
+      driverUserId: "auth-user-1",
+    });
+
+    expect(result).toEqual({
+      success: false,
+      error: "Driver account was not found.",
+    });
+  });
+
+  it("rejects arriveAtPickup when the ride cannot be moved to arrived", async () => {
+    mockSingle.mockResolvedValueOnce({
+      data: { id: "driver-1" },
+      error: null,
+    });
+    mockRideUpdateSingle.mockResolvedValueOnce({
+      data: null,
+      error: { message: "not en route" },
+    });
+
+    const result = await arriveAtPickup({
+      rideId: "ride-22",
+      driverUserId: "auth-user-1",
+    });
+
+    expect(result).toEqual({
+      success: false,
+      error: "Unable to mark arrival — ride may not be en route.",
+    });
+  });
+
+  it("still returns success when arriveAtPickup history insert fails", async () => {
+    mockSingle.mockResolvedValueOnce({
+      data: { id: "driver-1" },
+      error: null,
+    });
+    mockRideUpdateSingle.mockResolvedValueOnce({
+      data: { id: "ride-22", status: "arrived" },
+      error: null,
+    });
+    mockHistoryInsert.mockResolvedValueOnce({
+      error: { message: "history failed" },
+    });
+
+    const result = await arriveAtPickup({
+      rideId: "ride-22",
+      driverUserId: "auth-user-1",
+    });
+
+    expect(result).toEqual({
+      success: true,
+      data: {
+        id: "ride-22",
+        status: "arrived",
+      },
+    });
   });
 
   it("rejects rejectTrip when assigned to a different driver", async () => {
@@ -392,6 +900,143 @@ describe("driver trip operations", () => {
     );
   });
 
+  it("rejects confirmPickup when the payload is invalid", async () => {
+    const result = await confirmPickup({
+      rideId: "",
+      driverUserId: "",
+    });
+
+    expect(result).toEqual({
+      success: false,
+      error: "Invalid pickup confirmation request.",
+    });
+  });
+
+  it("rejects confirmPickup when the driver account is missing", async () => {
+    mockSingle.mockResolvedValueOnce({
+      data: null,
+      error: { message: "missing driver" },
+    });
+
+    const result = await confirmPickup({
+      rideId: "ride-22",
+      driverUserId: "auth-user-1",
+    });
+
+    expect(result).toEqual({
+      success: false,
+      error: "Driver account was not found.",
+    });
+  });
+
+  it("rejects confirmPickup when the ride cannot be loaded", async () => {
+    mockSingle.mockResolvedValueOnce({
+      data: { id: "driver-1" },
+      error: null,
+    });
+    mockRideSelectSingle.mockResolvedValueOnce({
+      data: null,
+      error: { message: "missing ride" },
+    });
+
+    const result = await confirmPickup({
+      rideId: "ride-22",
+      driverUserId: "auth-user-1",
+    });
+
+    expect(result).toEqual({
+      success: false,
+      error: "Unable to find the trip to confirm pickup.",
+    });
+  });
+
+  it("confirms pickup when the current ride status is arrived", async () => {
+    mockSingle.mockResolvedValueOnce({
+      data: { id: "driver-1" },
+      error: null,
+    });
+    mockRideSelectSingle.mockResolvedValueOnce({
+      data: { id: "ride-22", status: "arrived", driver_id: "driver-1" },
+      error: null,
+    });
+    mockRideUpdateSingle.mockResolvedValueOnce({
+      data: { id: "ride-22", status: "in_progress" },
+      error: null,
+    });
+
+    const result = await confirmPickup({
+      rideId: "ride-22",
+      driverUserId: "auth-user-1",
+    });
+
+    expect(result).toEqual({
+      success: true,
+      data: {
+        id: "ride-22",
+        status: "in_progress",
+      },
+    });
+    expect(mockHistoryInsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        from_status: "arrived",
+        to_status: "in_progress",
+      }),
+    );
+  });
+
+  it("rejects confirmPickup when the ride update fails", async () => {
+    mockSingle.mockResolvedValueOnce({
+      data: { id: "driver-1" },
+      error: null,
+    });
+    mockRideSelectSingle.mockResolvedValueOnce({
+      data: { id: "ride-22", status: "arrived", driver_id: "driver-1" },
+      error: null,
+    });
+    mockRideUpdateSingle.mockResolvedValueOnce({
+      data: null,
+      error: { message: "update failed" },
+    });
+
+    const result = await confirmPickup({
+      rideId: "ride-22",
+      driverUserId: "auth-user-1",
+    });
+
+    expect(result).toEqual({
+      success: false,
+      error: "Unable to confirm pickup right now.",
+    });
+  });
+
+  it("rejects confirmPickup when history cannot be recorded", async () => {
+    mockSingle.mockResolvedValueOnce({
+      data: { id: "driver-1" },
+      error: null,
+    });
+    mockRideSelectSingle.mockResolvedValueOnce({
+      data: { id: "ride-22", status: "driver_en_route", driver_id: "driver-1" },
+      error: null,
+    });
+    mockRideUpdateSingle.mockResolvedValueOnce({
+      data: { id: "ride-22", status: "in_progress" },
+      error: null,
+    });
+    mockHistoryInsert.mockResolvedValueOnce({
+      error: { message: "history failed" },
+    });
+
+    const result = await confirmPickup({
+      rideId: "ride-22",
+      driverUserId: "auth-user-1",
+    });
+
+    expect(result).toEqual({
+      success: false,
+      error: "Unable to record trip status history.",
+    });
+  });
+
   it("completes a trip with fare_final and sets the driver availability back to available", async () => {
     mockSingle.mockResolvedValueOnce({
       data: { id: "driver-1" },
@@ -440,6 +1085,144 @@ describe("driver trip operations", () => {
         change_source: "driver",
       }),
     );
+  });
+
+  it("rejects completeTrip when the payload is invalid", async () => {
+    const result = await completeTrip({
+      rideId: "",
+      driverUserId: "",
+      fareFinal: -1,
+    });
+
+    expect(result).toEqual({
+      success: false,
+      error: "Invalid trip completion request.",
+    });
+  });
+
+  it("rejects completeTrip when the driver account is missing", async () => {
+    mockSingle.mockResolvedValueOnce({
+      data: null,
+      error: { message: "missing driver" },
+    });
+
+    const result = await completeTrip({
+      rideId: "ride-22",
+      driverUserId: "auth-user-1",
+      fareFinal: 19.5,
+    });
+
+    expect(result).toEqual({
+      success: false,
+      error: "Driver account was not found.",
+    });
+  });
+
+  it("rejects completeTrip when the ride cannot be loaded", async () => {
+    mockSingle.mockResolvedValueOnce({
+      data: { id: "driver-1" },
+      error: null,
+    });
+    mockRideSelectSingle.mockResolvedValueOnce({
+      data: null,
+      error: { message: "missing ride" },
+    });
+
+    const result = await completeTrip({
+      rideId: "ride-22",
+      driverUserId: "auth-user-1",
+      fareFinal: 19.5,
+    });
+
+    expect(result).toEqual({
+      success: false,
+      error: "Unable to find the trip to complete.",
+    });
+  });
+
+  it("rejects completeTrip when the ride update fails", async () => {
+    mockSingle.mockResolvedValueOnce({
+      data: { id: "driver-1" },
+      error: null,
+    });
+    mockRideSelectSingle.mockResolvedValueOnce({
+      data: { id: "ride-22", status: "in_progress", driver_id: "driver-1" },
+      error: null,
+    });
+    mockRideUpdateSingle.mockResolvedValueOnce({
+      data: null,
+      error: { message: "update failed" },
+    });
+
+    const result = await completeTrip({
+      rideId: "ride-22",
+      driverUserId: "auth-user-1",
+      fareFinal: 19.5,
+    });
+
+    expect(result).toEqual({
+      success: false,
+      error: "Unable to complete this trip right now.",
+    });
+  });
+
+  it("rejects completeTrip when history cannot be recorded", async () => {
+    mockSingle.mockResolvedValueOnce({
+      data: { id: "driver-1" },
+      error: null,
+    });
+    mockRideSelectSingle.mockResolvedValueOnce({
+      data: { id: "ride-22", status: "in_progress", driver_id: "driver-1" },
+      error: null,
+    });
+    mockRideUpdateSingle.mockResolvedValueOnce({
+      data: { id: "ride-22", status: "completed", fare_final: 19.5 },
+      error: null,
+    });
+    mockHistoryInsert.mockResolvedValueOnce({
+      error: { message: "history failed" },
+    });
+
+    const result = await completeTrip({
+      rideId: "ride-22",
+      driverUserId: "auth-user-1",
+      fareFinal: 19.5,
+    });
+
+    expect(result).toEqual({
+      success: false,
+      error: "Unable to record trip status history.",
+    });
+  });
+
+  it("falls back to the requested fare when completeTrip does not return fare_final", async () => {
+    mockSingle.mockResolvedValueOnce({
+      data: { id: "driver-1" },
+      error: null,
+    });
+    mockRideSelectSingle.mockResolvedValueOnce({
+      data: { id: "ride-22", status: "in_progress", driver_id: "driver-1" },
+      error: null,
+    });
+    mockRideUpdateSingle.mockResolvedValueOnce({
+      data: { id: "ride-22", status: "completed", fare_final: null },
+      error: null,
+    });
+
+    const result = await completeTrip({
+      rideId: "ride-22",
+      driverUserId: "auth-user-1",
+      fareFinal: 31.25,
+    });
+
+    expect(result).toEqual({
+      success: true,
+      data: {
+        id: "ride-22",
+        status: "completed",
+        fareFinal: 31.25,
+      },
+    });
   });
 
   it("returns current driver status with active trip id when one exists", async () => {
@@ -493,6 +1276,83 @@ describe("driver trip operations", () => {
     expect(mockDriverUpdateEq).toHaveBeenCalledWith("id", "driver-1");
   });
 
+  it("rejects toggleDriverAvailability when the payload is invalid", async () => {
+    const result = await toggleDriverAvailability({
+      driverUserId: "",
+      nextStatus: "offline",
+    });
+
+    expect(result).toEqual({
+      success: false,
+      error: "Invalid availability request.",
+    });
+  });
+
+  it("rejects toggleDriverAvailability when the driver account is missing", async () => {
+    mockSingle.mockResolvedValueOnce({
+      data: null,
+      error: { message: "missing driver" },
+    });
+
+    const result = await toggleDriverAvailability({
+      driverUserId: "auth-user-1",
+      nextStatus: "offline",
+    });
+
+    expect(result).toEqual({
+      success: false,
+      error: "Driver account was not found.",
+    });
+  });
+
+  it("toggles a driver from offline to available", async () => {
+    mockSingle.mockResolvedValueOnce({
+      data: { id: "driver-1", status: "offline" },
+      error: null,
+    });
+
+    const result = await toggleDriverAvailability({
+      driverUserId: "auth-user-1",
+      nextStatus: "available",
+    });
+
+    expect(result).toEqual({
+      success: true,
+      data: {
+        driverId: "driver-1",
+        status: "available",
+      },
+    });
+    expect(mockDriverUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: "available",
+      }),
+    );
+  });
+
+  it("returns success from toggleDriverAvailability even though the update result is unchecked", async () => {
+    mockSingle.mockResolvedValueOnce({
+      data: { id: "driver-1", status: "available" },
+      error: null,
+    });
+    mockDriverUpdateEq.mockResolvedValueOnce({
+      error: { message: "update failed" },
+    });
+
+    const result = await toggleDriverAvailability({
+      driverUserId: "auth-user-1",
+      nextStatus: "offline",
+    });
+
+    expect(result).toEqual({
+      success: true,
+      data: {
+        driverId: "driver-1",
+        status: "offline",
+      },
+    });
+  });
+
   it("fetches pending assigned trips from matching rides", async () => {
     mockSingle.mockResolvedValueOnce({
       data: { id: "driver-1" },
@@ -523,6 +1383,107 @@ describe("driver trip operations", () => {
     }
     expect(mockFrom).toHaveBeenCalledWith("drivers");
     expect(mockFrom).toHaveBeenCalledWith("rides");
+  });
+
+  it("returns an empty assigned-trip list when no matching rides exist", async () => {
+    mockSingle.mockResolvedValueOnce({
+      data: { id: "driver-1" },
+      error: null,
+    });
+    mockRideOrder.mockResolvedValueOnce({
+      data: [],
+      error: null,
+    });
+
+    const result = await getAssignedTrips("auth-user-1");
+
+    expect(result).toEqual({
+      success: true,
+      data: [],
+    });
+  });
+
+  it("rejects getAssignedTrips when the driver user id is missing", async () => {
+    const result = await getAssignedTrips("");
+
+    expect(result).toEqual({
+      success: false,
+      error: "Driver user id is required.",
+    });
+  });
+
+  it("rejects getAssignedTrips when the driver account is missing", async () => {
+    mockSingle.mockResolvedValueOnce({
+      data: null,
+      error: { message: "missing driver" },
+    });
+
+    const result = await getAssignedTrips("auth-user-1");
+
+    expect(result).toEqual({
+      success: false,
+      error: "Driver account was not found.",
+    });
+  });
+
+  it("rejects getAssignedTrips when the rides query fails", async () => {
+    mockSingle.mockResolvedValueOnce({
+      data: { id: "driver-1" },
+      error: null,
+    });
+    mockRideOrder.mockResolvedValueOnce({
+      data: null,
+      error: { message: "query failed" },
+    });
+
+    const result = await getAssignedTrips("auth-user-1");
+
+    expect(result).toEqual({
+      success: false,
+      error: "Unable to load assigned trips right now.",
+    });
+  });
+
+  it("maps assigned trip rider names from array joins and falls back when absent", async () => {
+    mockSingle.mockResolvedValueOnce({
+      data: { id: "driver-1" },
+      error: null,
+    });
+    mockRideOrder.mockResolvedValueOnce({
+      data: [
+        {
+          id: "ride-1",
+          pickup_address: "1150 West End Ave",
+          dropoff_address: "245 River Pkwy",
+          fare_estimate: 24.75,
+          estimated_duration_min: 26,
+          distance_miles: 7.4,
+          riders: [{ name: "Aisha R." }],
+        },
+        {
+          id: "ride-2",
+          pickup_address: "80 Oak Ave",
+          dropoff_address: "City Hall",
+          fare_estimate: null,
+          estimated_duration_min: null,
+          distance_miles: null,
+          riders: null,
+        },
+      ],
+      error: null,
+    });
+
+    const result = await getAssignedTrips("auth-user-1");
+
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(result.data[0]?.riderName).toBe("Aisha R.");
+    expect(result.data[1]).toMatchObject({
+      riderName: "Rider",
+      offeredFare: 0,
+      estimatedTripTimeMin: 0,
+      mileageMi: 0,
+    });
   });
 
   it("rejects acceptTrip when the ride is not currently in matching", async () => {

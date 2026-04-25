@@ -1,7 +1,28 @@
 import { writeFile } from "node:fs/promises";
 import { expect, test } from "@playwright/test";
+import {
+  createTestDriver,
+  createTestRider,
+  deleteTestUser,
+  injectAuthenticatedSession,
+  type TestDriver,
+  type TestUser,
+} from "./helpers/auth";
 
 test.describe("rider + driver connected flow", () => {
+  let rider: TestUser;
+  let driver: TestDriver;
+
+  test.beforeAll(async () => {
+    rider = await createTestRider("connected-flow-rider");
+    driver = await createTestDriver("connected-flow-driver");
+  });
+
+  test.afterAll(async () => {
+    await deleteTestUser(rider.userId);
+    await deleteTestUser(driver.userId);
+  });
+
   test("connects rider and driver and advances rider status after driver actions", async ({
     page,
   }) => {
@@ -9,6 +30,8 @@ test.describe("rider + driver connected flow", () => {
 
     const riderPage = page;
     const driverPage = await page.context().newPage();
+    await injectAuthenticatedSession(riderPage.context(), rider);
+    await injectAuthenticatedSession(driverPage.context(), driver);
 
     await riderPage.goto("/ride/new-ride");
     await expect(riderPage.getByText("Finding your driver")).toBeVisible();

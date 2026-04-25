@@ -1,13 +1,31 @@
+import { writeFile } from "node:fs/promises";
 import { expect, test } from "@playwright/test";
+import {
+  createTestDriver,
+  deleteTestUser,
+  injectAuthenticatedSession,
+  type TestDriver,
+} from "./helpers/auth";
 
 test.describe("driver flows", () => {
+  let driver: TestDriver;
+
+  test.beforeAll(async () => {
+    driver = await createTestDriver("driver-flows");
+  });
+
+  test.afterAll(async () => {
+    await deleteTestUser(driver.userId);
+  });
+
   test("lets the driver toggle shift status and open the active trip", async ({
     page,
   }) => {
+    await injectAuthenticatedSession(page.context(), driver);
     await page.goto("/driver");
 
     await expect(page.getByText("Driver shift")).toBeVisible();
-    await expect(page.getByText("Marcus W.")).toBeVisible();
+    await expect(page.getByText("E2E Driver driver-flows")).toBeVisible();
     await expect(page.getByText("Trips today")).toBeVisible();
     await expect(
       page.getByText("Available for the next assignment"),
@@ -32,6 +50,8 @@ test.describe("driver flows", () => {
   test("handles queue review, navigation, and pickup confirmation", async ({
     page,
   }) => {
+    await writeFile("/tmp/ultra-demo-ride-state.json", JSON.stringify({ "new-ride": "matching" }), "utf-8");
+    await injectAuthenticatedSession(page.context(), driver);
     await page.goto("/queue");
 
     await expect(page).toHaveURL(/\/queue$/);
@@ -45,9 +65,13 @@ test.describe("driver flows", () => {
     await expect(page.getByText("Assignment declined")).toBeVisible();
 
     await page.getByRole("button", { name: "Review Next Request" }).click();
+    const acceptTripHref = await page
+      .getByRole("link", { name: "Accept Trip" })
+      .getAttribute("href");
+    expect(acceptTripHref).toMatch(/^\/trip\/.+/);
     await page.getByRole("link", { name: "Accept Trip" }).click();
 
-    await expect(page).toHaveURL(/\/trip\/new-ride$/);
+    await expect(page).toHaveURL(new RegExp(`${acceptTripHref}$`));
     await expect(page.getByText("Pickup pin ready")).toBeVisible();
 
     await page
@@ -61,7 +85,7 @@ test.describe("driver flows", () => {
       .getByRole("link", { name: "Advance to pickup confirmation" })
       .click();
 
-    await expect(page).toHaveURL(/\/trip\/new-ride\/pickup$/);
+    await expect(page).toHaveURL(new RegExp(`${acceptTripHref}/pickup$`));
     await expect(page.getByText("At pickup pin")).toBeVisible();
 
     const confirmPickupButton = page.getByRole("button", {

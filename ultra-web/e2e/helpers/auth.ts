@@ -56,6 +56,10 @@ export interface TestUser {
   password: string;
 }
 
+export interface TestDriver extends TestUser {
+  driverId: string;
+}
+
 /**
  * Create (or reuse) a confirmed test rider. Uses the service role key, so this
  * only runs from the Playwright process — never from the browser.
@@ -89,6 +93,70 @@ export async function createTestRider(emailPrefix = "e2e-rider"): Promise<TestUs
     .insert({ user_id: data.user.id, name: `E2E Rider ${emailPrefix}` });
 
   return { userId: data.user.id, email, password };
+}
+
+export async function createTestDriver(emailPrefix = "e2e-driver"): Promise<TestDriver> {
+  assertEnv();
+
+  const admin = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
+  const email = `${emailPrefix}-${Date.now()}@ultra.test`;
+  const password = "e2e-test-password-123";
+
+  const { data, error } = await admin.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+  });
+
+  if (error || !data.user) {
+    throw new Error(`Failed to create test driver: ${error?.message}`);
+  }
+
+  await admin
+    .from("user_roles")
+    .insert({ user_id: data.user.id, role: "driver" });
+
+  const { data: driverRow, error: driverError } = await admin
+    .from("drivers")
+    .insert({ user_id: data.user.id, name: `E2E Driver ${emailPrefix}`, status: "available" })
+    .select("id")
+    .single();
+
+  if (driverError || !driverRow) {
+    throw new Error(`Failed to create driver row: ${driverError?.message}`);
+  }
+
+  return { userId: data.user.id, email, password, driverId: driverRow.id };
+}
+
+export async function seedChildProfiles(
+  userId: string,
+  children: Array<{ name: string; emergencyContactName: string }>
+): Promise<void> {
+  assertEnv();
+
+  const admin = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
+  const { data: riderRow, error: riderError } = await admin
+    .from("riders")
+    .select("id")
+    .eq("user_id", userId)
+    .single();
+
+  if (riderError || !riderRow) {
+    throw new Error(`Failed to load rider row for child profiles: ${riderError?.message}`);
+  }
+
+  for (const child of children) {
+    const { error } = await admin.from("rider_profiles").insert({
+      rider_id: riderRow.id,
+      name: child.name,
+      is_child: true,
+      notes: child.emergencyContactName,
+    });
+    if (error) {
+      throw new Error(`Failed to seed child profile ${child.name}: ${error.message}`);
+    }
+  }
 }
 
 /**

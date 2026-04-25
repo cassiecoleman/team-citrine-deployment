@@ -23,6 +23,13 @@ vi.mock("next/link", () => ({
   ),
 }));
 
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({
+    replace: vi.fn(),
+    refresh: vi.fn(),
+  }),
+}));
+
 const shiftSummary: DriverShiftSummary = {
   driverName: "Marcus W.",
   status: "online",

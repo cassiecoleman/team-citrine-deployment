@@ -19,6 +19,7 @@ const mockRatingUpsertSelect = vi.fn(() => ({ single: mockRatingUpsertSingle }))
 const mockRatingUpsert = vi.fn(() => ({ select: mockRatingUpsertSelect }));
 
 const mockHistoryInsert = vi.fn();
+const mockDriverFlagInsert = vi.fn();
 
 const mockFrom = vi.fn((table: string) => {
   if (table === "riders") {
@@ -37,6 +38,10 @@ const mockFrom = vi.fn((table: string) => {
     return { insert: mockHistoryInsert };
   }
 
+  if (table === "driver_flags") {
+    return { insert: mockDriverFlagInsert };
+  }
+
   return {};
 });
 
@@ -47,6 +52,7 @@ vi.mock("@/lib/supabase-server", () => ({
 describe("ride completion actions", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockDriverFlagInsert.mockResolvedValue({ error: null });
   });
 
   it("fetches ride summary for a completed rider-owned ride", async () => {
@@ -157,7 +163,7 @@ describe("ride completion actions", () => {
     );
   });
 
-  it("persists a driver issue report in ride history", async () => {
+  it("persists a driver issue report in driver_flags and ride history", async () => {
     mockSingle
       .mockResolvedValueOnce({ data: { id: "rider-1" }, error: null })
       .mockResolvedValueOnce({
@@ -169,6 +175,7 @@ describe("ride completion actions", () => {
         },
         error: null,
       });
+    mockDriverFlagInsert.mockResolvedValueOnce({ error: null });
     mockHistoryInsert.mockResolvedValueOnce({ error: null });
 
     const result = await flagDriver(
@@ -184,6 +191,15 @@ describe("ride completion actions", () => {
       success: true,
       data: { rideId: "ride-1", category: "Unsafe driving" },
     });
+    expect(mockFrom).toHaveBeenCalledWith("driver_flags");
+    expect(mockDriverFlagInsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        driver_id: "driver-1",
+        reporter_id: "rider-1",
+        ride_id: "ride-1",
+        reason: "safety",
+      }),
+    );
     expect(mockFrom).toHaveBeenCalledWith("ride_status_history");
     expect(mockHistoryInsert).toHaveBeenCalledWith(
       expect.objectContaining({

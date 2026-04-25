@@ -29,6 +29,9 @@ const createChannel = () => {
 };
 
 const channelFactory = vi.fn(() => createChannel());
+const fetchMock = vi.fn();
+
+global.fetch = fetchMock as typeof fetch;
 
 vi.mock("@/lib/supabase", () => ({
   createClient: () => ({
@@ -64,10 +67,26 @@ afterEach(() => {
   subscribeStatusHandlers.length = 0;
   channels.length = 0;
   channelFactory.mockClear();
+  fetchMock.mockReset();
 });
 
 describe("useRideStatus", () => {
   it("subscribes to ride updates and applies realtime status changes", () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        id: "ride-1",
+        status: "driver_en_route",
+        driver: {
+          id: "driver-1",
+          name: "Marcus W.",
+          rating: 4.9,
+          vehicle: "Toyota Camry",
+          licensePlate: "ULT-2026",
+        },
+      }),
+    });
+
     const { result, unmount } = renderHook(() =>
       useRideStatus({
         rideId: "ride-1",
@@ -79,14 +98,15 @@ describe("useRideStatus", () => {
     expect(channels[0]?.on).toHaveBeenCalledTimes(1);
     expect(channels[0]?.subscribe).toHaveBeenCalledTimes(1);
 
-    act(() => {
+    return act(async () => {
       realtimePayloadHandler?.({ new: { status: "driver_en_route" } });
+      await Promise.resolve();
+    }).then(() => {
+      expect(result.current.ride.status).toBe("en_route");
+
+      unmount();
+      expect(removeChannel).toHaveBeenCalledTimes(1);
     });
-
-    expect(result.current.ride.status).toBe("en_route");
-
-    unmount();
-    expect(removeChannel).toHaveBeenCalledTimes(1);
   });
 
   it("re-subscribes when the realtime channel reports an error", () => {
