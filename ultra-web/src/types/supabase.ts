@@ -804,6 +804,9 @@ export type Database = {
           avatar_url: string | null
           created_at: string
           created_by: string | null
+          current_lat: number | null
+          current_lng: number | null
+          current_location_updated_at: string | null
           deleted_at: string | null
           id: string
           name: string
@@ -818,6 +821,9 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           created_by?: string | null
+          current_lat?: number | null
+          current_lng?: number | null
+          current_location_updated_at?: string | null
           deleted_at?: string | null
           id?: string
           name: string
@@ -832,6 +838,9 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           created_by?: string | null
+          current_lat?: number | null
+          current_lng?: number | null
+          current_location_updated_at?: string | null
           deleted_at?: string | null
           id?: string
           name?: string
