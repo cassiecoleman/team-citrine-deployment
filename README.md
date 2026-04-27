@@ -17,13 +17,21 @@ cd ultra-web
 npm install
 ```
 
-4. Start the development server:
+4. Copy `ultra-web/.env.local.example` to `ultra-web/.env.local`, then update
+   `.env.local` so it includes the full set of keys required by the app.
+   Keep it in sync with `.env.local.example` as new integrations land.
+
+   For the current backend and payment flows, that includes:
+   - Supabase keys: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_DB_URL`
+   - Stripe test keys: `STRIPE_SECRET_KEY`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
+
+5. Start the development server:
 
 ```bash
 npm run dev
 ```
 
-5. Open `http://localhost:3000` in your browser.
+6. Open `http://localhost:3000` in your browser.
 
 ## Available routes
 
@@ -59,11 +67,46 @@ npm run test
 npm run test:e2e
 ```
 
+Stripe-backed pages and Playwright payment tests also require the Stripe test
+keys from `ultra-web/.env.local.example` to be present in `ultra-web/.env.local`.
+
 If Playwright asks for browser binaries on your machine, install them with:
 
 ```bash
 npx playwright install chromium
 ```
+
+## Seed Logins
+
+The repo includes Supabase seed scripts you can use to create known accounts
+for testing `/login`.
+
+From `ultra-web/`:
+
+```bash
+npx tsx scripts/seed-test-rider.ts
+npx tsx scripts/seed-test-driver.ts
+npx tsx scripts/seed-admins.ts
+```
+
+Available seeded credentials after running those scripts:
+
+- Rider: `rider1@ultra-app.test` / `UltraRider2026!`
+- Driver: `driver1@ultra-app.test` / `UltraDriver2026!`
+- Admin: `admin1@ultra-app.test` / `UltraAdmin2026!`
+- Admin: `admin2@ultra-app.test` / `UltraAdmin2026!`
+- Admin: `admin3@ultra-app.test` / `UltraAdmin2026!`
+
+These scripts require `ultra-web/.env.local` to be populated with the
+Supabase values from `ultra-web/.env.local.example`.
+
+## Stripe Test Card
+
+For Stripe payment testing in test mode, use:
+
+- Visa: `4242424242424242`
+- CVC: any 3 digits
+- Expiration: any future date
 
 ## Notes
 

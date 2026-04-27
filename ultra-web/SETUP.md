@@ -15,13 +15,16 @@ npm install
 
 ## 2. Environment Variables
 
-Copy the example env file and fill in your Supabase credentials:
+Copy the example env file first, then make sure `.env.local` stays aligned with
+the full variable list in `.env.local.example`:
 
 ```bash
 cp .env.local.example .env.local
 ```
 
-Edit `.env.local` with the values from the Supabase dashboard:
+Edit `.env.local` with the values for every variable in `.env.local.example`.
+Today that means Supabase credentials plus the Stripe test keys used by the
+payment pages and Playwright payment specs:
 
 | Variable | Where to Find |
 |----------|---------------|
@@ -29,6 +32,8 @@ Edit `.env.local` with the values from the Supabase dashboard:
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase Dashboard > Settings > API > `anon` key |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase Dashboard > Settings > API > `service_role` key |
 | `SUPABASE_DB_URL` | Supabase Dashboard > Settings > Database > Connection string (Session mode, port 5432) |
+| `STRIPE_SECRET_KEY` | Stripe Dashboard > Developers > API keys > Secret key (test mode) |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Stripe Dashboard > Developers > API keys > Publishable key (test mode) |
 
 Ask Jacob for the actual values if you don't have dashboard access.
 

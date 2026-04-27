@@ -18,6 +18,7 @@ const mockRatingUpsertSingle = vi.fn();
 const mockRatingUpsertSelect = vi.fn(() => ({ single: mockRatingUpsertSingle }));
 const mockRatingUpsert = vi.fn(() => ({ select: mockRatingUpsertSelect }));
 
+const mockDriverFlagInsert = vi.fn();
 const mockHistoryInsert = vi.fn();
 
 const mockFrom = vi.fn((table: string) => {
@@ -35,6 +36,10 @@ const mockFrom = vi.fn((table: string) => {
 
   if (table === "ride_status_history") {
     return { insert: mockHistoryInsert };
+  }
+
+  if (table === "driver_flags") {
+    return { insert: mockDriverFlagInsert };
   }
 
   return {};
@@ -169,6 +174,7 @@ describe("ride completion actions", () => {
         },
         error: null,
       });
+    mockDriverFlagInsert.mockResolvedValueOnce({ error: null });
     mockHistoryInsert.mockResolvedValueOnce({ error: null });
 
     const result = await flagDriver(
@@ -184,6 +190,17 @@ describe("ride completion actions", () => {
       success: true,
       data: { rideId: "ride-1", category: "Unsafe driving" },
     });
+    expect(mockFrom).toHaveBeenCalledWith("driver_flags");
+    expect(mockDriverFlagInsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        driver_id: "driver-1",
+        reporter_id: "rider-1",
+        ride_id: "ride-1",
+        reason: "safety",
+        details: "Hard braking near school zone.",
+        created_by: "user-1",
+      }),
+    );
     expect(mockFrom).toHaveBeenCalledWith("ride_status_history");
     expect(mockHistoryInsert).toHaveBeenCalledWith(
       expect.objectContaining({
