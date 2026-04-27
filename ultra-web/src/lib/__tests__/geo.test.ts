@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { haversineMiles } from "../geo";
+import { geocodeAddress, haversineMiles } from "../geo";
 
 describe("haversineMiles", () => {
   it("returns 0 for identical points", () => {
@@ -16,5 +16,58 @@ describe("haversineMiles", () => {
     const ab = haversineMiles(35.1495, -90.049, 35.1174, -89.9711);
     const ba = haversineMiles(35.1174, -89.9711, 35.1495, -90.049);
     expect(ab).toBeCloseTo(ba, 9);
+  });
+});
+
+describe("geocodeAddress", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("returns lat/lng/displayName for a Memphis address from Nominatim", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => [
+        {
+          lat: "35.1495",
+          lon: "-90.049",
+          display_name: "1150 West End Ave, Memphis, TN, USA",
+        },
+      ],
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await geocodeAddress("1150 West End Ave, Memphis, TN");
+
+    expect(result).toEqual({
+      lat: 35.1495,
+      lng: -90.049,
+      displayName: "1150 West End Ave, Memphis, TN, USA",
+    });
+
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(String(url)).toContain("https://nominatim.openstreetmap.org/search");
+    expect(String(url)).toContain("format=json");
+    expect(String(url)).toContain("1150");
+    expect(init?.headers?.["User-Agent"]).toMatch(/ultra/i);
+  });
+
+  it("returns null when Nominatim has no results", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => [],
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await geocodeAddress("nowhereville xyz");
+    expect(result).toBeNull();
+  });
+
+  it("returns null on a non-OK response", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: false, status: 503 });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await geocodeAddress("1150 West End Ave");
+    expect(result).toBeNull();
   });
 });
