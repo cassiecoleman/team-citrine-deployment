@@ -8,3 +8,4 @@ node_modules
 mise.toml
 ultra-web/playwright-report/
 ultra-web/test-results/
+AGENTS.md
