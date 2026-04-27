@@ -24,6 +24,9 @@ export default function AdminPageShell({ title, description, children }: AdminPa
           <Link href="/admin/rides" className="block rounded-lg px-3 py-2 hover:bg-primary-light/30">
             Rides
           </Link>
+          <Link href="/admin/live-map" className="block rounded-lg px-3 py-2 hover:bg-primary-light/30">
+            Live Map
+          </Link>
           <Link href="/admin/completed" className="block rounded-lg px-3 py-2 hover:bg-primary-light/30">
             Completed
           </Link>
