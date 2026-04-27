@@ -99,7 +99,7 @@ describe("GET /api/rides/[id]/status", () => {
     expect(getRideStatus).toHaveBeenCalledWith("ride-1");
   });
 
-  it("tries to match a driver when the ride is still in matching status", async () => {
+  it("does not try to match a driver when the ride is still in matching status", async () => {
     getUser.mockResolvedValue({
       data: { user: { id: "user-1" } },
       error: null,
