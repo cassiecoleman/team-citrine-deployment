@@ -3,7 +3,7 @@
 import { z } from "zod";
 
 import { geocodeAddress } from "@/lib/geo";
-import { createServiceRoleClient } from "@/lib/supabase-server";
+import { createServerAuthClient, createServiceRoleClient } from "@/lib/supabase-server";
 
 export type LocationActionResult<T> =
   | { success: true; data: T }
@@ -181,6 +181,53 @@ export async function getActiveLiveLocations(
         };
       }),
     },
+  };
+}
+
+export interface SubmitLocationState {
+  success: boolean;
+  error: string | null;
+  lat?: number;
+  lng?: number;
+  updatedAt?: string;
+}
+
+export async function submitMyLocation(
+  _prev: SubmitLocationState,
+  input: FormData | { lat?: number; lng?: number; address?: string },
+): Promise<SubmitLocationState> {
+  let payload: { lat?: number; lng?: number; address?: string };
+  if (input instanceof FormData) {
+    const address = (input.get("address") as string | null)?.trim() || undefined;
+    const latRaw = (input.get("lat") as string | null)?.trim();
+    const lngRaw = (input.get("lng") as string | null)?.trim();
+    payload = {
+      address,
+      lat: latRaw ? Number(latRaw) : undefined,
+      lng: lngRaw ? Number(lngRaw) : undefined,
+    };
+  } else {
+    payload = input;
+  }
+
+  const auth = await createServerAuthClient();
+  const {
+    data: { user },
+  } = await auth.auth.getUser();
+  if (!user) {
+    return { success: false, error: "Not signed in." };
+  }
+
+  const result = await updateMyLocation(payload, user.id);
+  if (!result.success) {
+    return { success: false, error: result.error };
+  }
+  return {
+    success: true,
+    error: null,
+    lat: result.data.lat,
+    lng: result.data.lng,
+    updatedAt: result.data.updatedAt,
   };
 }
 
