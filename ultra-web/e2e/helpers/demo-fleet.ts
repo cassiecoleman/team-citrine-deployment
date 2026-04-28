@@ -402,6 +402,104 @@ export async function submitRideRating(input: {
   );
 }
 
+/**
+ * Bulk-create one matching-status ride per rider in the input list.
+ * Used by the demo to pre-populate the request queue so admin sees
+ * pending matching rides before any driver claims them.
+ */
+export async function prepareRidePool(
+  riders: Array<{
+    riderId: string;
+    pickupLat: number;
+    pickupLng: number;
+    dropoffLat: number;
+    dropoffLng: number;
+    pickupAddress?: string;
+    dropoffAddress?: string;
+  }>,
+): Promise<Map<string, string>> {
+  const sb = admin();
+  const rows = riders.map((r) => ({
+    rider_id: r.riderId,
+    pickup_address: r.pickupAddress ?? "Pickup",
+    pickup_lat: r.pickupLat,
+    pickup_lng: r.pickupLng,
+    dropoff_address: r.dropoffAddress ?? "Dropoff",
+    dropoff_lat: r.dropoffLat,
+    dropoff_lng: r.dropoffLng,
+    fare_estimate: 22.5,
+    estimated_duration_min: 18,
+    distance_miles: 5,
+    status: "matching",
+  }));
+  const { data, error } = await sb.from("rides").insert(rows).select("id, rider_id");
+  if (error || !data) throw new Error(`prepareRidePool: ${error?.message}`);
+  const map = new Map<string, string>();
+  for (const row of data) map.set(String(row.rider_id), String(row.id));
+  return map;
+}
+
+/**
+ * Atomically claim the oldest pending matching ride and assign it to
+ * the given driver (transitions matching → driver_en_route). Returns
+ * null when there are no more pending rides.
+ */
+export async function claimNextPendingRide(driverId: string): Promise<{
+  rideId: string;
+  riderId: string;
+  pickupLat: number;
+  pickupLng: number;
+  dropoffLat: number;
+  dropoffLng: number;
+} | null> {
+  const sb = admin();
+  // Oldest pending first.
+  const { data: candidate } = await sb
+    .from("rides")
+    .select("id, rider_id, pickup_lat, pickup_lng, dropoff_lat, dropoff_lng")
+    .eq("status", "matching")
+    .is("driver_id", null)
+    .order("requested_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  if (!candidate) return null;
+
+  // Conditional update so two parallel claims can't grab the same row.
+  const { data: claimed, error } = await sb
+    .from("rides")
+    .update({
+      driver_id: driverId,
+      status: "driver_en_route",
+      matched_at: new Date().toISOString(),
+    })
+    .eq("id", candidate.id)
+    .eq("status", "matching")
+    .is("driver_id", null)
+    .select("id, rider_id, pickup_lat, pickup_lng, dropoff_lat, dropoff_lng")
+    .maybeSingle();
+
+  if (error || !claimed) {
+    // Race lost — let the worker try again.
+    return claimNextPendingRide(driverId);
+  }
+
+  await sb.from("ride_status_history").insert({
+    ride_id: claimed.id,
+    new_status: "driver_en_route",
+    change_source: "demo",
+    change_reason: "demo claim from pool",
+  });
+
+  return {
+    rideId: String(claimed.id),
+    riderId: String(claimed.rider_id),
+    pickupLat: Number(claimed.pickup_lat),
+    pickupLng: Number(claimed.pickup_lng),
+    dropoffLat: Number(claimed.dropoff_lat),
+    dropoffLng: Number(claimed.dropoff_lng),
+  };
+}
+
 export async function flagDriverForRide(input: {
   rideId: string;
   riderId: string;
