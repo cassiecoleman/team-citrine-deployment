@@ -9,6 +9,8 @@ loadEnvLocalIfMissing([
   "NEXT_PUBLIC_SUPABASE_URL",
   "NEXT_PUBLIC_SUPABASE_ANON_KEY",
   "SUPABASE_SERVICE_ROLE_KEY",
+  "STRIPE_SECRET_KEY",
+  "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY",
 ]);
 
 function loadEnvLocalIfMissing(requiredKeys: string[]): void {
@@ -56,18 +58,20 @@ export interface TestUser {
   password: string;
 }
 
-export interface TestDriver extends TestUser {
-  driverId: string;
+function createAdminClient() {
+  assertEnv();
+  return createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
 }
 
 /**
  * Create (or reuse) a confirmed test rider. Uses the service role key, so this
  * only runs from the Playwright process — never from the browser.
  */
-export async function createTestRider(emailPrefix = "e2e-rider"): Promise<TestUser> {
-  assertEnv();
-
-  const admin = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
+export async function createTestRider(
+  emailPrefix = "e2e-rider",
+  options?: { name?: string }
+): Promise<TestUser> {
+  const admin = createAdminClient();
   const email = `${emailPrefix}-${Date.now()}@ultra.test`;
   const password = "e2e-test-password-123";
 
@@ -90,15 +94,19 @@ export async function createTestRider(emailPrefix = "e2e-rider"): Promise<TestUs
   // "No rider profile found for this account."
   await admin
     .from("riders")
-    .insert({ user_id: data.user.id, name: `E2E Rider ${emailPrefix}` });
+    .insert({
+      user_id: data.user.id,
+      name: options?.name ?? `E2E Rider ${emailPrefix}`,
+    });
 
   return { userId: data.user.id, email, password };
 }
 
-export async function createTestDriver(emailPrefix = "e2e-driver"): Promise<TestDriver> {
-  assertEnv();
-
-  const admin = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
+export async function createTestDriver(
+  emailPrefix = "e2e-driver",
+  options?: { name?: string; status?: "available" | "offline" }
+): Promise<TestUser> {
+  const admin = createAdminClient();
   const email = `${emailPrefix}-${Date.now()}@ultra.test`;
   const password = "e2e-test-password-123";
 
@@ -112,51 +120,104 @@ export async function createTestDriver(emailPrefix = "e2e-driver"): Promise<Test
     throw new Error(`Failed to create test driver: ${error?.message}`);
   }
 
-  await admin
-    .from("user_roles")
-    .insert({ user_id: data.user.id, role: "driver" });
+  await admin.from("user_roles").insert({ user_id: data.user.id, role: "driver" });
+  await admin.from("drivers").insert({
+    user_id: data.user.id,
+    name: options?.name ?? "Marcus W.",
+    status: options?.status ?? "available",
+    rating: 4.9,
+    total_ratings: 12,
+    vehicle_make: "Toyota",
+    vehicle_model: "Camry",
+    vehicle_color: "Blue",
+    vehicle_year: 2022,
+    license_plate: "ULT-2026",
+  });
 
-  const { data: driverRow, error: driverError } = await admin
-    .from("drivers")
-    .insert({ user_id: data.user.id, name: `E2E Driver ${emailPrefix}`, status: "available" })
-    .select("id")
-    .single();
-
-  if (driverError || !driverRow) {
-    throw new Error(`Failed to create driver row: ${driverError?.message}`);
-  }
-
-  return { userId: data.user.id, email, password, driverId: driverRow.id };
+  return { userId: data.user.id, email, password };
 }
 
-export async function seedChildProfiles(
-  userId: string,
-  children: Array<{ name: string; emergencyContactName: string }>
-): Promise<void> {
-  assertEnv();
-
-  const admin = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
-  const { data: riderRow, error: riderError } = await admin
+export async function getRiderIdForUser(userId: string): Promise<string> {
+  const admin = createAdminClient();
+  const { data, error } = await admin
     .from("riders")
     .select("id")
     .eq("user_id", userId)
     .single();
 
-  if (riderError || !riderRow) {
-    throw new Error(`Failed to load rider row for child profiles: ${riderError?.message}`);
+  if (error || !data) {
+    throw new Error(`Failed to resolve rider id for ${userId}: ${error?.message}`);
   }
 
-  for (const child of children) {
-    const { error } = await admin.from("rider_profiles").insert({
-      rider_id: riderRow.id,
-      name: child.name,
+  return data.id;
+}
+
+export async function createChildProfileFixture(input: {
+  riderUserId: string;
+  name: string;
+  emergencyContactName?: string;
+}): Promise<string> {
+  const admin = createAdminClient();
+  const riderId = await getRiderIdForUser(input.riderUserId);
+  const { data, error } = await admin
+    .from("rider_profiles")
+    .insert({
+      rider_id: riderId,
+      name: input.name,
       is_child: true,
-      notes: child.emergencyContactName,
-    });
-    if (error) {
-      throw new Error(`Failed to seed child profile ${child.name}: ${error.message}`);
-    }
+      notes: input.emergencyContactName ?? null,
+    })
+    .select("id")
+    .single();
+
+  if (error || !data) {
+    throw new Error(`Failed to create child profile: ${error?.message}`);
   }
+
+  return data.id;
+}
+
+export async function createMatchingRideFixture(input: {
+  riderUserId: string;
+  pickupAddress?: string;
+  dropoffAddress?: string;
+  fareEstimate?: number;
+  estimatedDurationMin?: number;
+  distanceMiles?: number;
+}): Promise<string> {
+  const admin = createAdminClient();
+  const riderId = await getRiderIdForUser(input.riderUserId);
+  const { data, error } = await admin
+    .from("rides")
+    .insert({
+      rider_id: riderId,
+      pickup_address: input.pickupAddress ?? "1150 West End Ave",
+      pickup_lat: 35.1495,
+      pickup_lng: -90.049,
+      dropoff_address: input.dropoffAddress ?? "245 River Pkwy",
+      dropoff_lat: 35.1174,
+      dropoff_lng: -89.9711,
+      fare_estimate: input.fareEstimate ?? 24.75,
+      estimated_duration_min: input.estimatedDurationMin ?? 26,
+      distance_miles: input.distanceMiles ?? 7.4,
+      status: "matching",
+    })
+    .select("id")
+    .single();
+
+  if (error || !data) {
+    throw new Error(`Failed to create matching ride: ${error?.message}`);
+  }
+
+  return data.id;
+}
+
+export async function deleteRide(rideId: string): Promise<void> {
+  const admin = createAdminClient();
+  await admin.from("ride_status_history").delete().eq("ride_id", rideId);
+  await admin.from("ride_ratings").delete().eq("ride_id", rideId);
+  await admin.from("driver_flags").delete().eq("ride_id", rideId);
+  await admin.from("rides").delete().eq("id", rideId);
 }
 
 /**
@@ -236,8 +297,10 @@ export async function deleteTestUser(userId: string): Promise<void> {
   if (riderRow?.id) {
     // ride_passes.rider_id has no ON DELETE CASCADE, so delete first.
     await admin.from("ride_passes").delete().eq("rider_id", riderRow.id);
+    await admin.from("rider_profiles").delete().eq("rider_id", riderRow.id);
   }
 
+  await admin.from("drivers").delete().eq("user_id", userId);
   await admin.from("user_roles").delete().eq("user_id", userId);
   // Deleting the auth user cascades to riders via ON DELETE CASCADE.
   await admin.auth.admin.deleteUser(userId);

@@ -4,6 +4,7 @@ import {
   toggleDriverAvailability,
 } from "@/features/driver-trips/actions";
 import { DriverShiftBoard } from "@/features/driver-trips/components/DriverShiftBoard";
+import { LocationEntryCard } from "@/features/location/components/LocationEntryCard";
 
 export default async function DriverHomePage({
   searchParams,
@@ -33,5 +34,12 @@ export default async function DriverHomePage({
         }
       : summary;
 
-  return <DriverShiftBoard summary={summaryWithFallbackToggle} />;
+  return (
+    <div className="flex flex-col gap-4">
+      <DriverShiftBoard summary={summaryWithFallbackToggle} />
+      <div className="px-4 pb-4">
+        <LocationEntryCard />
+      </div>
+    </div>
+  );
 }

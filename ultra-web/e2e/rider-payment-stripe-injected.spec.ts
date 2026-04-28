@@ -96,20 +96,44 @@ test.describe("Issue #31 — ride pass Stripe Elements (session-injected)", () =
     const paymentFrame = page.frameLocator(
       'iframe[src*="elements-inner-accessory-target"]'
     );
+    const cardNumberInput = paymentFrame.locator('input[autocomplete="cc-number"]');
+    const cardExpInput = paymentFrame.locator('input[autocomplete="cc-exp"]');
+    const cardCvcInput = paymentFrame.locator('input[autocomplete="cc-csc"]');
+    const subscribeButton = page.getByRole("button", { name: /subscribe|pay/i });
 
-    await paymentFrame
-      .locator('input[autocomplete="cc-number"]')
-      .pressSequentially(TEST_CARD_NUMBER.replace(/\s/g, ""), { delay: 10 });
-    await paymentFrame
-      .locator('input[autocomplete="cc-exp"]')
-      .pressSequentially(TEST_CARD_EXP.replace(/[\s/]/g, ""), { delay: 10 });
-    await paymentFrame
-      .locator('input[autocomplete="cc-csc"]')
-      .pressSequentially(TEST_CARD_CVC, { delay: 10 });
+    await expect(cardNumberInput).toBeVisible({ timeout: 15_000 });
+    await expect(cardExpInput).toBeVisible({ timeout: 15_000 });
+    await expect(cardCvcInput).toBeVisible({ timeout: 15_000 });
+
+    await cardNumberInput.pressSequentially(TEST_CARD_NUMBER.replace(/\s/g, ""), {
+      delay: 10,
+    });
+    await cardExpInput.pressSequentially(TEST_CARD_EXP.replace(/[\s/]/g, ""), {
+      delay: 10,
+    });
+    await cardCvcInput.pressSequentially(TEST_CARD_CVC, { delay: 10 });
+
+    await expect(subscribeButton).toBeEnabled();
 
     // Force-click to bypass Stripe's "developer tools" floating overlay
     // which intercepts normal click events in the bottom-right corner.
-    await page.getByRole("button", { name: /subscribe|pay/i }).click({ force: true });
+    await subscribeButton.click({ force: true });
+
+    const paymentError = page.locator(".border-red-300.bg-red-50");
+    const checkoutResult = await Promise.race([
+      page.waitForURL(/\/passes\/active/, { timeout: 30_000 }).then(
+        () => "active" as const,
+      ),
+      paymentError
+        .waitFor({ state: "visible", timeout: 30_000 })
+        .then(() => "error" as const)
+        .catch(() => null),
+    ]);
+
+    if (checkoutResult === "error") {
+      const message = (await paymentError.textContent())?.trim() ?? "Unknown payment error";
+      throw new Error(`Ride pass checkout did not complete: ${message}`);
+    }
 
     // stripe.confirmPayment() with test card 4242... auto-succeeds; the
     // client then calls confirmPassPurchase() and routes to /passes/active.

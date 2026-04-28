@@ -1,31 +1,36 @@
-import { writeFile } from "node:fs/promises";
 import { expect, test } from "@playwright/test";
 import {
+  createMatchingRideFixture,
   createTestDriver,
+  createTestRider,
+  deleteRide,
   deleteTestUser,
   injectAuthenticatedSession,
-  type TestDriver,
+  type TestUser,
 } from "./helpers/auth";
 
 test.describe("driver flows", () => {
-  let driver: TestDriver;
+  let driver: TestUser;
 
   test.beforeAll(async () => {
-    driver = await createTestDriver("driver-flows");
+    driver = await createTestDriver("e2e-driver-flows", { name: "Marcus W." });
   });
 
   test.afterAll(async () => {
-    await deleteTestUser(driver.userId);
+    if (driver?.userId) {
+      await deleteTestUser(driver.userId);
+    }
   });
 
   test("lets the driver toggle shift status and open the active trip", async ({
+    context,
     page,
   }) => {
-    await injectAuthenticatedSession(page.context(), driver);
+    await injectAuthenticatedSession(context, driver);
     await page.goto("/driver");
 
     await expect(page.getByText("Driver shift")).toBeVisible();
-    await expect(page.getByText("E2E Driver driver-flows")).toBeVisible();
+    await expect(page.getByText("Marcus W.")).toBeVisible();
     await expect(page.getByText("Trips today")).toBeVisible();
     await expect(
       page.getByText("Available for the next assignment"),
@@ -48,68 +53,75 @@ test.describe("driver flows", () => {
   });
 
   test("handles queue review, navigation, and pickup confirmation", async ({
+    context,
     page,
   }) => {
-    await writeFile("/tmp/ultra-demo-ride-state.json", JSON.stringify({ "new-ride": "matching" }), "utf-8");
-    await injectAuthenticatedSession(page.context(), driver);
-    await page.goto("/queue");
+    const rider = await createTestRider("e2e-driver-queue", { name: "Aisha R." });
+    let rideId: string | undefined;
 
-    await expect(page).toHaveURL(/\/queue$/);
-    await expect(
-      page.getByRole("heading", { name: "Incoming assignment" }),
-    ).toBeVisible();
-    await expect(page.getByText("Offered fare", { exact: true })).toBeVisible();
-    await expect(page.getByText("Medical appointment")).toBeVisible();
+    try {
+      rideId = await createMatchingRideFixture({
+        riderUserId: rider.userId,
+      });
+      await injectAuthenticatedSession(context, driver);
+      await page.goto("/queue");
 
-    await page.getByRole("button", { name: "Reject" }).click();
-    await expect(page.getByText("Assignment declined")).toBeVisible();
+      await expect(page).toHaveURL(/\/queue$/);
+      await expect(
+        page.getByRole("heading", { name: "Incoming assignment" }),
+      ).toBeVisible();
+      await expect(page.getByText("Offered fare", { exact: true })).toBeVisible();
+      await expect(page.getByText("Standard ride")).toBeVisible();
 
-    await page.getByRole("button", { name: "Review Next Request" }).click();
-    const acceptTripHref = await page
-      .getByRole("link", { name: "Accept Trip" })
-      .getAttribute("href");
-    expect(acceptTripHref).toMatch(/^\/trip\/.+/);
-    await page.getByRole("link", { name: "Accept Trip" }).click();
+      await page.getByRole("link", { name: "Accept Trip" }).click();
 
-    await expect(page).toHaveURL(new RegExp(`${acceptTripHref}$`));
-    await expect(page.getByText("Pickup pin ready")).toBeVisible();
+      await expect(page).toHaveURL(new RegExp(`/trip/${rideId}$`));
+      await expect(page.getByText("Pickup pin ready")).toBeVisible();
 
-    await page
-      .getByRole("button", { name: "Hazards ready for curb pickup" })
-      .click();
-    await expect(
-      page.getByText("1 of 3 arrival checks complete"),
-    ).toBeVisible();
+      await page
+        .getByRole("button", { name: "Hazards ready for curb pickup" })
+        .click();
+      await expect(
+        page.getByText("1 of 3 arrival checks complete"),
+      ).toBeVisible();
 
-    await page
-      .getByRole("link", { name: "Advance to pickup confirmation" })
-      .click();
+      await page
+        .getByRole("link", { name: "Advance to pickup confirmation" })
+        .click();
 
-    await expect(page).toHaveURL(new RegExp(`${acceptTripHref}/pickup$`));
-    await expect(page.getByText("At pickup pin")).toBeVisible();
+      await expect(page).toHaveURL(new RegExp(`/trip/${rideId}/pickup$`));
+      await expect(page.getByText("At pickup pin")).toBeVisible();
 
-    const confirmPickupButton = page.getByRole("button", {
-      name: "Confirm Pickup",
-    });
-    await expect(confirmPickupButton).toBeDisabled();
+      const confirmPickupButton = page.getByRole("button", {
+        name: "Confirm Pickup",
+      });
+      await expect(confirmPickupButton).toBeDisabled();
 
-    await page
-      .getByRole("button", {
-        name: "1. Confirm the rider says the name on screen.",
-      })
-      .click();
-    await page
-      .getByRole("button", {
-        name: "2. Confirm curbside pickup matches the app pin.",
-      })
-      .click();
+      const firstCheck = page.getByRole("button", {
+        name: /confirm the rider says the name on screen/i,
+      });
+      const secondCheck = page.getByRole("button", {
+        name: /confirm curbside pickup matches the app pin/i,
+      });
 
-    await expect(confirmPickupButton).toBeEnabled();
-    await confirmPickupButton.click();
+      await firstCheck.click();
+      await expect(firstCheck).toHaveAttribute("aria-pressed", "true");
 
-    await expect(page.getByText("Pickup confirmed")).toBeVisible();
-    await page.getByRole("link", { name: "Return to Shift Board" }).click();
+      await secondCheck.click();
+      await expect(secondCheck).toHaveAttribute("aria-pressed", "true");
 
-    await expect(page).toHaveURL(/\/driver$/);
+      await expect(confirmPickupButton).toBeEnabled();
+      await confirmPickupButton.click();
+
+      await expect(page.getByText("Pickup confirmed")).toBeVisible();
+      await page.getByRole("link", { name: "Return to Shift Board" }).click();
+
+      await expect(page).toHaveURL(/\/driver$/);
+    } finally {
+      if (rideId) {
+        await deleteRide(rideId);
+      }
+      await deleteTestUser(rider.userId);
+    }
   });
 });

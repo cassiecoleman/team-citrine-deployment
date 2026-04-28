@@ -28,10 +28,8 @@ const createChannel = () => {
   return channel;
 };
 
-const channelFactory = vi.fn(() => createChannel());
 const fetchMock = vi.fn();
-
-global.fetch = fetchMock as typeof fetch;
+const channelFactory = vi.fn(() => createChannel());
 
 vi.mock("@/lib/supabase", () => ({
   createClient: () => ({
@@ -64,6 +62,8 @@ const baseRide: RideDetail = {
 afterEach(() => {
   realtimePayloadHandler = undefined;
   removeChannel.mockClear();
+  fetchMock.mockReset();
+  vi.unstubAllGlobals();
   subscribeStatusHandlers.length = 0;
   channels.length = 0;
   channelFactory.mockClear();
@@ -71,21 +71,16 @@ afterEach(() => {
 });
 
 describe("useRideStatus", () => {
-  it("subscribes to ride updates and applies realtime status changes", () => {
+  it("subscribes to ride updates and applies realtime status changes", async () => {
     fetchMock.mockResolvedValue({
       ok: true,
       json: async () => ({
         id: "ride-1",
         status: "driver_en_route",
-        driver: {
-          id: "driver-1",
-          name: "Marcus W.",
-          rating: 4.9,
-          vehicle: "Toyota Camry",
-          licensePlate: "ULT-2026",
-        },
+        driver: baseRide.driver,
       }),
     });
+    vi.stubGlobal("fetch", fetchMock);
 
     const { result, unmount } = renderHook(() =>
       useRideStatus({
@@ -98,15 +93,18 @@ describe("useRideStatus", () => {
     expect(channels[0]?.on).toHaveBeenCalledTimes(1);
     expect(channels[0]?.subscribe).toHaveBeenCalledTimes(1);
 
-    return act(async () => {
+    await act(async () => {
       realtimePayloadHandler?.({ new: { status: "driver_en_route" } });
       await Promise.resolve();
-    }).then(() => {
-      expect(result.current.ride.status).toBe("en_route");
-
-      unmount();
-      expect(removeChannel).toHaveBeenCalledTimes(1);
     });
+
+    expect(result.current.ride.status).toBe("en_route");
+    expect(fetchMock).toHaveBeenCalledWith("/api/rides/ride-1/status?full=1", {
+      cache: "no-store",
+    });
+
+    unmount();
+    expect(removeChannel).toHaveBeenCalledTimes(1);
   });
 
   it("re-subscribes when the realtime channel reports an error", () => {

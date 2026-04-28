@@ -1,9 +1,9 @@
 import { expect, test } from "@playwright/test";
 import {
+  createChildProfileFixture,
   createTestRider,
   deleteTestUser,
   injectAuthenticatedSession,
-  seedChildProfiles,
   type TestUser,
 } from "./helpers/auth";
 
@@ -11,22 +11,34 @@ test.describe("US10 — manage rider profiles", () => {
   let rider: TestUser;
 
   test.beforeAll(async () => {
-    rider = await createTestRider("profile");
-    await seedChildProfiles(rider.userId, [
-      { name: "Emma", emergencyContactName: "Rosa M." },
-      { name: "Lucas", emergencyContactName: "Rosa M." },
-    ]);
+    rider = await createTestRider("e2e-profile", { name: "Maria Johnson" });
+    await createChildProfileFixture({
+      riderUserId: rider.userId,
+      name: "Emma",
+      emergencyContactName: "Rosa M.",
+    });
+    await createChildProfileFixture({
+      riderUserId: rider.userId,
+      name: "Lucas",
+      emergencyContactName: "Rosa M.",
+    });
   });
 
   test.afterAll(async () => {
-    await deleteTestUser(rider.userId);
+    if (rider?.userId) {
+      await deleteTestUser(rider.userId);
+    }
+  });
+
+  test.beforeEach(async ({ context }) => {
+    await injectAuthenticatedSession(context, rider);
   });
 
   test("profile page shows parent account info", async ({ page }) => {
     await injectAuthenticatedSession(page.context(), rider);
     await page.goto("/profile");
 
-    await expect(page.getByText("E2E Rider profile")).toBeVisible();
+    await expect(page.getByText("Maria Johnson")).toBeVisible();
     await expect(page.getByText(rider.email)).toBeVisible();
   });
 

@@ -198,6 +198,8 @@ describe("ride completion actions", () => {
         reporter_id: "rider-1",
         ride_id: "ride-1",
         reason: "safety",
+        details: "Hard braking near school zone.",
+        created_by: "user-1",
       }),
     );
     expect(mockFrom).toHaveBeenCalledWith("ride_status_history");
