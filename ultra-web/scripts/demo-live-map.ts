@@ -47,7 +47,7 @@ const APP_URL = process.env.ULTRA_APP_URL ?? "http://localhost:3000";
 const SLOW = process.env.DEMO_SLOW === "1" || process.env.DEMO_SPEED === "slow";
 const TICKS = SLOW ? 6 : 4;
 const TICK_MS = SLOW ? 800 : 500;
-const FINAL_HOLD_MS = SLOW ? 60_000 : 20_000;
+const FINAL_HOLD_MS = 20_000;
 const HARD_DEADLINE_MS = SLOW ? 360_000 : 115_000;
 
 const RATING_COMMENTS = [
@@ -85,7 +85,7 @@ async function main() {
     console.log(`[${((Date.now() - start) / 1000).toFixed(1)}s] ${msg}`);
 
   if (SLOW) {
-    log("SLOW mode active — animation ticks stretched, 60s end-of-demo hold.");
+    log("SLOW mode active — animation ticks stretched.");
   }
 
   log("Pre-run sweep: removing any leftover demo users from previous runs…");
