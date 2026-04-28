@@ -26,51 +26,27 @@ export function LiveMapClient({ initialLocations }: LiveMapClientProps) {
   useEffect(() => {
     const supabase = createClient();
 
-    // Initial load — the SSR pass may not have a session cookie in some
-    // demo flows (programmatic cookie injection lands after the first
-    // render). Fetching here guarantees dots appear once the admin
-    // browser is authed, regardless of when seeding happened.
-    void Promise.all([
-      supabase
-        .from("riders")
-        .select("id, name, current_lat, current_lng, current_location_updated_at")
-        .not("current_lat", "is", null)
-        .not("current_lng", "is", null),
-      supabase
-        .from("driver_locations")
-        .select("driver_id, lat, lng, recorded_at, drivers!inner(id, name, status)"),
-    ]).then(([riderResp, driverResp]) => {
-      if (riderResp.data) {
-        setRiders(
-          riderResp.data.map((row) => ({
-            id: String(row.id),
-            name: String(row.name ?? ""),
-            lat: Number(row.current_lat),
-            lng: Number(row.current_lng),
-            updatedAt: (row.current_location_updated_at as string | null) ?? null,
-          })),
-        );
+    // Server-side poll. Realtime postgres_changes is wired up below for
+    // delta updates, but client-side cross-origin auth cookies between
+    // localhost (Next dev) and 127.0.0.1 (Supabase) can drop the session,
+    // so we always also poll a service-role-backed route handler every
+    // 1s. Cheap at the demo scale (~10 users).
+    let cancelled = false;
+    async function pollOnce() {
+      try {
+        const resp = await fetch("/api/admin/live-locations", {
+          cache: "no-store",
+        });
+        if (!resp.ok || cancelled) return;
+        const body: LiveLocationsResult = await resp.json();
+        setRiders(body.riders);
+        setDrivers(body.drivers);
+      } catch {
+        // ignore transient fetch errors
       }
-      if (driverResp.data) {
-        setDrivers(
-          driverResp.data.map((row) => {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const drv = (Array.isArray((row as any).drivers)
-              ? (row as any).drivers[0]
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              : (row as any).drivers) as { id?: string; name?: string; status?: string } | undefined;
-            return {
-              id: drv?.id ?? String(row.driver_id),
-              name: drv?.name ?? "",
-              status: drv?.status ?? "",
-              lat: Number(row.lat),
-              lng: Number(row.lng),
-              updatedAt: (row.recorded_at as string | null) ?? null,
-            };
-          }),
-        );
-      }
-    });
+    }
+    void pollOnce();
+    const pollInterval = window.setInterval(pollOnce, 1000);
 
     const channel = supabase
       .channel("admin-live-map")
@@ -120,6 +96,8 @@ export function LiveMapClient({ initialLocations }: LiveMapClientProps) {
       .subscribe();
 
     return () => {
+      cancelled = true;
+      window.clearInterval(pollInterval);
       supabase.removeChannel(channel);
     };
   }, []);
@@ -141,6 +119,11 @@ export function LiveMapClient({ initialLocations }: LiveMapClientProps) {
     .filter((entry): entry is NonNullable<typeof entry> => entry !== null);
 
   return (
+    <div className="space-y-2">
+      <div className="rounded bg-primary-light/40 px-3 py-1 text-xs text-muted">
+        loaded {riders.length} rider{riders.length === 1 ? "" : "s"} ·{" "}
+        {drivers.length} driver{drivers.length === 1 ? "" : "s"} · {matchLines.length} match line{matchLines.length === 1 ? "" : "s"}
+      </div>
     <div className="h-[600px] w-full overflow-hidden rounded-xl border border-border">
       <MapContainer
         center={MEMPHIS_CENTER}
@@ -196,6 +179,7 @@ export function LiveMapClient({ initialLocations }: LiveMapClientProps) {
           />
         ))}
       </MapContainer>
+    </div>
     </div>
   );
 }
