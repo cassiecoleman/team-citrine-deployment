@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { LocationEntryCard } from "@/features/location/components/LocationEntryCard";
+
 export default function HomePage() {
   return (
     <div className="flex flex-col gap-4 p-4">
@@ -11,6 +13,8 @@ export default function HomePage() {
           <p className="text-xs">You are here</p>
         </div>
       </div>
+
+      <LocationEntryCard />
 
       {/* Ride Pass banner */}
       <Link

@@ -1,9 +1,22 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useState } from "react";
 import { Check, MapPinned, Phone, Route } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import type { ActiveDriverTrip } from "../types";
+
+const RideMap = dynamic(
+  () => import("@/features/maps/components/RideMap").then((mod) => mod.RideMap),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-48 items-center justify-center rounded-xl border border-border bg-card text-xs text-muted">
+        Loading map…
+      </div>
+    ),
+  },
+);
 
 export function TripNavigationView({
   trip,
@@ -39,15 +52,41 @@ export function TripNavigationView({
           </span>
         </div>
 
-        <div className="mt-4 flex h-48 items-center justify-center rounded-xl border border-border bg-card">
-          <div className="text-center text-sm text-muted">
-            <MapPinned aria-hidden="true" className="mx-auto h-8 w-8 text-primary" />
-            <p className="mt-2 font-medium text-foreground">Turn-by-turn map preview</p>
-            <p className="text-xs">
-              {trip.pickupLabel} to {trip.dropoffLabel}
-            </p>
+        {trip.pickupLat !== undefined &&
+        trip.pickupLng !== undefined &&
+        trip.dropoffLat !== undefined &&
+        trip.dropoffLng !== undefined ? (
+          <div className="mt-4 h-48">
+            <RideMap
+              pickup={{
+                lat: trip.pickupLat,
+                lng: trip.pickupLng,
+                address: trip.pickupAddress,
+              }}
+              dropoff={{
+                lat: trip.dropoffLat,
+                lng: trip.dropoffLng,
+                address: trip.dropoffAddress,
+              }}
+              driverLocation={
+                trip.driverLat !== undefined && trip.driverLng !== undefined
+                  ? { lat: trip.driverLat, lng: trip.driverLng }
+                  : undefined
+              }
+              className="h-full w-full overflow-hidden rounded-xl border border-border"
+            />
           </div>
-        </div>
+        ) : (
+          <div className="mt-4 flex h-48 items-center justify-center rounded-xl border border-border bg-card">
+            <div className="text-center text-sm text-muted">
+              <MapPinned aria-hidden="true" className="mx-auto h-8 w-8 text-primary" />
+              <p className="mt-2 font-medium text-foreground">Turn-by-turn map preview</p>
+              <p className="text-xs">
+                {trip.pickupLabel} to {trip.dropoffLabel}
+              </p>
+            </div>
+          </div>
+        )}
 
         <div className="mt-4 grid grid-cols-2 gap-3">
           <div className="rounded-xl border border-border bg-card px-4 py-3">

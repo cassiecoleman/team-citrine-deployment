@@ -200,7 +200,7 @@ export async function getActiveDriverTrip(
   const rideResult = await supabase
     .from("rides")
     .select(
-      "id,pickup_address,dropoff_address,fare_estimate,distance_miles,riders(name,phone)",
+      "id,pickup_address,pickup_lat,pickup_lng,dropoff_address,dropoff_lat,dropoff_lng,fare_estimate,distance_miles,driver_id,riders(name,phone)",
     )
     .eq("id", id)
     .maybeSingle();
@@ -223,12 +223,32 @@ export async function getActiveDriverTrip(
         ? rideResult.data.riders.phone
         : activeTrip.riderPhone;
 
+  let driverLat: number | undefined;
+  let driverLng: number | undefined;
+  if (rideResult.data.driver_id) {
+    const { data: locRow } = await supabase
+      .from("driver_locations")
+      .select("lat,lng")
+      .eq("driver_id", rideResult.data.driver_id)
+      .maybeSingle();
+    if (locRow) {
+      driverLat = Number(locRow.lat);
+      driverLng = Number(locRow.lng);
+    }
+  }
+
   return {
     ...activeTrip,
     id: rideResult.data.id,
     riderName,
     pickupAddress: rideResult.data.pickup_address,
+    pickupLat: Number(rideResult.data.pickup_lat),
+    pickupLng: Number(rideResult.data.pickup_lng),
     dropoffAddress: rideResult.data.dropoff_address,
+    dropoffLat: Number(rideResult.data.dropoff_lat),
+    dropoffLng: Number(rideResult.data.dropoff_lng),
+    driverLat,
+    driverLng,
     offeredFare: rideResult.data.fare_estimate ?? activeTrip.offeredFare,
     mileageMi: rideResult.data.distance_miles ?? activeTrip.mileageMi,
     riderPhone: riderPhone ?? activeTrip.riderPhone,

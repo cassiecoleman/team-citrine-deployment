@@ -1,5 +1,6 @@
 "use server";
 
+import { haversineMiles } from "@/lib/geo";
 import { homeLocation, hospitalLocation } from "@/lib/mock-data";
 import { mockDelay } from "@/lib/mock-delay";
 import type { Location } from "@/types";
@@ -106,30 +107,6 @@ interface MatchDriverOptions {
   timeoutMs?: number;
 }
 
-function degreesToRadians(value: number): number {
-  return (value * Math.PI) / 180;
-}
-
-function haversineMiles(
-  startLat: number,
-  startLng: number,
-  endLat: number,
-  endLng: number,
-): number {
-  const earthRadiusMiles = 3958.8;
-  const latDelta = degreesToRadians(endLat - startLat);
-  const lngDelta = degreesToRadians(endLng - startLng);
-  const startLatRadians = degreesToRadians(startLat);
-  const endLatRadians = degreesToRadians(endLat);
-
-  const a =
-    Math.sin(latDelta / 2) ** 2 +
-    Math.cos(startLatRadians) *
-      Math.cos(endLatRadians) *
-      Math.sin(lngDelta / 2) ** 2;
-
-  return 2 * earthRadiusMiles * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
 
 async function cancelRideForMatchingTimeout(
   rideId: string,
