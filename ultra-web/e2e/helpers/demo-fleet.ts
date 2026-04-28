@@ -13,6 +13,72 @@ function admin() {
   return createClient(url, serviceRoleKey);
 }
 
+const DEMO_EMAIL_PREFIXES = ["demo-", "pw-demo-", "pw-livemap-", "e2e-"];
+
+function isDemoEmail(email: string | undefined | null): boolean {
+  if (!email) return false;
+  return DEMO_EMAIL_PREFIXES.some((p) => email.startsWith(p));
+}
+
+/**
+ * Delete every demo/test user (plus their cascades) from the local
+ * Supabase. Idempotent — safe to call before and after every run.
+ *
+ * "Demo" is identified by email prefix: demo-, pw-demo-, pw-livemap-,
+ * e2e-. Matches what createDemoFleet emits and what the existing
+ * Playwright helpers (createTestRider/Driver) emit. Will not touch
+ * seed-* or rider1@ultra-app.test style accounts created by the
+ * standalone seed scripts.
+ */
+export async function sweepDemoOrphans(): Promise<{
+  deletedUsers: number;
+  scannedPages: number;
+}> {
+  const sb = admin();
+  let deleted = 0;
+  let page = 1;
+  const PER_PAGE = 200;
+  for (;;) {
+    const { data, error } = await sb.auth.admin.listUsers({
+      page,
+      perPage: PER_PAGE,
+    });
+    if (error || !data?.users?.length) break;
+
+    const targets = data.users.filter((u) => isDemoEmail(u.email));
+    for (const u of targets) {
+      const { data: rider } = await sb
+        .from("riders")
+        .select("id")
+        .eq("user_id", u.id)
+        .maybeSingle();
+      if (rider?.id) {
+        await sb.from("rides").delete().eq("rider_id", rider.id);
+        await sb.from("ride_passes").delete().eq("rider_id", rider.id);
+        await sb.from("rider_profiles").delete().eq("rider_id", rider.id);
+      }
+      const { data: drv } = await sb
+        .from("drivers")
+        .select("id")
+        .eq("user_id", u.id)
+        .maybeSingle();
+      if (drv?.id) {
+        await sb.from("rides").delete().eq("driver_id", drv.id);
+        await sb.from("driver_locations").delete().eq("driver_id", drv.id);
+        await sb.from("drivers").delete().eq("user_id", u.id);
+      }
+      await sb.from("riders").delete().eq("user_id", u.id);
+      await sb.from("user_roles").delete().eq("user_id", u.id);
+      await sb.auth.admin.deleteUser(u.id).catch(() => {});
+      deleted++;
+    }
+
+    if (data.users.length < PER_PAGE) break;
+    page++;
+  }
+  return { deletedUsers: deleted, scannedPages: page };
+}
+
 export interface FleetUser extends TestUser {
   role: "rider" | "driver" | "admin";
   riderId?: string;
@@ -52,6 +118,10 @@ export async function createDemoFleet(input: {
   drivers: DriverSeed[];
   emailPrefix?: string;
 }): Promise<DemoFleet> {
+  // Always sweep orphans BEFORE seeding — guarantees the demo starts
+  // from a clean slate even if a previous run crashed mid-flight.
+  await sweepDemoOrphans();
+
   const sb = admin();
   const ts = Date.now();
   const prefix = input.emailPrefix ?? "demo";
@@ -106,12 +176,13 @@ export async function createDemoFleet(input: {
   for (let i = 0; i < input.drivers.length; i++) {
     const seed = input.drivers[i]!;
     const u = await makeUser("driver", i);
+    const plateSuffix = `${ts.toString().slice(-5)}-${i}`;
     const v = seed.vehicle ?? {
       make: "Toyota",
       model: "Camry",
       color: "Blue",
       year: 2022,
-      plate: `ULT-${1000 + i}`,
+      plate: `ULT-${plateSuffix}`,
     };
     const { data: drvRow, error: dErr } = await sb
       .from("drivers")
@@ -170,20 +241,34 @@ export async function createDemoFleet(input: {
         await sb.from("rides").delete().eq("id", rideId);
       }
       for (const userId of createdUserIds) {
-        const { data: riderRow } = await sb
+        const { data: rider } = await sb
           .from("riders")
           .select("id")
           .eq("user_id", userId)
           .maybeSingle();
-        if (riderRow?.id) {
-          await sb.from("ride_passes").delete().eq("rider_id", riderRow.id);
-          await sb.from("rider_profiles").delete().eq("rider_id", riderRow.id);
+        if (rider?.id) {
+          await sb.from("rides").delete().eq("rider_id", rider.id);
+          await sb.from("ride_passes").delete().eq("rider_id", rider.id);
+          await sb.from("rider_profiles").delete().eq("rider_id", rider.id);
         }
-        await sb.from("driver_locations").delete().eq("driver_id", riderRow?.id ?? "x");
-        await sb.from("drivers").delete().eq("user_id", userId);
+        const { data: drv } = await sb
+          .from("drivers")
+          .select("id")
+          .eq("user_id", userId)
+          .maybeSingle();
+        if (drv?.id) {
+          await sb.from("rides").delete().eq("driver_id", drv.id);
+          await sb.from("driver_locations").delete().eq("driver_id", drv.id);
+          await sb.from("drivers").delete().eq("user_id", userId);
+        }
+        await sb.from("riders").delete().eq("user_id", userId);
         await sb.from("user_roles").delete().eq("user_id", userId);
-        await sb.auth.admin.deleteUser(userId);
+        await sb.auth.admin.deleteUser(userId).catch(() => {});
       }
+      // Belt-and-suspenders: sweep any orphan demo users that weren't
+      // tracked in createdUserIds (e.g. from a sibling spec or an
+      // earlier crashed run that this process didn't see).
+      await sweepDemoOrphans();
     },
   };
 }

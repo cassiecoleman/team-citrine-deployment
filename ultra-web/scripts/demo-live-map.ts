@@ -29,6 +29,7 @@ import {
   createMatchingRide,
   setDriverLocation,
   setRideStatus,
+  sweepDemoOrphans,
   type FleetUser,
   type RideTrace,
 } from "../e2e/helpers/demo-fleet";
@@ -59,6 +60,10 @@ async function main() {
   const start = Date.now();
   const log = (msg: string) =>
     console.log(`[${((Date.now() - start) / 1000).toFixed(1)}s] ${msg}`);
+
+  log("Pre-run sweep: removing any leftover demo users from previous runs…");
+  const swept = await sweepDemoOrphans();
+  log(`  swept ${swept.deletedUsers} orphan user${swept.deletedUsers === 1 ? "" : "s"}`);
 
   log("Seeding demo fleet (7 riders, 3 drivers, 1 admin)…");
   const fleet = await createDemoFleet({ riders: RIDER_SEEDS, drivers: DRIVER_SEEDS });
