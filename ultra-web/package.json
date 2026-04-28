@@ -18,7 +18,12 @@
     "db:migration:new": "npx supabase migration new",
     "demo:clear-pending": "npx tsx scripts/clear-pending-rides.ts",
     "demo:clear-incomplete": "npx tsx scripts/clear-incomplete-rides.ts",
-    "demo:live-map": "npx tsx scripts/demo-live-map.ts"
+    "demo:live-map": "npx tsx scripts/demo-live-map.ts",
+    "loadtest:smoke": "k6 run --vus 1 --duration 10s ../loadtest/api.js",
+    "loadtest:api": "k6 run ../loadtest/api.js",
+    "loadtest:realtime": "k6 run ../loadtest/realtime.js",
+    "loadtest:setup": "npx tsx ../loadtest/lib/setup.ts",
+    "loadtest:teardown": "npx tsx ../loadtest/lib/teardown.ts"
   },
   "dependencies": {
     "@stripe/react-stripe-js": "^6.2.0",

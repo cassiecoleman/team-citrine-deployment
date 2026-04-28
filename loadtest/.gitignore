@@ -1,0 +1,8 @@
+# k6 summary outputs
+*.json
+!package.json
+*.html
+*.csv
+
+# Local seed credentials produced by lib/setup.ts
+seeded.json

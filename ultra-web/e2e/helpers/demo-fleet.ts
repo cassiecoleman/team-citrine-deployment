@@ -43,7 +43,13 @@ function admin() {
   return createClient(url, serviceRoleKey);
 }
 
-const DEMO_EMAIL_PREFIXES = ["demo-", "pw-demo-", "pw-livemap-", "e2e-"];
+const DEMO_EMAIL_PREFIXES = [
+  "demo-",
+  "pw-demo-",
+  "pw-livemap-",
+  "e2e-",
+  "loadtest-",
+];
 
 function isDemoEmail(email: string | undefined | null): boolean {
   if (!email) return false;
@@ -55,10 +61,11 @@ function isDemoEmail(email: string | undefined | null): boolean {
  * Supabase. Idempotent — safe to call before and after every run.
  *
  * "Demo" is identified by email prefix: demo-, pw-demo-, pw-livemap-,
- * e2e-. Matches what createDemoFleet emits and what the existing
- * Playwright helpers (createTestRider/Driver) emit. Will not touch
- * seed-* or rider1@ultra-app.test style accounts created by the
- * standalone seed scripts.
+ * e2e-, loadtest-. Matches what createDemoFleet emits, what the
+ * Playwright helpers (createTestRider/Driver) emit, and what the k6
+ * loadtest setup script emits. Will not touch seed-* or
+ * rider1@ultra-app.test style accounts created by the standalone seed
+ * scripts.
  */
 export async function sweepDemoOrphans(): Promise<{
   deletedUsers: number;
