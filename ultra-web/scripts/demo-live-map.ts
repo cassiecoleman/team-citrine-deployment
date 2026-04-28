@@ -25,13 +25,13 @@ import { chromium, type Browser, type BrowserContext, type Page } from "@playwri
 import { createClient } from "@supabase/supabase-js";
 
 import {
+  clearRiderLocation,
   createDemoFleet,
   createMatchingRide,
   setDriverLocation,
   setRideStatus,
   sweepDemoOrphans,
   type FleetUser,
-  type RideTrace,
 } from "../e2e/helpers/demo-fleet";
 import { haversineMiles } from "../src/lib/geo";
 
@@ -143,122 +143,57 @@ async function main() {
     }
     await adminPage.bringToFront();
 
-    const rides: Array<RideTrace & { driverId: string; driver: FleetUser; rider: FleetUser; visibleDriverPage?: Page }> = [];
+    // Build a pool of rides that need a driver. Each driver pulls
+    // from the pool until it's empty.
+    const ridePool: FleetUser[] = [...fleet.riders];
+    const visibleRiderPages = new Map<string, Page>(
+      visibleRiders.map((r) => [r.user.riderId!, r.page]),
+    );
 
-    // Phase 2: assign visible drivers to ride[0] and ride[1] explicitly,
-    // then create those two rides FIRST so the visible drivers can see
-    // their own offer in /queue. The remaining 5 rides get DB-driven
-    // matching after.
-    log("Phase 2 — UI-driven accepts for the 2 visible drivers…");
+    // Phase 2: each visible driver does ONE ride end-to-end through
+    // the UI (queue → trip → pickup confirmation). They take the
+    // closest pending rider. After that they fall back into the
+    // worker loop with everyone else.
+    log("Phase 2 — visible drivers handling first ride via UI…");
+    const uiPromises: Promise<void>[] = [];
     for (let i = 0; i < visibleDrivers.length; i++) {
-      const driver = visibleDrivers[i]!.user;
       const driverPage = visibleDrivers[i]!.page;
-      const rider = fleet.riders[i]!;
-      const riderPage = visibleRiders[i]?.page;
-      const trace = await createMatchingRide({
-        riderId: rider.riderId!,
-        pickupLat: rider.startLat,
-        pickupLng: rider.startLng,
-        dropoffLat: rider.destLat!,
-        dropoffLng: rider.destLng!,
-      });
-      log(`  ride ${trace.rideId.slice(0, 8)}… → driver ${driver.email.split("@")[0]} (UI)`);
-      rides.push({
-        ...trace,
-        driverId: driver.driverId!,
+      const driver = visibleDrivers[i]!.user;
+      // Pick the nearest pending rider for this driver from the pool.
+      const idx = nearestPendingIndex(driver, ridePool);
+      if (idx === -1) continue;
+      const rider = ridePool.splice(idx, 1)[0]!;
+      uiPromises.push(
+        runUiRide({
+          driver,
+          driverPage,
+          rider,
+          riderPage: visibleRiderPages.get(rider.riderId!),
+          start,
+          log,
+        }),
+      );
+    }
+    await Promise.all(uiPromises);
+    await adminPage.bringToFront();
+
+    // Phase 3: parallel driver worker loop. Each driver keeps pulling
+    // the nearest pending rider, animates a full ride, marks the
+    // rider as "left the app" by clearing their location, then loops.
+    log(`Phase 3 — worker loop, ${ridePool.length} riders left in queue…`);
+    const workerPromises = fleet.drivers.map((driver) =>
+      runDriverWorker({
         driver,
-        rider,
-        visibleDriverPage: driverPage,
-      });
+        ridePool,
+        visibleRiderPages,
+        start,
+        log,
+      }),
+    );
+    await Promise.all(workerPromises);
 
-      // Visible rider navigates to their tracking page so they see
-      // the matching → driver_en_route → arrived → in_progress
-      // transitions live (the page polls /api/rides/:id/status).
-      if (riderPage) {
-        riderPage.goto(`${APP_URL}/ride/${trace.rideId}`).catch(() => {});
-      }
-
-      await driverPage.bringToFront().catch(() => {});
-      await driverPage.goto(`${APP_URL}/queue`);
-      await driverPage
-        .getByRole("heading", { name: /Incoming assignment/i })
-        .waitFor({ state: "visible", timeout: 8000 })
-        .catch(() => {});
-      await sleep(1200);
-      await driverPage.getByRole("link", { name: /Accept Trip/i }).click();
-      await driverPage.waitForURL(new RegExp(`/trip/${trace.rideId}$`), { timeout: 8000 }).catch(() => {});
-      await sleep(800);
-    }
-    await adminPage.bringToFront();
-
-    // Phase 3: create the remaining 5 ride requests, DB-assign them to
-    // non-visible drivers (driver-2) using the existing nearest pick.
-    log("Phase 3 — DB-driven rides for the remaining 5 riders (staggered 1s)…");
-    for (let i = visibleDrivers.length; i < fleet.riders.length; i++) {
-      const rider = fleet.riders[i]!;
-      const trace = await createMatchingRide({
-        riderId: rider.riderId!,
-        pickupLat: rider.startLat,
-        pickupLng: rider.startLng,
-        dropoffLat: rider.destLat!,
-        dropoffLng: rider.destLng!,
-      });
-      const driver = pickNearestAvailable(rider, fleet.drivers, rides, /* allowReuse */ true);
-      log(`  ride ${trace.rideId.slice(0, 8)}… → driver ${driver.email.split("@")[0]} (DB)`);
-      rides.push({ ...trace, driverId: driver.driverId!, driver, rider });
-      await setRideStatus(trace.rideId, "driver_en_route", {
-        driver_id: driver.driverId!,
-        matched_at: new Date().toISOString(),
-      });
-      await sleep(1000);
-    }
-
-    log("Animating drivers toward pickups…");
-    await animatePhase(rides, "to_pickup", start);
-
-    // Phase 4: visible drivers click through pickup confirmation.
-    log("Phase 4 — visible drivers confirming pickup via UI…");
-    for (const ride of rides) {
-      if (!ride.visibleDriverPage) continue;
-      const dp = ride.visibleDriverPage;
-      await dp.bringToFront().catch(() => {});
-      await dp.getByRole("link", { name: /Advance to pickup confirmation/i }).click().catch(() => {});
-      await dp.waitForURL(new RegExp(`/trip/${ride.rideId}/pickup$`), { timeout: 5000 }).catch(() => {});
-      await sleep(700);
-      await dp
-        .getByRole("button", { name: /Confirm the rider says the name on screen/i })
-        .click()
-        .catch(() => {});
-      await sleep(400);
-      await dp
-        .getByRole("button", { name: /Confirm curbside pickup matches the app pin/i })
-        .click()
-        .catch(() => {});
-      await sleep(400);
-      await dp.getByRole("button", { name: /^Confirm Pickup$/i }).click().catch(() => {});
-      await sleep(800);
-    }
-    await adminPage.bringToFront();
-
-    log("All drivers arrived. Starting in-progress phase…");
-    for (const ride of rides) {
-      await setRideStatus(ride.rideId, "in_progress", {
-        pickup_at: new Date().toISOString(),
-      });
-    }
-
-    await animatePhase(rides, "to_dropoff", start);
-
-    log("All rides completed. Marking final state…");
-    for (const ride of rides) {
-      await setRideStatus(ride.rideId, "completed", {
-        completed_at: new Date().toISOString(),
-        fare_final: 22.5,
-      });
-    }
-
-    log("Demo complete. Holding admin window for 30s — watch the map, then cleanup runs…");
-    await adminPage.waitForTimeout(30000);
+    log("Demo complete. Holding admin window for 20s — watch the map, then cleanup runs…");
+    await adminPage.waitForTimeout(20000);
   } finally {
     for (const b of browsers) {
       await b.close().catch(() => {});
@@ -269,63 +204,159 @@ async function main() {
   }
 }
 
-function pickNearestAvailable(
-  rider: FleetUser,
-  drivers: FleetUser[],
-  taken: Array<{ driverId: string }>,
-  allowReuse = false,
-): FleetUser {
-  const takenIds = new Set(taken.map((t) => t.driverId));
-  const available = drivers.filter((d) => !takenIds.has(d.driverId!));
-  const pool = allowReuse ? drivers : available.length > 0 ? available : drivers;
-  let best = pool[0]!;
+function nearestPendingIndex(
+  driver: { startLat: number; startLng: number },
+  pool: FleetUser[],
+): number {
+  if (pool.length === 0) return -1;
+  let bestIdx = 0;
   let bestDistance = Number.POSITIVE_INFINITY;
-  for (const d of pool) {
-    const dist = haversineMiles(rider.startLat, rider.startLng, d.startLat, d.startLng);
-    if (dist < bestDistance) {
-      best = d;
-      bestDistance = dist;
+  for (let i = 0; i < pool.length; i++) {
+    const r = pool[i]!;
+    const d = haversineMiles(driver.startLat, driver.startLng, r.startLat, r.startLng);
+    if (d < bestDistance) {
+      bestDistance = d;
+      bestIdx = i;
     }
   }
-  return best;
+  return bestIdx;
 }
 
-async function animatePhase(
-  rides: Array<RideTrace & { driverId: string; driver: FleetUser; rider: FleetUser }>,
-  phase: "to_pickup" | "to_dropoff",
-  startEpoch: number,
-) {
-  const TICKS = 8;
-  const TICK_MS = 750;
-  for (let step = 1; step <= TICKS; step++) {
-    if (Date.now() - startEpoch > HARD_DEADLINE_MS) {
-      console.warn("Hard deadline reached — skipping remaining animation ticks.");
+async function runUiRide(input: {
+  driver: FleetUser;
+  driverPage: Page;
+  rider: FleetUser;
+  riderPage?: Page;
+  start: number;
+  log: (msg: string) => void;
+}) {
+  const { driver, driverPage, rider, riderPage, log } = input;
+  const trace = await createMatchingRide({
+    riderId: rider.riderId!,
+    pickupLat: rider.startLat,
+    pickupLng: rider.startLng,
+    dropoffLat: rider.destLat!,
+    dropoffLng: rider.destLng!,
+  });
+  log(`  UI ride ${trace.rideId.slice(0, 8)}… ${driver.email.split("@")[0]} ↔ ${rider.email.split("@")[0]}`);
+
+  if (riderPage) {
+    riderPage.goto(`${APP_URL}/ride/${trace.rideId}`).catch(() => {});
+  }
+
+  await driverPage.goto(`${APP_URL}/queue`);
+  await driverPage
+    .getByRole("heading", { name: /Incoming assignment/i })
+    .waitFor({ state: "visible", timeout: 8000 })
+    .catch(() => {});
+  await sleep(800);
+  await driverPage.getByRole("link", { name: /Accept Trip/i }).click().catch(() => {});
+  await driverPage.waitForURL(new RegExp(`/trip/${trace.rideId}$`), { timeout: 8000 }).catch(() => {});
+
+  // Animate to pickup while driver page is on /trip/:id
+  await animateMovement(driver.driverId!, driver.startLat, driver.startLng, rider.startLat, rider.startLng, 4, 500);
+
+  await driverPage.getByRole("link", { name: /Advance to pickup confirmation/i }).click({ timeout: 5000 }).catch(() => {});
+  await driverPage.waitForURL(new RegExp(`/trip/${trace.rideId}/pickup$`), { timeout: 5000 }).catch(() => {});
+  await sleep(400);
+  await driverPage
+    .getByRole("button", { name: /Confirm the rider says the name on screen/i })
+    .click()
+    .catch(() => {});
+  await sleep(300);
+  await driverPage
+    .getByRole("button", { name: /Confirm curbside pickup matches the app pin/i })
+    .click()
+    .catch(() => {});
+  await sleep(300);
+  await driverPage.getByRole("button", { name: /^Confirm Pickup$/i }).click().catch(() => {});
+
+  await setRideStatus(trace.rideId, "in_progress", {
+    pickup_at: new Date().toISOString(),
+  });
+  await animateMovement(driver.driverId!, rider.startLat, rider.startLng, rider.destLat!, rider.destLng!, 4, 500);
+
+  await setRideStatus(trace.rideId, "completed", {
+    completed_at: new Date().toISOString(),
+    fare_final: 22.5,
+  });
+  await clearRiderLocation(rider.riderId!);
+  // Driver's "current position" for the next pickup is the dropoff.
+  driver.startLat = rider.destLat!;
+  driver.startLng = rider.destLng!;
+  log(`  ✓ ${rider.email.split("@")[0]} delivered (driver ${driver.email.split("@")[0]} now at dropoff)`);
+}
+
+async function runDriverWorker(input: {
+  driver: FleetUser;
+  ridePool: FleetUser[];
+  visibleRiderPages: Map<string, Page>;
+  start: number;
+  log: (msg: string) => void;
+}) {
+  const { driver, ridePool, visibleRiderPages, start, log } = input;
+  while (ridePool.length > 0) {
+    if (Date.now() - input.start > HARD_DEADLINE_MS) {
+      console.warn("Hard deadline reached — driver worker stopping.");
       return;
     }
-    await Promise.all(
-      rides.map((ride) => {
-        const fromLat = ride.driver.startLat;
-        const fromLng = ride.driver.startLng;
-        const toLat = phase === "to_pickup" ? ride.rider.startLat : ride.rider.destLat!;
-        const toLng = phase === "to_pickup" ? ride.rider.startLng : ride.rider.destLng!;
-        const t = step / TICKS;
-        const lat = fromLat + (toLat - fromLat) * t;
-        const lng = fromLng + (toLng - fromLng) * t;
-        return setDriverLocation(ride.driverId, lat, lng);
-      }),
-    );
-    await sleep(TICK_MS);
-  }
-  // Snap to destination + mark "arrived" if this was the pickup phase
-  for (const ride of rides) {
-    const toLat = phase === "to_pickup" ? ride.rider.startLat : ride.rider.destLat!;
-    const toLng = phase === "to_pickup" ? ride.rider.startLng : ride.rider.destLng!;
-    await setDriverLocation(ride.driverId, toLat, toLng);
-    if (phase === "to_pickup") {
-      await setRideStatus(ride.rideId, "arrived", {
-        driver_arrived_at: new Date().toISOString(),
-      });
+    const idx = nearestPendingIndex(driver, ridePool);
+    if (idx === -1) return;
+    const rider = ridePool.splice(idx, 1)[0]!;
+
+    const trace = await createMatchingRide({
+      riderId: rider.riderId!,
+      pickupLat: rider.startLat,
+      pickupLng: rider.startLng,
+      dropoffLat: rider.destLat!,
+      dropoffLng: rider.destLng!,
+    });
+    log(`  DB ride ${trace.rideId.slice(0, 8)}… ${driver.email.split("@")[0]} ↔ ${rider.email.split("@")[0]}`);
+
+    const riderPage = visibleRiderPages.get(rider.riderId!);
+    if (riderPage) {
+      riderPage.goto(`${APP_URL}/ride/${trace.rideId}`).catch(() => {});
     }
+
+    await setRideStatus(trace.rideId, "driver_en_route", {
+      driver_id: driver.driverId!,
+      matched_at: new Date().toISOString(),
+    });
+    await animateMovement(driver.driverId!, driver.startLat, driver.startLng, rider.startLat, rider.startLng, 4, 500);
+    await setRideStatus(trace.rideId, "arrived", {
+      driver_arrived_at: new Date().toISOString(),
+    });
+    await sleep(400);
+    await setRideStatus(trace.rideId, "in_progress", {
+      pickup_at: new Date().toISOString(),
+    });
+    await animateMovement(driver.driverId!, rider.startLat, rider.startLng, rider.destLat!, rider.destLng!, 4, 500);
+    await setRideStatus(trace.rideId, "completed", {
+      completed_at: new Date().toISOString(),
+      fare_final: 22.5,
+    });
+    await clearRiderLocation(rider.riderId!);
+    driver.startLat = rider.destLat!;
+    driver.startLng = rider.destLng!;
+    log(`  ✓ ${rider.email.split("@")[0]} delivered`);
+  }
+}
+
+async function animateMovement(
+  driverId: string,
+  fromLat: number,
+  fromLng: number,
+  toLat: number,
+  toLng: number,
+  ticks: number,
+  tickMs: number,
+) {
+  for (let step = 1; step <= ticks; step++) {
+    const t = step / ticks;
+    const lat = fromLat + (toLat - fromLat) * t;
+    const lng = fromLng + (toLng - fromLng) * t;
+    await setDriverLocation(driverId, lat, lng);
+    await sleep(tickMs);
   }
 }
 

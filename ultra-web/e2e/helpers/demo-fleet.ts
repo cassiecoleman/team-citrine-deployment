@@ -357,3 +357,19 @@ export async function setDriverLocation(
     { onConflict: "driver_id" },
   );
 }
+
+/**
+ * Mark a rider as "closed the app" — clears current_lat/lng so they
+ * disappear from the admin Live Map. Idempotent.
+ */
+export async function clearRiderLocation(riderId: string): Promise<void> {
+  const sb = admin();
+  await sb
+    .from("riders")
+    .update({
+      current_lat: null,
+      current_lng: null,
+      current_location_updated_at: new Date().toISOString(),
+    })
+    .eq("id", riderId);
+}
