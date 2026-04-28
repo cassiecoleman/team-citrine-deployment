@@ -373,3 +373,49 @@ export async function clearRiderLocation(riderId: string): Promise<void> {
     })
     .eq("id", riderId);
 }
+
+export async function submitRideRating(input: {
+  rideId: string;
+  riderId: string;
+  driverId: string;
+  riderGaveDriver?: number;
+  driverGaveRider?: number;
+  riderComment?: string;
+  driverComment?: string;
+  tipAmount?: number;
+}): Promise<void> {
+  const sb = admin();
+  await sb.from("ride_ratings").upsert(
+    {
+      ride_id: input.rideId,
+      rider_id: input.riderId,
+      driver_id: input.driverId,
+      rider_gave_driver: input.riderGaveDriver ?? null,
+      driver_gave_rider: input.driverGaveRider ?? null,
+      rider_comment: input.riderComment ?? null,
+      driver_comment: input.driverComment ?? null,
+      tip_amount: input.tipAmount ?? 0,
+      rider_submitted: input.riderGaveDriver !== undefined,
+      driver_submitted: input.driverGaveRider !== undefined,
+    },
+    { onConflict: "ride_id" },
+  );
+}
+
+export async function flagDriverForRide(input: {
+  rideId: string;
+  riderId: string;
+  driverId: string;
+  reason: "safety" | "behavior" | "vehicle" | "other";
+  details: string;
+}): Promise<void> {
+  const sb = admin();
+  await sb.from("driver_flags").insert({
+    ride_id: input.rideId,
+    reporter_id: input.riderId,
+    driver_id: input.driverId,
+    reason: input.reason,
+    details: input.details,
+    status: "pending",
+  });
+}

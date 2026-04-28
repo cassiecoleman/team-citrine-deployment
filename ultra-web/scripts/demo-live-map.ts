@@ -28,8 +28,10 @@ import {
   clearRiderLocation,
   createDemoFleet,
   createMatchingRide,
+  flagDriverForRide,
   setDriverLocation,
   setRideStatus,
+  submitRideRating,
   sweepDemoOrphans,
   type FleetUser,
 } from "../e2e/helpers/demo-fleet";
@@ -38,7 +40,28 @@ import { haversineMiles } from "../src/lib/geo";
 config({ path: resolve(__dirname, "../.env.local") });
 
 const APP_URL = process.env.ULTRA_APP_URL ?? "http://localhost:3000";
-const HARD_DEADLINE_MS = 115_000; // leave a 5s margin under the 2-minute cap
+
+// Slow mode: stretches the demo so you can flip between admin tabs
+// (/admin/rides, /admin/requests, /admin/completed, /admin/flags) and
+// watch each panel populate. Toggle with `DEMO_SLOW=1`.
+const SLOW = process.env.DEMO_SLOW === "1" || process.env.DEMO_SPEED === "slow";
+const TICKS = SLOW ? 6 : 4;
+const TICK_MS = SLOW ? 800 : 500;
+const FINAL_HOLD_MS = SLOW ? 60_000 : 20_000;
+const HARD_DEADLINE_MS = SLOW ? 360_000 : 115_000;
+
+const RATING_COMMENTS = [
+  { stars: 5, comment: "Smooth ride, friendly driver." },
+  { stars: 5, comment: "On time and clean car!" },
+  { stars: 4, comment: "Good ride. Music was loud." },
+  { stars: 5, comment: "Helped with bags. Great service." },
+  { stars: 3, comment: "Took the long way." },
+];
+
+const COMPLAINT = {
+  reason: "safety" as const,
+  details: "Driver was on their phone during the ride and ran a yellow light.",
+};
 
 const RIDER_SEEDS = [
   { name: "Aisha R.", startLat: 35.155, startLng: -90.06, destLat: 35.13, destLng: -89.97 },
@@ -60,6 +83,10 @@ async function main() {
   const start = Date.now();
   const log = (msg: string) =>
     console.log(`[${((Date.now() - start) / 1000).toFixed(1)}s] ${msg}`);
+
+  if (SLOW) {
+    log("SLOW mode active — animation ticks stretched, 60s end-of-demo hold.");
+  }
 
   log("Pre-run sweep: removing any leftover demo users from previous runs…");
   const swept = await sweepDemoOrphans();
@@ -192,8 +219,10 @@ async function main() {
     );
     await Promise.all(workerPromises);
 
-    log("Demo complete. Holding admin window for 20s — watch the map, then cleanup runs…");
-    await adminPage.waitForTimeout(20000);
+    log(
+      `Demo complete. Holding admin window for ${(FINAL_HOLD_MS / 1000).toFixed(0)}s — flip between /admin/rides, /admin/requests, /admin/completed, /admin/flags to see the data, then cleanup runs…`,
+    );
+    await adminPage.waitForTimeout(FINAL_HOLD_MS);
   } finally {
     for (const b of browsers) {
       await b.close().catch(() => {});
@@ -254,7 +283,7 @@ async function runUiRide(input: {
   await driverPage.waitForURL(new RegExp(`/trip/${trace.rideId}$`), { timeout: 8000 }).catch(() => {});
 
   // Animate to pickup while driver page is on /trip/:id
-  await animateMovement(driver.driverId!, driver.startLat, driver.startLng, rider.startLat, rider.startLng, 4, 500);
+  await animateMovement(driver.driverId!, driver.startLat, driver.startLng, rider.startLat, rider.startLng, TICKS, TICK_MS);
 
   await driverPage.getByRole("link", { name: /Advance to pickup confirmation/i }).click({ timeout: 5000 }).catch(() => {});
   await driverPage.waitForURL(new RegExp(`/trip/${trace.rideId}/pickup$`), { timeout: 5000 }).catch(() => {});
@@ -274,11 +303,17 @@ async function runUiRide(input: {
   await setRideStatus(trace.rideId, "in_progress", {
     pickup_at: new Date().toISOString(),
   });
-  await animateMovement(driver.driverId!, rider.startLat, rider.startLng, rider.destLat!, rider.destLng!, 4, 500);
+  await animateMovement(driver.driverId!, rider.startLat, rider.startLng, rider.destLat!, rider.destLng!, TICKS, TICK_MS);
 
   await setRideStatus(trace.rideId, "completed", {
     completed_at: new Date().toISOString(),
     fare_final: 22.5,
+  });
+  await attachRideFeedback({
+    rideId: trace.rideId,
+    riderId: rider.riderId!,
+    driverId: driver.driverId!,
+    isFirstRide: true,
   });
   await clearRiderLocation(rider.riderId!);
   // Driver's "current position" for the next pickup is the dropoff.
@@ -304,6 +339,8 @@ async function runDriverWorker(input: {
     if (idx === -1) return;
     const rider = ridePool.splice(idx, 1)[0]!;
 
+    // In slow mode, hold each ride in `matching` for a beat so it
+    // shows up in /admin/requests before being assigned.
     const trace = await createMatchingRide({
       riderId: rider.riderId!,
       pickupLat: rider.startLat,
@@ -312,6 +349,7 @@ async function runDriverWorker(input: {
       dropoffLng: rider.destLng!,
     });
     log(`  DB ride ${trace.rideId.slice(0, 8)}… ${driver.email.split("@")[0]} ↔ ${rider.email.split("@")[0]}`);
+    if (SLOW) await sleep(2500);
 
     const riderPage = visibleRiderPages.get(rider.riderId!);
     if (riderPage) {
@@ -322,7 +360,7 @@ async function runDriverWorker(input: {
       driver_id: driver.driverId!,
       matched_at: new Date().toISOString(),
     });
-    await animateMovement(driver.driverId!, driver.startLat, driver.startLng, rider.startLat, rider.startLng, 4, 500);
+    await animateMovement(driver.driverId!, driver.startLat, driver.startLng, rider.startLat, rider.startLng, TICKS, TICK_MS);
     await setRideStatus(trace.rideId, "arrived", {
       driver_arrived_at: new Date().toISOString(),
     });
@@ -330,15 +368,71 @@ async function runDriverWorker(input: {
     await setRideStatus(trace.rideId, "in_progress", {
       pickup_at: new Date().toISOString(),
     });
-    await animateMovement(driver.driverId!, rider.startLat, rider.startLng, rider.destLat!, rider.destLng!, 4, 500);
+    await animateMovement(driver.driverId!, rider.startLat, rider.startLng, rider.destLat!, rider.destLng!, TICKS, TICK_MS);
     await setRideStatus(trace.rideId, "completed", {
       completed_at: new Date().toISOString(),
       fare_final: 22.5,
+    });
+    await attachRideFeedback({
+      rideId: trace.rideId,
+      riderId: rider.riderId!,
+      driverId: driver.driverId!,
+      isFirstRide: false,
     });
     await clearRiderLocation(rider.riderId!);
     driver.startLat = rider.destLat!;
     driver.startLng = rider.destLng!;
     log(`  ✓ ${rider.email.split("@")[0]} delivered`);
+  }
+}
+
+let complaintFiled = false;
+let ratingIdx = 0;
+
+async function attachRideFeedback(input: {
+  rideId: string;
+  riderId: string;
+  driverId: string;
+  isFirstRide: boolean;
+}) {
+  // File the one complaint on the first DB-driven ride so the admin
+  // /flags tab has data. Visible-driver UI rides skip this so the
+  // complaint shows up partway through the demo, not on the very
+  // first transition.
+  if (!complaintFiled && !input.isFirstRide) {
+    await flagDriverForRide({
+      rideId: input.rideId,
+      riderId: input.riderId,
+      driverId: input.driverId,
+      reason: COMPLAINT.reason,
+      details: COMPLAINT.details,
+    });
+    // Still leave a low rating with the complaint so the same ride
+    // shows in /admin/completed with the bad score.
+    await submitRideRating({
+      rideId: input.rideId,
+      riderId: input.riderId,
+      driverId: input.driverId,
+      riderGaveDriver: 1,
+      riderComment: "Felt unsafe — see flag.",
+      tipAmount: 0,
+    });
+    complaintFiled = true;
+    return;
+  }
+
+  // 80% of completed rides get a 4-or-5 star rating + small tip.
+  if (Math.random() < 0.8) {
+    const review = RATING_COMMENTS[ratingIdx % RATING_COMMENTS.length]!;
+    ratingIdx++;
+    await submitRideRating({
+      rideId: input.rideId,
+      riderId: input.riderId,
+      driverId: input.driverId,
+      riderGaveDriver: review.stars,
+      riderComment: review.comment,
+      tipAmount: review.stars >= 5 ? 4 : 2,
+    });
   }
 }
 
