@@ -25,6 +25,53 @@ export function LiveMapClient({ initialLocations }: LiveMapClientProps) {
 
   useEffect(() => {
     const supabase = createClient();
+
+    // Initial load — the SSR pass may not have a session cookie in some
+    // demo flows (programmatic cookie injection lands after the first
+    // render). Fetching here guarantees dots appear once the admin
+    // browser is authed, regardless of when seeding happened.
+    void Promise.all([
+      supabase
+        .from("riders")
+        .select("id, name, current_lat, current_lng, current_location_updated_at")
+        .not("current_lat", "is", null)
+        .not("current_lng", "is", null),
+      supabase
+        .from("driver_locations")
+        .select("driver_id, lat, lng, recorded_at, drivers!inner(id, name, status)"),
+    ]).then(([riderResp, driverResp]) => {
+      if (riderResp.data) {
+        setRiders(
+          riderResp.data.map((row) => ({
+            id: String(row.id),
+            name: String(row.name ?? ""),
+            lat: Number(row.current_lat),
+            lng: Number(row.current_lng),
+            updatedAt: (row.current_location_updated_at as string | null) ?? null,
+          })),
+        );
+      }
+      if (driverResp.data) {
+        setDrivers(
+          driverResp.data.map((row) => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const drv = (Array.isArray((row as any).drivers)
+              ? (row as any).drivers[0]
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              : (row as any).drivers) as { id?: string; name?: string; status?: string } | undefined;
+            return {
+              id: drv?.id ?? String(row.driver_id),
+              name: drv?.name ?? "",
+              status: drv?.status ?? "",
+              lat: Number(row.lat),
+              lng: Number(row.lng),
+              updatedAt: (row.recorded_at as string | null) ?? null,
+            };
+          }),
+        );
+      }
+    });
+
     const channel = supabase
       .channel("admin-live-map")
       .on(

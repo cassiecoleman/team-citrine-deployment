@@ -21,7 +21,7 @@
 
 import { config } from "dotenv";
 import { resolve } from "path";
-import { chromium, type BrowserContext } from "@playwright/test";
+import { chromium, type Browser, type BrowserContext } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
 
 import {
@@ -63,15 +63,53 @@ async function main() {
   log("Seeding demo fleet (7 riders, 3 drivers, 1 admin)…");
   const fleet = await createDemoFleet({ riders: RIDER_SEEDS, drivers: DRIVER_SEEDS });
 
-  let browser;
+  const browsers: Browser[] = [];
   try {
     log(`Opening admin browser at ${APP_URL}/admin/live-map`);
-    browser = await chromium.launch({ headless: false });
-    const adminContext = await browser.newContext();
+    const adminBrowser = await chromium.launch({
+      headless: false,
+      args: ["--window-position=0,0", "--window-size=1100,900"],
+    });
+    browsers.push(adminBrowser);
+    const adminContext = await adminBrowser.newContext({
+      viewport: { width: 1100, height: 900 },
+    });
     await injectSession(adminContext, fleet.admin);
     const adminPage = await adminContext.newPage();
     await adminPage.goto(`${APP_URL}/admin/live-map`);
-    await adminPage.waitForTimeout(2000);
+    await adminPage.bringToFront();
+    await adminPage.waitForTimeout(1500);
+
+    // Open 2 rider + 2 driver phone-width windows so the demo also
+    // shows the user-facing UIs updating live alongside the admin map.
+    const phoneWindows = [
+      { user: fleet.riders[0]!, role: "rider" as const, dest: "/", x: 1110, y: 0 },
+      { user: fleet.riders[1]!, role: "rider" as const, dest: "/", x: 1510, y: 0 },
+      { user: fleet.drivers[0]!, role: "driver" as const, dest: "/driver", x: 1110, y: 460 },
+      { user: fleet.drivers[1]!, role: "driver" as const, dest: "/driver", x: 1510, y: 460 },
+    ];
+    for (const w of phoneWindows) {
+      const b = await chromium.launch({
+        headless: false,
+        args: [
+          `--window-position=${w.x},${w.y}`,
+          "--window-size=400,820",
+        ],
+      });
+      browsers.push(b);
+      const ctx = await b.newContext({
+        viewport: { width: 390, height: 780 },
+        deviceScaleFactor: 2,
+        isMobile: true,
+        hasTouch: true,
+      });
+      await injectSession(ctx, w.user);
+      const page = await ctx.newPage();
+      await page.goto(`${APP_URL}${w.dest}`);
+      log(`  opened ${w.role} window for ${w.user.email.split("@")[0]} at ${w.dest}`);
+    }
+    await adminPage.bringToFront();
+    await adminPage.waitForTimeout(1000);
 
     const rides: Array<RideTrace & { driverId: string; driver: FleetUser; rider: FleetUser }> = [];
 
@@ -116,10 +154,12 @@ async function main() {
       });
     }
 
-    log("Demo complete. Holding admin window for 4s before cleanup…");
-    await adminPage.waitForTimeout(4000);
+    log("Demo complete. Holding admin window for 30s — watch the map, then cleanup runs…");
+    await adminPage.waitForTimeout(30000);
   } finally {
-    if (browser) await browser.close();
+    for (const b of browsers) {
+      await b.close().catch(() => {});
+    }
     log("Cleaning up seeded users and rides…");
     await fleet.cleanup();
     log(`Total wall time: ${((Date.now() - start) / 1000).toFixed(1)}s`);
