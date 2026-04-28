@@ -10,10 +10,12 @@ import { createClient } from "@/lib/supabase";
 
 const RIDER_COLOR = "#2563eb"; // blue
 const DRIVER_COLOR = "#f97316"; // orange
+const PAIR_COLOR = "#16a34a"; // green — rider + driver in same vehicle
 const MEMPHIS_CENTER: [number, number] = [35.135, -90.045];
 
 type RiderMarker = LiveLocationsResult["riders"][number];
 type DriverMarker = LiveLocationsResult["drivers"][number];
+type ActiveRide = LiveLocationsResult["activeRides"][number];
 
 interface LiveMapClientProps {
   initialLocations: LiveLocationsResult;
@@ -22,6 +24,9 @@ interface LiveMapClientProps {
 export function LiveMapClient({ initialLocations }: LiveMapClientProps) {
   const [riders, setRiders] = useState<RiderMarker[]>(initialLocations.riders);
   const [drivers, setDrivers] = useState<DriverMarker[]>(initialLocations.drivers);
+  const [activeRides, setActiveRides] = useState<ActiveRide[]>(
+    initialLocations.activeRides ?? [],
+  );
 
   useEffect(() => {
     const supabase = createClient();
@@ -41,6 +46,7 @@ export function LiveMapClient({ initialLocations }: LiveMapClientProps) {
         const body: LiveLocationsResult = await resp.json();
         setRiders(body.riders);
         setDrivers(body.drivers);
+        setActiveRides(body.activeRides ?? []);
       } catch {
         // ignore transient fetch errors
       }
@@ -102,9 +108,41 @@ export function LiveMapClient({ initialLocations }: LiveMapClientProps) {
     };
   }, []);
 
-  const matchLines = riders
+  // Riders that are currently in_progress (driver has them in the
+  // vehicle) get rolled up into a single green "pair" marker at the
+  // driver's position. We hide the underlying rider + driver markers
+  // for those rides so the map shows one symbol per pair.
+  const inProgressDriverIds = new Set(
+    activeRides
+      .filter((r) => r.status === "in_progress" && r.driverId)
+      .map((r) => r.driverId as string),
+  );
+  const inProgressRiderIds = new Set(
+    activeRides.filter((r) => r.status === "in_progress").map((r) => r.riderId),
+  );
+
+  const pairMarkers = activeRides
+    .filter((r) => r.status === "in_progress" && r.driverId)
+    .map((r) => {
+      const driver = drivers.find((d) => d.id === r.driverId);
+      const rider = riders.find((rd) => rd.id === r.riderId);
+      if (!driver) return null;
+      return {
+        rideId: r.id,
+        riderName: rider?.name,
+        driverName: driver.name,
+        lat: driver.lat,
+        lng: driver.lng,
+      };
+    })
+    .filter((entry): entry is NonNullable<typeof entry> => entry !== null);
+
+  const visibleRiders = riders.filter((r) => !inProgressRiderIds.has(r.id));
+  const visibleDrivers = drivers.filter((d) => !inProgressDriverIds.has(d.id));
+
+  const matchLines = visibleRiders
     .map((rider) => {
-      const nearest = nearestAvailableDriver(rider, drivers);
+      const nearest = nearestAvailableDriver(rider, visibleDrivers);
       if (!nearest) return null;
       return {
         riderId: rider.id,
@@ -121,8 +159,10 @@ export function LiveMapClient({ initialLocations }: LiveMapClientProps) {
   return (
     <div className="space-y-2">
       <div className="rounded bg-primary-light/40 px-3 py-1 text-xs text-muted">
-        loaded {riders.length} rider{riders.length === 1 ? "" : "s"} ·{" "}
-        {drivers.length} driver{drivers.length === 1 ? "" : "s"} · {matchLines.length} match line{matchLines.length === 1 ? "" : "s"}
+        {visibleRiders.length} rider{visibleRiders.length === 1 ? "" : "s"} ·{" "}
+        {visibleDrivers.length} driver{visibleDrivers.length === 1 ? "" : "s"} ·{" "}
+        {pairMarkers.length} in-trip pair{pairMarkers.length === 1 ? "" : "s"} ·{" "}
+        {matchLines.length} match line{matchLines.length === 1 ? "" : "s"}
       </div>
     <div className="h-[600px] w-full overflow-hidden rounded-xl border border-border">
       <MapContainer
@@ -136,7 +176,7 @@ export function LiveMapClient({ initialLocations }: LiveMapClientProps) {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
-        {drivers.map((driver) => (
+        {visibleDrivers.map((driver) => (
           <CircleMarker
             key={`driver-${driver.id}`}
             center={[driver.lat, driver.lng]}
@@ -152,7 +192,7 @@ export function LiveMapClient({ initialLocations }: LiveMapClientProps) {
           </CircleMarker>
         ))}
 
-        {riders.map((rider) => (
+        {visibleRiders.map((rider) => (
           <CircleMarker
             key={`rider-${rider.id}`}
             center={[rider.lat, rider.lng]}
@@ -162,6 +202,29 @@ export function LiveMapClient({ initialLocations }: LiveMapClientProps) {
             <Popup>
               <div className="text-xs">
                 <p className="font-semibold">{rider.name}</p>
+              </div>
+            </Popup>
+          </CircleMarker>
+        ))}
+
+        {pairMarkers.map((p) => (
+          // Two overlapping green circles to look like a "double dot"
+          // signaling rider+driver in the same vehicle.
+          <CircleMarker
+            key={`pair-${p.rideId}`}
+            center={[p.lat, p.lng]}
+            radius={11}
+            pathOptions={{
+              color: PAIR_COLOR,
+              fillColor: PAIR_COLOR,
+              fillOpacity: 0.85,
+              weight: 3,
+            }}
+          >
+            <Popup>
+              <div className="text-xs">
+                <p className="font-semibold">{p.driverName} + {p.riderName ?? "rider"}</p>
+                <p className="text-muted">in trip</p>
               </div>
             </Popup>
           </CircleMarker>

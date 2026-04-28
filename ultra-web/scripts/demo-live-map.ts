@@ -21,7 +21,7 @@
 
 import { config } from "dotenv";
 import { resolve } from "path";
-import { chromium, type Browser, type BrowserContext } from "@playwright/test";
+import { chromium, type Browser, type BrowserContext, type Page } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
 
 import {
@@ -87,6 +87,12 @@ async function main() {
 
     // Open 2 rider + 2 driver phone-width windows so the demo also
     // shows the user-facing UIs updating live alongside the admin map.
+    // Drivers from the seed: drivers[0] = Marcus W., [1] = Nina J.
+    // We pick rider[0] / rider[1] as the riders whose rides go to those
+    // visible drivers so the UI flow is end-to-end visible.
+    const visibleRiders: { user: FleetUser; page: Page }[] = [];
+    const visibleDrivers: { user: FleetUser; page: Page }[] = [];
+
     const phoneWindows = [
       { user: fleet.riders[0]!, role: "rider" as const, dest: "/", x: 1110, y: 0 },
       { user: fleet.riders[1]!, role: "rider" as const, dest: "/", x: 1510, y: 0 },
@@ -112,14 +118,83 @@ async function main() {
       const page = await ctx.newPage();
       await page.goto(`${APP_URL}${w.dest}`);
       log(`  opened ${w.role} window for ${w.user.email.split("@")[0]} at ${w.dest}`);
+      if (w.role === "rider") visibleRiders.push({ user: w.user, page });
+      else visibleDrivers.push({ user: w.user, page });
     }
     await adminPage.bringToFront();
     await adminPage.waitForTimeout(1000);
 
-    const rides: Array<RideTrace & { driverId: string; driver: FleetUser; rider: FleetUser }> = [];
+    // Phase 1: visible riders fill in the LocationEntryCard so you can
+    // see the form interaction. (The seed already populated their
+    // current_lat/lng, but this re-saves them via the real UI.) Use
+    // the Lat/Lng tab so we don't depend on Nominatim during the demo.
+    log("Visible riders entering their location via LocationEntryCard…");
+    for (const r of visibleRiders) {
+      await r.page.bringToFront().catch(() => {});
+      await r.page.getByRole("button", { name: /lat \/ lng/i }).click({ timeout: 5000 }).catch(() => {});
+      await r.page.getByLabel(/latitude/i).fill(String(r.user.startLat), { timeout: 3000 }).catch(() => {});
+      await r.page.getByLabel(/longitude/i).fill(String(r.user.startLng), { timeout: 3000 }).catch(() => {});
+      await r.page.getByRole("button", { name: /save location/i }).click({ timeout: 3000 }).catch(() => {});
+      await r.page
+        .getByText(/saved 35\./i)
+        .waitFor({ state: "visible", timeout: 3000 })
+        .catch(() => {});
+      await sleep(300);
+    }
+    await adminPage.bringToFront();
 
-    log("Firing 7 ride requests staggered every 1.5s…");
-    for (let i = 0; i < fleet.riders.length; i++) {
+    const rides: Array<RideTrace & { driverId: string; driver: FleetUser; rider: FleetUser; visibleDriverPage?: Page }> = [];
+
+    // Phase 2: assign visible drivers to ride[0] and ride[1] explicitly,
+    // then create those two rides FIRST so the visible drivers can see
+    // their own offer in /queue. The remaining 5 rides get DB-driven
+    // matching after.
+    log("Phase 2 — UI-driven accepts for the 2 visible drivers…");
+    for (let i = 0; i < visibleDrivers.length; i++) {
+      const driver = visibleDrivers[i]!.user;
+      const driverPage = visibleDrivers[i]!.page;
+      const rider = fleet.riders[i]!;
+      const riderPage = visibleRiders[i]?.page;
+      const trace = await createMatchingRide({
+        riderId: rider.riderId!,
+        pickupLat: rider.startLat,
+        pickupLng: rider.startLng,
+        dropoffLat: rider.destLat!,
+        dropoffLng: rider.destLng!,
+      });
+      log(`  ride ${trace.rideId.slice(0, 8)}… → driver ${driver.email.split("@")[0]} (UI)`);
+      rides.push({
+        ...trace,
+        driverId: driver.driverId!,
+        driver,
+        rider,
+        visibleDriverPage: driverPage,
+      });
+
+      // Visible rider navigates to their tracking page so they see
+      // the matching → driver_en_route → arrived → in_progress
+      // transitions live (the page polls /api/rides/:id/status).
+      if (riderPage) {
+        riderPage.goto(`${APP_URL}/ride/${trace.rideId}`).catch(() => {});
+      }
+
+      await driverPage.bringToFront().catch(() => {});
+      await driverPage.goto(`${APP_URL}/queue`);
+      await driverPage
+        .getByRole("heading", { name: /Incoming assignment/i })
+        .waitFor({ state: "visible", timeout: 8000 })
+        .catch(() => {});
+      await sleep(1200);
+      await driverPage.getByRole("link", { name: /Accept Trip/i }).click();
+      await driverPage.waitForURL(new RegExp(`/trip/${trace.rideId}$`), { timeout: 8000 }).catch(() => {});
+      await sleep(800);
+    }
+    await adminPage.bringToFront();
+
+    // Phase 3: create the remaining 5 ride requests, DB-assign them to
+    // non-visible drivers (driver-2) using the existing nearest pick.
+    log("Phase 3 — DB-driven rides for the remaining 5 riders (staggered 1s)…");
+    for (let i = visibleDrivers.length; i < fleet.riders.length; i++) {
       const rider = fleet.riders[i]!;
       const trace = await createMatchingRide({
         riderId: rider.riderId!,
@@ -128,19 +203,42 @@ async function main() {
         dropoffLat: rider.destLat!,
         dropoffLng: rider.destLng!,
       });
-      const driver = pickNearestAvailable(rider, fleet.drivers, rides);
-      log(`  rider ${rider.email.split("@")[0]} → driver ${driver.email.split("@")[0]}`);
+      const driver = pickNearestAvailable(rider, fleet.drivers, rides, /* allowReuse */ true);
+      log(`  ride ${trace.rideId.slice(0, 8)}… → driver ${driver.email.split("@")[0]} (DB)`);
       rides.push({ ...trace, driverId: driver.driverId!, driver, rider });
-      // Simulate driver accept: assign + transition to driver_en_route
       await setRideStatus(trace.rideId, "driver_en_route", {
         driver_id: driver.driverId!,
         matched_at: new Date().toISOString(),
       });
-      await sleep(1500);
+      await sleep(1000);
     }
 
     log("Animating drivers toward pickups…");
     await animatePhase(rides, "to_pickup", start);
+
+    // Phase 4: visible drivers click through pickup confirmation.
+    log("Phase 4 — visible drivers confirming pickup via UI…");
+    for (const ride of rides) {
+      if (!ride.visibleDriverPage) continue;
+      const dp = ride.visibleDriverPage;
+      await dp.bringToFront().catch(() => {});
+      await dp.getByRole("link", { name: /Advance to pickup confirmation/i }).click().catch(() => {});
+      await dp.waitForURL(new RegExp(`/trip/${ride.rideId}/pickup$`), { timeout: 5000 }).catch(() => {});
+      await sleep(700);
+      await dp
+        .getByRole("button", { name: /Confirm the rider says the name on screen/i })
+        .click()
+        .catch(() => {});
+      await sleep(400);
+      await dp
+        .getByRole("button", { name: /Confirm curbside pickup matches the app pin/i })
+        .click()
+        .catch(() => {});
+      await sleep(400);
+      await dp.getByRole("button", { name: /^Confirm Pickup$/i }).click().catch(() => {});
+      await sleep(800);
+    }
+    await adminPage.bringToFront();
 
     log("All drivers arrived. Starting in-progress phase…");
     for (const ride of rides) {
@@ -175,10 +273,11 @@ function pickNearestAvailable(
   rider: FleetUser,
   drivers: FleetUser[],
   taken: Array<{ driverId: string }>,
+  allowReuse = false,
 ): FleetUser {
   const takenIds = new Set(taken.map((t) => t.driverId));
   const available = drivers.filter((d) => !takenIds.has(d.driverId!));
-  const pool = available.length > 0 ? available : drivers;
+  const pool = allowReuse ? drivers : available.length > 0 ? available : drivers;
   let best = pool[0]!;
   let bestDistance = Number.POSITIVE_INFINITY;
   for (const d of pool) {

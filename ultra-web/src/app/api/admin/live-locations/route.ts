@@ -7,7 +7,7 @@ import {
 import { getCurrentUserAndRole } from "@/lib/auth-guards";
 import { createServiceRoleClient } from "@/lib/supabase-server";
 
-const EMPTY: LiveLocationsResult = { riders: [], drivers: [] };
+const EMPTY: LiveLocationsResult = { riders: [], drivers: [], activeRides: [] };
 
 export const dynamic = "force-dynamic";
 
@@ -29,7 +29,7 @@ export async function GET(request: Request) {
   // auth.role !== "admin" branch returns EMPTY.
   if (process.env.NODE_ENV !== "production") {
     const sb = createServiceRoleClient();
-    const [ridersResp, driversResp] = await Promise.all([
+    const [ridersResp, driversResp, ridesResp] = await Promise.all([
       sb
         .from("riders")
         .select("id, name, current_lat, current_lng, current_location_updated_at")
@@ -38,6 +38,10 @@ export async function GET(request: Request) {
       sb
         .from("driver_locations")
         .select("driver_id, lat, lng, recorded_at, drivers!inner(id, name, status)"),
+      sb
+        .from("rides")
+        .select("id, rider_id, driver_id, status")
+        .in("status", ["matching", "driver_en_route", "arrived", "in_progress"]),
     ]);
     const riders = (ridersResp.data ?? []).map((row) => ({
       id: String(row.id),
@@ -58,14 +62,22 @@ export async function GET(request: Request) {
         updatedAt: (row.recorded_at as string | null) ?? null,
       };
     });
+    const activeRides = (ridesResp.data ?? []).map((r) => ({
+      id: String(r.id),
+      riderId: String(r.rider_id),
+      driverId: r.driver_id ? String(r.driver_id) : null,
+      status: String(r.status),
+    }));
     if (debug)
       console.log(
         "[/api/admin/live-locations] dev bypass — riders:",
         riders.length,
         "drivers:",
         drivers.length,
+        "rides:",
+        activeRides.length,
       );
-    return NextResponse.json({ riders, drivers });
+    return NextResponse.json({ riders, drivers, activeRides });
   }
 
   if (!auth?.userId || auth.role !== "admin") {

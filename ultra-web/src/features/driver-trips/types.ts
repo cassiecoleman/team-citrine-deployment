@@ -33,8 +33,14 @@ export interface ActiveDriverTrip {
   riderRating: number;
   pickupLabel: string;
   pickupAddress: string;
+  pickupLat?: number;
+  pickupLng?: number;
   dropoffLabel: string;
   dropoffAddress: string;
+  dropoffLat?: number;
+  dropoffLng?: number;
+  driverLat?: number;
+  driverLng?: number;
   offeredFare: number;
   mileageMi: number;
   pickupEtaMin: number;

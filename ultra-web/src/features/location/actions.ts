@@ -25,6 +25,12 @@ export interface LiveLocationsResult {
     lng: number;
     updatedAt: string | null;
   }>;
+  activeRides: Array<{
+    id: string;
+    riderId: string;
+    driverId: string | null;
+    status: string;
+  }>;
 }
 
 const updateLocationSchema = z
@@ -159,9 +165,20 @@ export async function getActiveLiveLocations(
     return { success: false, error: driversResp.error.message };
   }
 
+  const ridesResp = await supabase
+    .from("rides")
+    .select("id, rider_id, driver_id, status")
+    .in("status", ["matching", "driver_en_route", "arrived", "in_progress"]);
+
   return {
     success: true,
     data: {
+      activeRides: (ridesResp.data ?? []).map((r) => ({
+        id: String(r.id),
+        riderId: String(r.rider_id),
+        driverId: r.driver_id ? String(r.driver_id) : null,
+        status: String(r.status),
+      })),
       riders: (ridersResp.data ?? []).map((row) => ({
         id: row.id as string,
         name: row.name as string,
