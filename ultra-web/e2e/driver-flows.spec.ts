@@ -97,16 +97,18 @@ test.describe("driver flows", () => {
       });
       await expect(confirmPickupButton).toBeDisabled();
 
-      await page
-        .getByRole("button", {
-          name: "1. Confirm the rider says the name on screen.",
-        })
-        .click();
-      await page
-        .getByRole("button", {
-          name: "2. Confirm curbside pickup matches the app pin.",
-        })
-        .click();
+      const firstCheck = page.getByRole("button", {
+        name: /confirm the rider says the name on screen/i,
+      });
+      const secondCheck = page.getByRole("button", {
+        name: /confirm curbside pickup matches the app pin/i,
+      });
+
+      await firstCheck.click();
+      await expect(firstCheck).toHaveAttribute("aria-pressed", "true");
+
+      await secondCheck.click();
+      await expect(secondCheck).toHaveAttribute("aria-pressed", "true");
 
       await expect(confirmPickupButton).toBeEnabled();
       await confirmPickupButton.click();

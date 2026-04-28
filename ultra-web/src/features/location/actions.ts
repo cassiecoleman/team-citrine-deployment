@@ -169,6 +169,9 @@ export async function getActiveLiveLocations(
     .from("rides")
     .select("id, rider_id, driver_id, status")
     .in("status", ["matching", "driver_en_route", "arrived", "in_progress"]);
+  if (ridesResp.error) {
+    return { success: false, error: ridesResp.error.message };
+  }
 
   return {
     success: true,

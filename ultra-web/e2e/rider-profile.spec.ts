@@ -35,6 +35,7 @@ test.describe("US10 — manage rider profiles", () => {
   });
 
   test("profile page shows parent account info", async ({ page }) => {
+    await injectAuthenticatedSession(page.context(), rider);
     await page.goto("/profile");
 
     await expect(page.getByText("Maria Johnson")).toBeVisible();
@@ -42,6 +43,7 @@ test.describe("US10 — manage rider profiles", () => {
   });
 
   test("child rider profiles are displayed", async ({ page }) => {
+    await injectAuthenticatedSession(page.context(), rider);
     await page.goto("/profile");
 
     await expect(page.getByText("Emma")).toBeVisible();
@@ -49,6 +51,7 @@ test.describe("US10 — manage rider profiles", () => {
   });
 
   test("emergency contact shown on child cards", async ({ page }) => {
+    await injectAuthenticatedSession(page.context(), rider);
     await page.goto("/profile");
 
     const rosaTexts = page.getByText("Rosa M.");
@@ -56,12 +59,14 @@ test.describe("US10 — manage rider profiles", () => {
   });
 
   test("add rider profile button is present", async ({ page }) => {
+    await injectAuthenticatedSession(page.context(), rider);
     await page.goto("/profile");
 
     await expect(page.getByText("Add Rider Profile")).toBeVisible();
   });
 
   test("quick links navigate correctly", async ({ page }) => {
+    await injectAuthenticatedSession(page.context(), rider);
     await page.goto("/profile");
 
     await expect(page.getByRole("link", { name: /safety settings/i })).toHaveAttribute("href", "/profile/safety");

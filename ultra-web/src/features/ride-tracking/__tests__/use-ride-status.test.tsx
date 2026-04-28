@@ -4,7 +4,6 @@ import type { RideDetail } from "../types";
 import { useRideStatus } from "../use-ride-status";
 
 const removeChannel = vi.fn();
-const fetchMock = vi.fn();
 let realtimePayloadHandler: ((payload: { new: { status?: string } }) => void) | undefined;
 const subscribeStatusHandlers: Array<(status: string) => void> = [];
 const channels: Array<{
@@ -29,6 +28,7 @@ const createChannel = () => {
   return channel;
 };
 
+const fetchMock = vi.fn();
 const channelFactory = vi.fn(() => createChannel());
 
 vi.mock("@/lib/supabase", () => ({
@@ -67,6 +67,7 @@ afterEach(() => {
   subscribeStatusHandlers.length = 0;
   channels.length = 0;
   channelFactory.mockClear();
+  fetchMock.mockReset();
 });
 
 describe("useRideStatus", () => {
@@ -94,6 +95,7 @@ describe("useRideStatus", () => {
 
     await act(async () => {
       realtimePayloadHandler?.({ new: { status: "driver_en_route" } });
+      await Promise.resolve();
     });
 
     expect(result.current.ride.status).toBe("en_route");

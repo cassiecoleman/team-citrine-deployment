@@ -41,9 +41,11 @@ test.describe("admin live map — rider visibility", () => {
 
       const riderPage = await riderCtx.newPage();
       await riderPage.goto("/");
-      await riderPage.getByLabel(/address/i).fill("1150 West End Ave, Memphis, TN");
+      await riderPage.getByRole("button", { name: /lat \/ lng/i }).click();
+      await riderPage.getByLabel(/latitude/i).fill("35.1495");
+      await riderPage.getByLabel(/longitude/i).fill("-90.0490");
       await riderPage.getByRole("button", { name: /save location/i }).click();
-      await expect(riderPage.getByText(/saved 35\./i)).toBeVisible();
+      await expect(riderPage.getByText(/saved 35\.1495, -90\.0490/i)).toBeVisible();
 
       const adminPage = await adminCtx.newPage();
       await adminPage.goto("/admin/live-map");

@@ -257,6 +257,23 @@ describe("getActiveLiveLocations", () => {
           }),
         };
       }
+      if (table === "rides") {
+        return {
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({
+              data: [
+                {
+                  id: "ride-1",
+                  rider_id: "rider-1",
+                  driver_id: "driver-1",
+                  status: "matching",
+                },
+              ],
+              error: null,
+            }),
+          }),
+        };
+      }
       throw new Error(`Unexpected table: ${table}`);
     });
 
@@ -280,6 +297,14 @@ describe("getActiveLiveLocations", () => {
         lng: -90.05,
         updatedAt: "2026-04-27T22:01:00Z",
       });
+      expect(result.data.activeRides).toEqual([
+        {
+          id: "ride-1",
+          riderId: "rider-1",
+          driverId: "driver-1",
+          status: "matching",
+        },
+      ]);
     }
   });
 });

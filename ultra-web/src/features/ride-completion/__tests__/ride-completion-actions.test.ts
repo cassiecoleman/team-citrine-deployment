@@ -18,8 +18,8 @@ const mockRatingUpsertSingle = vi.fn();
 const mockRatingUpsertSelect = vi.fn(() => ({ single: mockRatingUpsertSingle }));
 const mockRatingUpsert = vi.fn(() => ({ select: mockRatingUpsertSelect }));
 
-const mockDriverFlagInsert = vi.fn();
 const mockHistoryInsert = vi.fn();
+const mockDriverFlagInsert = vi.fn();
 
 const mockFrom = vi.fn((table: string) => {
   if (table === "riders") {
@@ -52,6 +52,7 @@ vi.mock("@/lib/supabase-server", () => ({
 describe("ride completion actions", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockDriverFlagInsert.mockResolvedValue({ error: null });
   });
 
   it("fetches ride summary for a completed rider-owned ride", async () => {
@@ -162,7 +163,7 @@ describe("ride completion actions", () => {
     );
   });
 
-  it("persists a driver issue report in ride history", async () => {
+  it("persists a driver issue report in driver_flags and ride history", async () => {
     mockSingle
       .mockResolvedValueOnce({ data: { id: "rider-1" }, error: null })
       .mockResolvedValueOnce({

@@ -67,6 +67,15 @@ npm run test
 npm run test:e2e
 ```
 
+For the focused backend unit suite for driver trip operations:
+
+```bash
+npm run test:driver-trips
+npm run test:driver-trips:coverage
+```
+
+These commands use `vitest.backend.config.mts` and target `src/features/driver-trips/__tests__/driver-trip-operations.test.ts`.
+
 Stripe-backed pages and Playwright payment tests also require the Stripe test
 keys from `ultra-web/.env.local.example` to be present in `ultra-web/.env.local`.
 
@@ -75,6 +84,8 @@ If Playwright asks for browser binaries on your machine, install them with:
 ```bash
 npx playwright install chromium
 ```
+
+If coverage support is missing locally, install dependencies in `ultra-web` first so the Vitest coverage provider is available.
 
 ## Seed Logins
 
