@@ -105,9 +105,10 @@ by:
   internet access to fetch rule packs. The runner's container should
   have egress; if it doesn't, the workflow logs will show a fetch
   error.
-- **SARIF upload fails with "resource not accessible"** — the workflow
-  needs `security-events: write` permissions. The current
-  `permissions:` block grants this; don't remove it.
+- **SARIF upload fails with "Resource not accessible by integration"**
+  — the upload step needs `actions: read` in addition to
+  `security-events: write`. If this regresses, check the workflow
+  `permissions:` block first.
 - **Dependabot PRs trigger the job and fail on read-only secret access**
   — the `if: github.actor != 'dependabot[bot]'` skip-condition handles
   this.
