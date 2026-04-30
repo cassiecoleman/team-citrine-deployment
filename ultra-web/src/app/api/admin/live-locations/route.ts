@@ -5,6 +5,7 @@ import {
   type LiveLocationsResult,
 } from "@/features/location/actions";
 import { getCurrentUserAndRole } from "@/lib/auth-guards";
+import { isExplicitLocalBypassEnabled } from "@/lib/app-env";
 import { createServiceRoleClient } from "@/lib/supabase-server";
 
 const EMPTY: LiveLocationsResult = { riders: [], drivers: [], activeRides: [] };
@@ -27,7 +28,7 @@ export async function GET(request: Request) {
   // service role. This is fine here because the local Supabase has
   // demo seed data and is bound to localhost; in production the
   // auth.role !== "admin" branch returns EMPTY.
-  if (process.env.NODE_ENV !== "production") {
+  if (isExplicitLocalBypassEnabled()) {
     const sb = createServiceRoleClient();
     const [ridersResp, driversResp, ridesResp] = await Promise.all([
       sb
