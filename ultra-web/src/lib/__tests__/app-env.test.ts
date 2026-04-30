@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   getAppOrigin,
   getDeploymentTarget,
+  getPasswordResetRedirectUrl,
   isExplicitLocalBypassEnabled,
 } from "@/lib/app-env";
 
@@ -55,5 +56,13 @@ describe("app env helpers", () => {
         ULTRA_ENABLE_ADMIN_LIVE_MAP_DEV_BYPASS: "true",
       }),
     ).toBe(false);
+  });
+
+  it("builds password reset redirects from the configured app origin", () => {
+    expect(
+      getPasswordResetRedirectUrl({
+        NEXT_PUBLIC_APP_URL: "https://ultra.example.com/some/path",
+      }),
+    ).toBe("https://ultra.example.com/auth/reset-password");
   });
 });

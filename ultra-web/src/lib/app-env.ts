@@ -40,6 +40,10 @@ export function getAppOrigin(env: EnvLike = process.env): string {
   );
 }
 
+export function getPasswordResetRedirectUrl(env: EnvLike = process.env): string {
+  return `${getAppOrigin(env)}/auth/reset-password`;
+}
+
 export function isExplicitLocalBypassEnabled(env: EnvLike = process.env): boolean {
   return (
     getDeploymentTarget(env) === "local" &&

@@ -1,5 +1,6 @@
 'use server'
 
+import { getPasswordResetRedirectUrl } from '@/lib/app-env'
 import { createServerAuthClient, createServiceRoleClient } from '@/lib/supabase-server'
 import { z } from 'zod'
 
@@ -175,7 +176,7 @@ export async function resetPassword(
     const supabase = await createServerAuthClient()
 
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/auth/reset-password`,
+      redirectTo: getPasswordResetRedirectUrl(),
     })
 
     if (error) {
