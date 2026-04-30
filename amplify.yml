@@ -1,0 +1,19 @@
+version: 1
+applications:
+  - appRoot: ultra-web
+    frontend:
+      phases:
+        preBuild:
+          commands:
+            - cd ultra-web
+            - npm ci
+        build:
+          commands:
+            - npm run build
+      artifacts:
+        baseDirectory: ultra-web/.next
+        files:
+          - "**/*"
+      cache:
+        paths:
+          - ultra-web/node_modules/**/*

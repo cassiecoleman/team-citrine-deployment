@@ -32,6 +32,10 @@ payment pages and Playwright payment specs:
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase Dashboard > Settings > API > `anon` key |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase Dashboard > Settings > API > `service_role` key |
 | `SUPABASE_DB_URL` | Supabase Dashboard > Settings > Database > Connection string (Session mode, port 5432) |
+| `NEXT_PUBLIC_APP_URL` | Local dev URL (`http://localhost:3000`) or the Amplify-hosted app URL in deployed environments |
+| `AMPLIFY_APP_ORIGIN` | Optional explicit Amplify preview/prod origin override if `NEXT_PUBLIC_APP_URL` is not set by the hosting environment |
+| `AMPLIFY_PRODUCTION_BRANCH` | Branch Amplify should treat as production, usually `main` |
+| `ULTRA_ENABLE_ADMIN_LIVE_MAP_DEV_BYPASS` | Set to `true` only for local demo/dev runs that need the admin live map bypass |
 | `STRIPE_SECRET_KEY` | Stripe Dashboard > Developers > API keys > Secret key (test mode) |
 | `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Stripe Dashboard > Developers > API keys > Publishable key (test mode) |
 
@@ -83,6 +87,13 @@ npm run test:e2e   # Run Playwright E2E tests
 npm run test:e2e:ui # E2E with browser UI
 ```
 
+To point Playwright at a deployed Amplify preview instead of starting local
+Next.js, set `PLAYWRIGHT_BASE_URL`:
+
+```bash
+PLAYWRIGHT_BASE_URL=https://your-preview.amplifyapp.com npm run test:e2e -- e2e/auth-pages.spec.ts
+```
+
 The schema tests hit the real Supabase database, so you need valid `.env.local` credentials.
 
 ## Available Scripts
@@ -97,6 +108,24 @@ The schema tests hit the real Supabase database, so you need valid `.env.local` 
 | `npm run db:types` | Regenerate TypeScript types from Supabase schema |
 | `npm run db:push` | Push local migrations to remote Supabase |
 | `npm run db:migration:new` | Create a new migration file |
+
+## AWS Amplify SSR Setup
+
+Amplify should be configured against the repository root and use the committed
+[`amplify.yml`](../amplify.yml) build spec. That file points Amplify at the
+`ultra-web/` app root and runs the standard Next build without splitting the
+app into separate frontend/backend deployables.
+
+Recommended Amplify environment variables:
+
+- `NEXT_PUBLIC_APP_URL`
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `STRIPE_SECRET_KEY`
+- `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
+- `STRIPE_WEBHOOK_SECRET`
+- `AMPLIFY_PRODUCTION_BRANCH`
 
 ## Creating a New Migration
 
