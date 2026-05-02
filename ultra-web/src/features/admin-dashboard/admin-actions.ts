@@ -67,7 +67,7 @@ export async function createAdminUser(input: CreateAdminUserInput): Promise<Acti
     // Validate input
     const parsed = createAdminUserSchema.safeParse(input)
     if (!parsed.success) {
-      const errors = parsed.error.errors
+      const errors = parsed.error.issues
       const message = errors[0]?.message || 'Validation failed'
       return { success: false, error: message }
     }
@@ -122,7 +122,7 @@ export async function updateUserRole(input: UpdateAdminRoleInput): Promise<Actio
     // Validate input
     const parsed = updateAdminRoleSchema.safeParse(input)
     if (!parsed.success) {
-      const errors = parsed.error.errors
+      const errors = parsed.error.issues
       const message = errors[0]?.message || 'Validation failed'
       return { success: false, error: message }
     }

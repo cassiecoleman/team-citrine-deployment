@@ -40,7 +40,7 @@ export async function signUp(
     // Validate input
     const parsed = signUpSchema.safeParse(input)
     if (!parsed.success) {
-      const errors = parsed.error.errors
+      const errors = parsed.error.issues
       const message = errors[0]?.message || 'Validation failed'
       return { success: false, error: message }
     }
@@ -112,7 +112,7 @@ export async function signIn(input: SignInInput): Promise<AuthResponse<{ session
     // Validate input
     const parsed = signInSchema.safeParse(input)
     if (!parsed.success) {
-      const errors = parsed.error.errors
+      const errors = parsed.error.issues
       const message = errors[0]?.message || 'Validation failed'
       return { success: false, error: message }
     }
@@ -167,7 +167,7 @@ export async function resetPassword(
   try {
     const parsed = resetPasswordSchema.safeParse(input)
     if (!parsed.success) {
-      const errors = parsed.error.errors
+      const errors = parsed.error.issues
       const message = errors[0]?.message || 'Validation failed'
       return { success: false, error: message }
     }
