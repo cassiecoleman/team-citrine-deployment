@@ -375,7 +375,7 @@ export async function matchDriver(
     data: {
       id: updateResult.data.id,
       status: updateResult.data.status,
-      driverId: updateResult.data.driver_id,
+      driverId: updateResult.data.driver_id ?? nearestDriver.id,
     },
   };
 }
