@@ -58,6 +58,8 @@ export interface TestUser {
   password: string;
 }
 
+export type TestDriver = TestUser;
+
 function createAdminClient() {
   assertEnv();
   return createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);

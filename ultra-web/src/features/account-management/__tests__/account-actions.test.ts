@@ -116,7 +116,7 @@ describe("account management actions", () => {
       error: null,
     });
     // rider_profiles query returns empty
-    mockEq.mockReturnValueOnce({ data: [], error: null });
+    mockEq.mockReturnValueOnce({ data: [], error: null } as any);
 
     const result = await getChildProfiles();
 

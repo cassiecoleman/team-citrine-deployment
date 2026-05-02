@@ -95,7 +95,7 @@ describe("GET /api/admin/live-locations", () => {
   beforeEach(() => {
     vi.resetAllMocks();
     delete process.env.ULTRA_ENABLE_ADMIN_LIVE_MAP_DEV_BYPASS;
-    process.env.NODE_ENV = "development";
+    (process.env as Record<string, string | undefined>).NODE_ENV = "development";
   });
 
   it("does not use the dev bypass unless it is explicitly enabled", async () => {

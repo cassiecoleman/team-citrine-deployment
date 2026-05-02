@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { mockDriver } from "@/lib/mock-data";
 import { createClient } from "@/lib/supabase";
 import { buildRideViewModel } from "./ride-status-adapter";
 import type { RideDetail } from "./types";
@@ -47,18 +48,22 @@ export function useRideStatus({ rideId, initialRide }: UseRideStatusInput): {
         if (!response.ok) return;
         const payload = await response.json();
         if (payload.driver) {
-          setRide((prev) => ({
-            ...prev,
-            status: buildRideViewModel(prev, { status: payload.status }).status,
-            driver: {
-              ...prev.driver,
-              id: payload.driver.id ?? prev.driver.id,
-              name: payload.driver.name ?? prev.driver.name,
-              rating: payload.driver.rating ?? prev.driver.rating,
-              vehicle: payload.driver.vehicle ?? prev.driver.vehicle,
-              licensePlate: payload.driver.licensePlate ?? prev.driver.licensePlate,
-            },
-          }));
+          setRide((prev) => {
+            const previousDriver = prev.driver ?? initialRide.driver ?? mockDriver;
+
+            return {
+              ...prev,
+              status: buildRideViewModel(prev, { status: payload.status }).status,
+              driver: {
+                ...previousDriver,
+                id: payload.driver.id ?? previousDriver.id,
+                name: payload.driver.name ?? previousDriver.name,
+                rating: payload.driver.rating ?? previousDriver.rating,
+                vehicle: payload.driver.vehicle ?? previousDriver.vehicle,
+                licensePlate: payload.driver.licensePlate ?? previousDriver.licensePlate,
+              },
+            };
+          });
           return;
         }
       } catch {

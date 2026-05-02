@@ -60,6 +60,7 @@ async function buildDemoFlowRide(id: string, fallbackRide: RideDetail): Promise<
 
 export async function getRideStatus(id: string): Promise<RideDetail> {
   const fallbackRide = buildFallbackRide(id);
+  const fallbackDriver = fallbackRide.driver ?? mockDriver;
 
   const hasSupabaseConfig =
     Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL) &&
@@ -109,12 +110,12 @@ export async function getRideStatus(id: string): Promise<RideDetail> {
     durationMin:
       row.actual_duration_min ?? row.estimated_duration_min ?? fallbackRide.durationMin,
     driver: {
-      id: row.driver_id ?? fallbackRide.driver.id,
-      name: row.drivers?.name ?? fallbackRide.driver.name,
-      rating: row.drivers?.rating ?? fallbackRide.driver.rating,
-      vehicle: driverVehicle || fallbackRide.driver.vehicle,
-      licensePlate: row.drivers?.license_plate ?? fallbackRide.driver.licensePlate,
-      etaMinutes: fallbackRide.driver.etaMinutes,
+      id: row.driver_id ?? fallbackDriver.id,
+      name: row.drivers?.name ?? fallbackDriver.name,
+      rating: row.drivers?.rating ?? fallbackDriver.rating,
+      vehicle: driverVehicle || fallbackDriver.vehicle,
+      licensePlate: row.drivers?.license_plate ?? fallbackDriver.licensePlate,
+      etaMinutes: fallbackDriver.etaMinutes,
     },
     progressPercent: status === "matching" ? 0 : fallbackRide.progressPercent,
     distanceRemainingMi: fallbackRide.distanceRemainingMi,

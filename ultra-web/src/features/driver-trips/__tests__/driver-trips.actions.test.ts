@@ -31,13 +31,14 @@ describe("driver trip actions", () => {
   it("returns the queued trip assignment used on the accept/reject screen", async () => {
     await setDemoRideStatus("new-ride", "matching");
     const assignment = await getQueuedTrip();
+    expect(assignment).not.toBeNull();
 
-    expect(assignment.id).toBe("new-ride");
-    expect(assignment.pickupLabel).toBe("Community Clinic");
-    expect(assignment.dropoffLabel).toBe("Metro General Hospital");
-    expect(assignment.note).toContain("blue awning");
-    expect(assignment.urgencyLabel).toBe("Medical appointment");
-    expect(assignment.accessibilityNotes).toHaveLength(2);
+    expect(assignment?.id).toBe("new-ride");
+    expect(assignment?.pickupLabel).toBe("Community Clinic");
+    expect(assignment?.dropoffLabel).toBe("Metro General Hospital");
+    expect(assignment?.note).toContain("blue awning");
+    expect(assignment?.urgencyLabel).toBe("Medical appointment");
+    expect(assignment?.accessibilityNotes).toHaveLength(2);
   });
 
   it("maps the active trip payload to the requested trip id", async () => {

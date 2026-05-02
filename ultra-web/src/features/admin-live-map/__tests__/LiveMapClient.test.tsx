@@ -90,6 +90,7 @@ const initialLocations: LiveLocationsResult = {
       updatedAt: "2026-04-27T22:00:00Z",
     },
   ],
+  activeRides: [],
 };
 
 afterEach(() => {
