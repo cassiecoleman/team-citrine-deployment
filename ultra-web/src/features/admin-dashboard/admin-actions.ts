@@ -37,10 +37,12 @@ const createAdminUserSchema = z.object({
   password: z.string().min(8, 'Password must be at least 8 characters'),
 })
 
+const roleValues = ['rider', 'driver', 'admin'] as const
+
 const updateAdminRoleSchema = z.object({
   userId: z.string().uuid('Invalid user ID'),
-  role: z.enum(['rider', 'driver', 'admin'], {
-    errorMap: () => ({ message: "Role must be 'rider', 'driver', or 'admin'" }),
+  role: z.enum(roleValues, {
+    message: "Role must be 'rider', 'driver', or 'admin'",
   }),
 })
 
