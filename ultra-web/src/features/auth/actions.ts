@@ -31,7 +31,7 @@ export type AuthResponse<T = void> =
 
 /**
  * Sign up a new rider or driver
- * Creates auth user and corresponding user_roles/riders entry
+ * Creates auth user and corresponding user_roles/profile entry
  */
 export async function signUp(
   input: SignUpInput
@@ -76,9 +76,10 @@ export async function signUp(
       return { success: false, error: `Role setup failed: ${rolesError.message}` }
     }
 
+    const nameFromEmail = email.split('@')[0]
+
     // Create riders row so downstream features (rides, passes, splits) can look up rider_id
     if (role === 'rider') {
-      const nameFromEmail = email.split('@')[0]
       const { error: riderError } = await supabase
         .from('riders')
         .insert({
@@ -91,6 +92,24 @@ export async function signUp(
         await supabase.from('user_roles').delete().eq('user_id', userId)
         await supabase.auth.admin.deleteUser(userId)
         return { success: false, error: `Rider profile setup failed: ${riderError.message}` }
+      }
+    }
+
+    // Create drivers row so driver flows can resolve the signed-in driver account
+    if (role === 'driver') {
+      const { error: driverError } = await supabase
+        .from('drivers')
+        .insert({
+          user_id: userId,
+          name: nameFromEmail,
+          status: 'offline',
+        })
+
+      if (driverError) {
+        // Clean up: remove role and auth user
+        await supabase.from('user_roles').delete().eq('user_id', userId)
+        await supabase.auth.admin.deleteUser(userId)
+        return { success: false, error: `Driver profile setup failed: ${driverError.message}` }
       }
     }
 
