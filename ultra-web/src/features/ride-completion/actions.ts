@@ -281,6 +281,10 @@ export async function flagDriver(
     return { success: false, error: rideResult.error };
   }
 
+  if (!rideResult.data.driver_id) {
+    return { success: false, error: "Ride does not have an assigned driver." };
+  }
+
   // Map UI category to driver_flags reason enum
   const categoryToReason: Record<string, string> = {
     "Unsafe driving": "safety",
