@@ -5,15 +5,14 @@ applications:
       phases:
         preBuild:
           commands:
-            - cd ultra-web
             - npm ci
         build:
           commands:
             - npm run build
       artifacts:
-        baseDirectory: ultra-web/.next
+        baseDirectory: .next
         files:
           - "**/*"
       cache:
         paths:
-          - ultra-web/node_modules/**/*
+          - node_modules/**/*
