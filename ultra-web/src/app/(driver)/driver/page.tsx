@@ -4,6 +4,7 @@ import {
   toggleDriverAvailability,
 } from "@/features/driver-trips/actions";
 import { DriverShiftBoard } from "@/features/driver-trips/components/DriverShiftBoard";
+import type { DriverShiftSummary } from "@/features/driver-trips/types";
 import { LocationEntryCard } from "@/features/location/components/LocationEntryCard";
 
 export default async function DriverHomePage({
@@ -25,7 +26,7 @@ export default async function DriverHomePage({
   }
 
   const summary = await getDriverShiftSummary(driverUserId);
-  const summaryWithFallbackToggle =
+  const summaryWithFallbackToggle: DriverShiftSummary =
     !driverUserId &&
     (params.availability === "available" || params.availability === "offline")
       ? {
