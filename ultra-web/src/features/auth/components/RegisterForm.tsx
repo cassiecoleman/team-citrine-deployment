@@ -57,7 +57,10 @@ export function RegisterForm() {
       return { success: true, error: null }
     }
 
-    return { success: false, error: result.error || 'Sign up failed' }
+    return {
+      success: false,
+      error: ('error' in result && result.error) ? result.error : 'Sign up failed',
+    }
   }
 
   return (

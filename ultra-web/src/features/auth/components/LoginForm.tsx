@@ -61,7 +61,10 @@ export function LoginForm() {
       return { success: true, error: null }
     }
 
-    return { success: false, error: result.error || 'Sign in failed' }
+    return {
+      success: false,
+      error: ('error' in result && result.error) ? result.error : 'Sign in failed',
+    }
   }
 
   return (
