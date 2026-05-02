@@ -6,7 +6,7 @@ import {
 } from "@/features/location/actions";
 import { getCurrentUserAndRole } from "@/lib/auth-guards";
 
-const EMPTY: LiveLocationsResult = { riders: [], drivers: [] };
+const EMPTY: LiveLocationsResult = { riders: [], drivers: [], activeRides: [] };
 
 export default async function AdminLiveMapPage() {
   const auth = await getCurrentUserAndRole();
