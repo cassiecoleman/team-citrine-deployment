@@ -49,7 +49,7 @@ export default async function CompleteRidePage({ params }: { params: Promise<{ i
   } catch {
     // no session
   }
-  riderUserId = riderUserId ?? getConfiguredDemoUserId();
+  riderUserId = riderUserId ?? getConfiguredDemoUserId() ?? undefined;
 
   let data: RideCompletionData;
 

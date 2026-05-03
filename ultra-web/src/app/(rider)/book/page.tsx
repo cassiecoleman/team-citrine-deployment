@@ -27,7 +27,7 @@ export default async function BookingPage() {
     } catch {
       // no session
     }
-    userId = userId ?? getConfiguredDemoUserId();
+    userId = userId ?? getConfiguredDemoUserId() ?? undefined;
 
     const pickup = {
       lat: Number(formData.get("pickupLat")) || homeLocation.lat,

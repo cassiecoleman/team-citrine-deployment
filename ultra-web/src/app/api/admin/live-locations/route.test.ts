@@ -154,7 +154,7 @@ describe("GET /api/admin/live-locations", () => {
 
   it("allows the bypass for deployed demo mode too", async () => {
     process.env.ULTRA_ENABLE_ADMIN_LIVE_MAP_DEV_BYPASS = "true";
-    process.env.NODE_ENV = "production";
+    (process.env as Record<string, string | undefined>).NODE_ENV = "production";
     process.env.AWS_BRANCH = "main";
     process.env.AMPLIFY_PRODUCTION_BRANCH = "main";
     getCurrentUserAndRole.mockResolvedValue(null);

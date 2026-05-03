@@ -28,7 +28,7 @@ export default async function SchedulePage() {
     } catch {
       // no session
     }
-    riderUserId = riderUserId ?? getConfiguredDemoUserId();
+    riderUserId = riderUserId ?? getConfiguredDemoUserId() ?? undefined;
 
     const isRecurring = formData.get("isRecurring") === "true";
     const date = String(formData.get("date") ?? "");
