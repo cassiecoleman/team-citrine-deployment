@@ -8,6 +8,7 @@ applications:
             - npm ci
         build:
           commands:
+            - env | grep -e NEXT_PUBLIC_SUPABASE_URL -e NEXT_PUBLIC_SUPABASE_ANON_KEY -e SUPABASE_SERVICE_ROLE_KEY -e NEXT_PUBLIC_APP_URL -e AMPLIFY_APP_ORIGIN -e AMPLIFY_PRODUCTION_BRANCH -e ULTRA_ENABLE_DEMO_MODE -e ULTRA_ENABLE_ADMIN_LIVE_MAP_DEV_BYPASS -e ULTRA_DEMO_RIDE_ID -e ULTRA_DEFAULT_USER_ID -e ULTRA_DEFAULT_DRIVER_USER_ID >> ultra-web/.env.production
             - npm run build
       artifacts:
         baseDirectory: .next
