@@ -4,7 +4,10 @@ import {
   getDemoQueueRideId,
   setDemoRideStatus,
 } from "@/lib/demo-ride-state";
-import { getConfiguredDemoRideId } from "@/lib/app-env";
+import {
+  getConfiguredDemoDriverUserId,
+  getConfiguredDemoRideId,
+} from "@/lib/app-env";
 import { mockDelay } from "@/lib/mock-delay";
 import { createServerAuthClient, createServiceRoleClient } from "@/lib/supabase-server";
 import { z } from "zod";
@@ -107,11 +110,7 @@ export async function getRuntimeDriverUserId(
 }
 
 function resolveConfiguredDriverUserId(driverUserId?: string): string | undefined {
-  return (
-    driverUserId ??
-    process.env.ULTRA_DEFAULT_DRIVER_USER_ID ??
-    process.env.ULTRA_DEFAULT_USER_ID
-  );
+  return driverUserId ?? getConfiguredDemoDriverUserId() ?? undefined;
 }
 
 export async function getDriverShiftSummary(

@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 
 import {
   getAppOrigin,
+  getConfiguredDemoDriverUserId,
   getConfiguredDemoRideId,
+  getConfiguredDemoUserId,
   getDeploymentTarget,
   getPasswordResetRedirectUrl,
   isDemoModeEnabled,
@@ -94,6 +96,48 @@ describe("app env helpers", () => {
     ).toBe("ride-seeded-demo-1");
 
     expect(getConfiguredDemoRideId({})).toBeNull();
+  });
+
+  it("only returns demo user ids when demo mode is enabled", () => {
+    expect(
+      getConfiguredDemoUserId({
+        NODE_ENV: "production",
+        AWS_BRANCH: "main",
+        AMPLIFY_PRODUCTION_BRANCH: "main",
+        ULTRA_DEFAULT_USER_ID: "rider-demo-1",
+      }),
+    ).toBe("rider-demo-1");
+
+    expect(
+      getConfiguredDemoUserId({
+        NODE_ENV: "production",
+        AWS_BRANCH: "main",
+        AMPLIFY_PRODUCTION_BRANCH: "main",
+        ULTRA_ENABLE_DEMO_MODE: "false",
+        ULTRA_DEFAULT_USER_ID: "rider-demo-1",
+      }),
+    ).toBeNull();
+  });
+
+  it("prefers the configured driver demo id and falls back to the rider demo id", () => {
+    expect(
+      getConfiguredDemoDriverUserId({
+        NODE_ENV: "production",
+        AWS_BRANCH: "main",
+        AMPLIFY_PRODUCTION_BRANCH: "main",
+        ULTRA_DEFAULT_DRIVER_USER_ID: "driver-demo-1",
+        ULTRA_DEFAULT_USER_ID: "rider-demo-1",
+      }),
+    ).toBe("driver-demo-1");
+
+    expect(
+      getConfiguredDemoDriverUserId({
+        NODE_ENV: "production",
+        AWS_BRANCH: "main",
+        AMPLIFY_PRODUCTION_BRANCH: "main",
+        ULTRA_DEFAULT_USER_ID: "rider-demo-1",
+      }),
+    ).toBe("rider-demo-1");
   });
 
   it("builds password reset redirects from the configured app origin", () => {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { MapPin, CreditCard, Users, Calendar } from "lucide-react";
@@ -22,8 +22,21 @@ interface BookingClientProps {
   estimate: FareEstimate;
   pickup: Location;
   initialDropoff: Location;
-  requestRideAction: (formData: FormData) => void | Promise<void>;
+  requestRideAction: (
+    prevState: BookingRequestState,
+    formData: FormData,
+  ) => BookingRequestState | Promise<BookingRequestState>;
 }
+
+export interface BookingRequestState {
+  success: boolean;
+  error: string | null;
+}
+
+const INITIAL_REQUEST_STATE: BookingRequestState = {
+  success: false,
+  error: null,
+};
 
 export function BookingClient({
   estimate,
@@ -31,6 +44,10 @@ export function BookingClient({
   initialDropoff,
   requestRideAction,
 }: BookingClientProps) {
+  const [requestState, formAction, isPending] = useActionState(
+    requestRideAction,
+    INITIAL_REQUEST_STATE,
+  );
   const [destinationQuery, setDestinationQuery] = useState("");
   const [dropoff, setDropoff] = useState(initialDropoff);
   const [distanceMi, setDistanceMi] = useState(estimate.distanceMi);
@@ -40,37 +57,59 @@ export function BookingClient({
   >(undefined);
   const [searchError, setSearchError] = useState<string | null>(null);
 
-  async function handleDestinationSearch() {
-    const geocoder = createGeocodingProvider();
-    const router = createRoutingProvider();
-    const results = await geocoder.search(destinationQuery);
-    const topResult = results[0];
-
-    if (!topResult) {
-      setSearchError("No destination match found. Try a Memphis address.");
-      return;
+  useEffect(() => {
+    if (requestState.error) {
+      console.error("[BookingClient] ride request failed", {
+        error: requestState.error,
+        pickup,
+        dropoff,
+      });
     }
+  }, [dropoff, pickup, requestState.error]);
 
-    setDropoff({
-      address: topResult.address,
-      lat: topResult.lat,
-      lng: topResult.lng,
-    });
-    setSearchError(null);
+  async function handleDestinationSearch() {
+    try {
+      const geocoder = createGeocodingProvider();
+      const router = createRoutingProvider();
+      const results = await geocoder.search(destinationQuery);
+      const topResult = results[0];
 
-    const route = await router.getRoute(
-      { lat: pickup.lat, lng: pickup.lng },
-      { lat: topResult.lat, lng: topResult.lng },
-    );
+      if (!topResult) {
+        setSearchError("No destination match found. Try a Memphis address.");
+        console.warn("[BookingClient] destination search returned no results", {
+          destinationQuery,
+        });
+        return;
+      }
 
-    setRouteCoordinates(route.coordinates);
-    setDistanceMi(route.distanceMiles);
+      setDropoff({
+        address: topResult.address,
+        lat: topResult.lat,
+        lng: topResult.lng,
+      });
+      setSearchError(null);
 
-    const etaFromMatrix = await router.getEtaMinutes(
-      { lat: pickup.lat, lng: pickup.lng },
-      { lat: topResult.lat, lng: topResult.lng },
-    );
-    setEtaMin(etaFromMatrix || route.durationMinutes);
+      const route = await router.getRoute(
+        { lat: pickup.lat, lng: pickup.lng },
+        { lat: topResult.lat, lng: topResult.lng },
+      );
+
+      setRouteCoordinates(route.coordinates);
+      setDistanceMi(route.distanceMiles);
+
+      const etaFromMatrix = await router.getEtaMinutes(
+        { lat: pickup.lat, lng: pickup.lng },
+        { lat: topResult.lat, lng: topResult.lng },
+      );
+      setEtaMin(etaFromMatrix || route.durationMinutes);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error";
+      setSearchError("Destination lookup failed. Check the console for details.");
+      console.error("[BookingClient] destination search failed", {
+        destinationQuery,
+        error: message,
+      });
+    }
   }
 
   return (
@@ -162,18 +201,26 @@ export function BookingClient({
       </Link>
 
       {/* Request Ride CTA */}
-      <form action={requestRideAction}>
+      <form action={formAction}>
         <input type="hidden" name="pickupLat" value={pickup.lat} />
         <input type="hidden" name="pickupLng" value={pickup.lng} />
         <input type="hidden" name="pickupAddress" value={pickup.address} />
         <input type="hidden" name="dropoffLat" value={dropoff.lat} />
         <input type="hidden" name="dropoffLng" value={dropoff.lng} />
         <input type="hidden" name="dropoffAddress" value={dropoff.address} />
+        {requestState.error ? (
+          <p className="mb-3 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            {requestState.error}
+          </p>
+        ) : null}
         <button
           type="submit"
-          className="w-full rounded-xl bg-primary py-4 text-center text-white font-semibold"
+          disabled={isPending}
+          className="w-full rounded-xl bg-primary py-4 text-center font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
         >
-          Request Ride {formatCurrency(estimate.totalFare)}
+          {isPending
+            ? "Requesting ride..."
+            : `Request Ride ${formatCurrency(estimate.totalFare)}`}
         </button>
       </form>
     </div>

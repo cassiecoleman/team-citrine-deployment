@@ -61,6 +61,28 @@ export function getConfiguredDemoRideId(env: EnvLike = process.env): string | nu
   return rideId ? rideId : null;
 }
 
+export function getConfiguredDemoUserId(env: EnvLike = process.env): string | null {
+  if (!isDemoModeEnabled(env)) {
+    return null;
+  }
+
+  const userId = env.ULTRA_DEFAULT_USER_ID?.trim();
+  return userId ? userId : null;
+}
+
+export function getConfiguredDemoDriverUserId(env: EnvLike = process.env): string | null {
+  if (!isDemoModeEnabled(env)) {
+    return null;
+  }
+
+  const userId = env.ULTRA_DEFAULT_DRIVER_USER_ID?.trim();
+  if (userId) {
+    return userId;
+  }
+
+  return getConfiguredDemoUserId(env);
+}
+
 export function isExplicitLocalBypassEnabled(env: EnvLike = process.env): boolean {
   return (
     (getDeploymentTarget(env) === "local" || isDemoModeEnabled(env)) &&

@@ -4,6 +4,7 @@ import {
   getRiderProfiles,
   scheduleRide,
 } from "@/features/ride-scheduling/actions";
+import { getConfiguredDemoUserId } from "@/lib/app-env";
 import { createServerAuthClient } from "@/lib/supabase-server";
 import { redirect } from "next/navigation";
 import { ScheduleForm } from "@/features/ride-scheduling/components/ScheduleForm";
@@ -27,7 +28,7 @@ export default async function SchedulePage() {
     } catch {
       // no session
     }
-    riderUserId = riderUserId ?? process.env.ULTRA_DEFAULT_USER_ID;
+    riderUserId = riderUserId ?? getConfiguredDemoUserId();
 
     const isRecurring = formData.get("isRecurring") === "true";
     const date = String(formData.get("date") ?? "");

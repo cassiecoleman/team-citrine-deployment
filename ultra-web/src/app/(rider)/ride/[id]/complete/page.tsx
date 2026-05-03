@@ -1,6 +1,10 @@
 import { getRideCompletion } from "@/features/ride-completion/actions";
 import { RideCompletePage } from "@/features/ride-completion/components/RideCompletePage";
-import { getConfiguredDemoRideId, isDemoModeEnabled } from "@/lib/app-env";
+import {
+  getConfiguredDemoRideId,
+  getConfiguredDemoUserId,
+  isDemoModeEnabled,
+} from "@/lib/app-env";
 import { createServerAuthClient } from "@/lib/supabase-server";
 import { aishaPayment, mockDriver, mockReceipt } from "@/lib/mock-data";
 import type { RideCompletionData } from "@/types";
@@ -45,7 +49,7 @@ export default async function CompleteRidePage({ params }: { params: Promise<{ i
   } catch {
     // no session
   }
-  riderUserId = riderUserId ?? process.env.ULTRA_DEFAULT_USER_ID;
+  riderUserId = riderUserId ?? getConfiguredDemoUserId();
 
   let data: RideCompletionData;
 
