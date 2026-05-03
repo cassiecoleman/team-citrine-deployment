@@ -95,6 +95,7 @@ describe("GET /api/admin/live-locations", () => {
   beforeEach(() => {
     vi.resetAllMocks();
     delete process.env.ULTRA_ENABLE_ADMIN_LIVE_MAP_DEV_BYPASS;
+    delete process.env.ULTRA_ENABLE_DEMO_MODE;
     (process.env as Record<string, string | undefined>).NODE_ENV = "development";
   });
 
@@ -112,12 +113,54 @@ describe("GET /api/admin/live-locations", () => {
     });
   });
 
-  it("allows the dev bypass when explicitly enabled for local runs", async () => {
+  it("allows the bypass when explicitly enabled for local runs", async () => {
     process.env.ULTRA_ENABLE_ADMIN_LIVE_MAP_DEV_BYPASS = "true";
     getCurrentUserAndRole.mockResolvedValue(null);
     createServiceRoleClient.mockReturnValue(createBypassClient());
 
     const response = await GET(new Request("http://localhost/api/admin/live-locations"));
+
+    expect(createServiceRoleClient).toHaveBeenCalled();
+    expect(await response.json()).toEqual({
+      riders: [
+        {
+          id: "rider-1",
+          name: "Rider One",
+          lat: 35.1,
+          lng: -90,
+          updatedAt: "2026-04-30T00:00:00.000Z",
+        },
+      ],
+      drivers: [
+        {
+          id: "driver-1",
+          name: "Driver One",
+          status: "available",
+          lat: 35.2,
+          lng: -90.1,
+          updatedAt: "2026-04-30T00:00:00.000Z",
+        },
+      ],
+      activeRides: [
+        {
+          id: "ride-1",
+          riderId: "rider-1",
+          driverId: "driver-1",
+          status: "matching",
+        },
+      ],
+    });
+  });
+
+  it("allows the bypass for deployed demo mode too", async () => {
+    process.env.ULTRA_ENABLE_ADMIN_LIVE_MAP_DEV_BYPASS = "true";
+    process.env.NODE_ENV = "production";
+    process.env.AWS_BRANCH = "main";
+    process.env.AMPLIFY_PRODUCTION_BRANCH = "main";
+    getCurrentUserAndRole.mockResolvedValue(null);
+    createServiceRoleClient.mockReturnValue(createBypassClient());
+
+    const response = await GET(new Request("https://ultra.example.com/api/admin/live-locations"));
 
     expect(createServiceRoleClient).toHaveBeenCalled();
     expect(await response.json()).toEqual({

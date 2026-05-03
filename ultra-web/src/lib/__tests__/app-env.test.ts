@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import {
   getAppOrigin,
+  getConfiguredDemoRideId,
   getDeploymentTarget,
   getPasswordResetRedirectUrl,
+  isDemoModeEnabled,
   isExplicitLocalBypassEnabled,
 } from "@/lib/app-env";
 
@@ -40,7 +42,23 @@ describe("app env helpers", () => {
     ).toBe("production");
   });
 
-  it("only enables explicit bypasses for local development", () => {
+  it("treats hosted builds as demo mode by default", () => {
+    expect(
+      isDemoModeEnabled({
+        NODE_ENV: "production",
+        AWS_BRANCH: "main",
+        AMPLIFY_PRODUCTION_BRANCH: "main",
+      }),
+    ).toBe(true);
+
+    expect(
+      isDemoModeEnabled({
+        NODE_ENV: "development",
+      }),
+    ).toBe(false);
+  });
+
+  it("allows explicit bypasses for local development and deployed demo mode", () => {
     expect(
       isExplicitLocalBypassEnabled({
         NODE_ENV: "development",
@@ -55,7 +73,27 @@ describe("app env helpers", () => {
         AMPLIFY_PRODUCTION_BRANCH: "main",
         ULTRA_ENABLE_ADMIN_LIVE_MAP_DEV_BYPASS: "true",
       }),
+    ).toBe(true);
+
+    expect(
+      isExplicitLocalBypassEnabled({
+        NODE_ENV: "production",
+        AWS_BRANCH: "main",
+        AMPLIFY_PRODUCTION_BRANCH: "main",
+        ULTRA_ENABLE_DEMO_MODE: "false",
+        ULTRA_ENABLE_ADMIN_LIVE_MAP_DEV_BYPASS: "true",
+      }),
     ).toBe(false);
+  });
+
+  it("returns the configured demo ride id when present", () => {
+    expect(
+      getConfiguredDemoRideId({
+        ULTRA_DEMO_RIDE_ID: "ride-seeded-demo-1",
+      }),
+    ).toBe("ride-seeded-demo-1");
+
+    expect(getConfiguredDemoRideId({})).toBeNull();
   });
 
   it("builds password reset redirects from the configured app origin", () => {

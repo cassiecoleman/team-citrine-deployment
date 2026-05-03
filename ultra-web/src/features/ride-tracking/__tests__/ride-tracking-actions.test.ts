@@ -61,17 +61,20 @@ describe("getRideStatus", () => {
   it("uses demo ride state status when Supabase config is unavailable", async () => {
     const originalSupabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const originalServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const originalDemoRideId = process.env.ULTRA_DEMO_RIDE_ID;
 
     process.env.NEXT_PUBLIC_SUPABASE_URL = "";
     process.env.SUPABASE_SERVICE_ROLE_KEY = "";
-    await setDemoRideStatus("new-ride", "driver_en_route");
+    process.env.ULTRA_DEMO_RIDE_ID = "ride-demo-1";
+    await setDemoRideStatus("ride-demo-1", "driver_en_route");
 
-    const ride = await getRideStatus("new-ride");
+    const ride = await getRideStatus("ride-demo-1");
 
-    expect(ride.id).toBe("new-ride");
+    expect(ride.id).toBe("ride-demo-1");
     expect(ride.status).toBe("en_route");
 
     process.env.NEXT_PUBLIC_SUPABASE_URL = originalSupabaseUrl;
     process.env.SUPABASE_SERVICE_ROLE_KEY = originalServiceRoleKey;
+    process.env.ULTRA_DEMO_RIDE_ID = originalDemoRideId;
   });
 });

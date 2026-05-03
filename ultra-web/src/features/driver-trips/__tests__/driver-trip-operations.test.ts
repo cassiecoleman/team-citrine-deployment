@@ -74,6 +74,11 @@ const mockFrom = vi.fn((table: string) => {
 
 vi.mock("@/lib/supabase-server", () => ({
   createServiceRoleClient: () => ({ from: mockFrom }),
+  createServerAuthClient: vi.fn(async () => ({
+    auth: {
+      getUser: vi.fn(async () => ({ data: { user: null } })),
+    },
+  })),
 }));
 
 describe("driver trip operations", () => {
@@ -282,29 +287,19 @@ describe("driver trip operations", () => {
     });
   });
 
-  it("resolves a fallback driver user id when env defaults are not set", async () => {
+  it("does not pick the first driver in the database when env defaults are not set", async () => {
     const originalDefaultDriverUserId = process.env.ULTRA_DEFAULT_DRIVER_USER_ID;
     const originalDefaultUserId = process.env.ULTRA_DEFAULT_USER_ID;
-    const originalSupabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const originalServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
     process.env.ULTRA_DEFAULT_DRIVER_USER_ID = "";
     process.env.ULTRA_DEFAULT_USER_ID = "";
-    process.env.NEXT_PUBLIC_SUPABASE_URL = "https://example.supabase.co";
-    process.env.SUPABASE_SERVICE_ROLE_KEY = "service-role";
-    mockDriverLimit.mockResolvedValueOnce({
-      data: [{ user_id: "driver-user-fallback" }],
-      error: null,
-    });
 
     const result = await getRuntimeDriverUserId();
 
-    expect(result).toBe("driver-user-fallback");
+    expect(result).toBeUndefined();
 
     process.env.ULTRA_DEFAULT_DRIVER_USER_ID = originalDefaultDriverUserId;
     process.env.ULTRA_DEFAULT_USER_ID = originalDefaultUserId;
-    process.env.NEXT_PUBLIC_SUPABASE_URL = originalSupabaseUrl;
-    process.env.SUPABASE_SERVICE_ROLE_KEY = originalServiceKey;
   });
 
   it("upserts a fresh driver location update", async () => {

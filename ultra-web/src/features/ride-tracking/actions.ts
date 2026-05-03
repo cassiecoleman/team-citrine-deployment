@@ -1,4 +1,5 @@
 import { ensureDemoRide, getDemoRideStatus } from "@/lib/demo-ride-state";
+import { getConfiguredDemoRideId, isDemoModeEnabled } from "@/lib/app-env";
 import { homeLocation, hospitalLocation, mockDriver } from "@/lib/mock-data";
 import { mockDelay } from "@/lib/mock-delay";
 import { createServiceRoleClient } from "@/lib/supabase-server";
@@ -61,13 +62,16 @@ async function buildDemoFlowRide(id: string, fallbackRide: RideDetail): Promise<
 export async function getRideStatus(id: string): Promise<RideDetail> {
   const fallbackRide = buildFallbackRide(id);
   const fallbackDriver = fallbackRide.driver ?? mockDriver;
+  const configuredDemoRideId = getConfiguredDemoRideId();
+  const isConfiguredDemoRide = configuredDemoRideId === id;
 
   const hasSupabaseConfig =
     Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL) &&
     Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY);
 
-  // Try real DB first if configured and not the hardcoded demo ID
-  if (!hasSupabaseConfig || id === "new-ride") {
+  // Try real DB first when configured, except for the explicitly configured
+  // demo ride which is allowed to stay scripted across demo environments.
+  if (!hasSupabaseConfig || isConfiguredDemoRide) {
     return buildDemoFlowRide(id, fallbackRide);
   }
 
@@ -81,8 +85,12 @@ export async function getRideStatus(id: string): Promise<RideDetail> {
     .single();
 
   if (rideResult.error || !rideResult.data) {
-    // Ride not in DB — fall back to demo state if available
-    return buildDemoFlowRide(id, fallbackRide);
+    // Ride not in DB — keep the scripted fallback only for the configured
+    // demo ride or for local/no-Supabase development.
+    if (isConfiguredDemoRide || isDemoModeEnabled()) {
+      return buildDemoFlowRide(id, fallbackRide);
+    }
+    return fallbackRide;
   }
 
   const row = rideResult.data as RideStatusRow;

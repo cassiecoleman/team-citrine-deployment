@@ -1,5 +1,6 @@
 import { getFareEstimate } from "@/features/fare-split/actions";
 import { createRide } from "@/features/ride-scheduling/actions";
+import { getConfiguredDemoRideId } from "@/lib/app-env";
 import { createServerAuthClient } from "@/lib/supabase-server";
 import { homeLocation, hospitalLocation } from "@/lib/mock-data";
 import { redirect } from "next/navigation";
@@ -63,7 +64,11 @@ export default async function BookingPage() {
     }
 
     if (!result.success) {
-      redirect("/ride/new-ride");
+      const demoRideId = getConfiguredDemoRideId();
+      if (demoRideId) {
+        redirect(`/ride/${demoRideId}`);
+      }
+      redirect("/book");
     }
 
     redirect(`/ride/${result.data.id}`);

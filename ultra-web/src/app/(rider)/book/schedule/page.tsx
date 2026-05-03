@@ -4,6 +4,7 @@ import {
   getRiderProfiles,
   scheduleRide,
 } from "@/features/ride-scheduling/actions";
+import { createServerAuthClient } from "@/lib/supabase-server";
 import { redirect } from "next/navigation";
 import { ScheduleForm } from "@/features/ride-scheduling/components/ScheduleForm";
 
@@ -14,10 +15,19 @@ export default async function SchedulePage() {
     getScheduleDefaults(),
     getRiderProfiles(),
   ]);
-  const defaultUserId = process.env.ULTRA_DEFAULT_USER_ID;
 
   async function submitScheduleAction(formData: FormData) {
     "use server";
+
+    let riderUserId: string | undefined;
+    try {
+      const supabase = await createServerAuthClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      riderUserId = user?.id;
+    } catch {
+      // no session
+    }
+    riderUserId = riderUserId ?? process.env.ULTRA_DEFAULT_USER_ID;
 
     const isRecurring = formData.get("isRecurring") === "true";
     const date = String(formData.get("date") ?? "");
@@ -47,7 +57,7 @@ export default async function SchedulePage() {
           scheduledFor,
           recurrenceRule,
         },
-        defaultUserId,
+        riderUserId,
       );
 
       if (!recurringResult.success) {
@@ -63,7 +73,7 @@ export default async function SchedulePage() {
         dropoff: defaults.dropoff,
         scheduledFor,
       },
-      defaultUserId,
+      riderUserId,
     );
 
     if (!result.success) {

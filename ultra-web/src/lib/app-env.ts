@@ -44,9 +44,26 @@ export function getPasswordResetRedirectUrl(env: EnvLike = process.env): string 
   return `${getAppOrigin(env)}/auth/reset-password`;
 }
 
+export function isDemoModeEnabled(env: EnvLike = process.env): boolean {
+  if (env.ULTRA_ENABLE_DEMO_MODE === "true") {
+    return true;
+  }
+
+  if (env.ULTRA_ENABLE_DEMO_MODE === "false") {
+    return false;
+  }
+
+  return getDeploymentTarget(env) !== "local";
+}
+
+export function getConfiguredDemoRideId(env: EnvLike = process.env): string | null {
+  const rideId = env.ULTRA_DEMO_RIDE_ID?.trim();
+  return rideId ? rideId : null;
+}
+
 export function isExplicitLocalBypassEnabled(env: EnvLike = process.env): boolean {
   return (
-    getDeploymentTarget(env) === "local" &&
+    (getDeploymentTarget(env) === "local" || isDemoModeEnabled(env)) &&
     env.ULTRA_ENABLE_ADMIN_LIVE_MAP_DEV_BYPASS === "true"
   );
 }

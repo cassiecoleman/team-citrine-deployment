@@ -35,7 +35,11 @@ payment pages and Playwright payment specs:
 | `NEXT_PUBLIC_APP_URL` | Local dev URL (`http://localhost:3000`) or the Amplify-hosted app URL in deployed environments |
 | `AMPLIFY_APP_ORIGIN` | Optional explicit Amplify preview/prod origin override if `NEXT_PUBLIC_APP_URL` is not set by the hosting environment |
 | `AMPLIFY_PRODUCTION_BRANCH` | Branch Amplify should treat as production, usually `main` |
-| `ULTRA_ENABLE_ADMIN_LIVE_MAP_DEV_BYPASS` | Set to `true` only for local demo/dev runs that need the admin live map bypass |
+| `ULTRA_ENABLE_DEMO_MODE` | Optional override for demo behavior. Hosted builds default to demo mode; set to `false` to force strict non-demo behavior |
+| `ULTRA_ENABLE_ADMIN_LIVE_MAP_DEV_BYPASS` | Set to `true` when the admin live map should bypass admin auth and read seeded demo data directly |
+| `ULTRA_DEMO_RIDE_ID` | Seeded ride id used for the scripted rider/driver demo flow when a deployed demo needs a stable ride target |
+| `ULTRA_DEFAULT_USER_ID` | Optional seeded rider auth fallback for demo environments when no session cookie is available |
+| `ULTRA_DEFAULT_DRIVER_USER_ID` | Optional seeded driver auth fallback for demo environments when no driver session cookie is available |
 | `STRIPE_SECRET_KEY` | Stripe Dashboard > Developers > API keys > Secret key (test mode) |
 | `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Stripe Dashboard > Developers > API keys > Publishable key (test mode) |
 

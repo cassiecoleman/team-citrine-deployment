@@ -4,6 +4,7 @@ import {
   getDemoQueueRideId,
   setDemoRideStatus,
 } from "@/lib/demo-ride-state";
+import { getConfiguredDemoRideId } from "@/lib/app-env";
 import { mockDelay } from "@/lib/mock-delay";
 import { createServerAuthClient, createServiceRoleClient } from "@/lib/supabase-server";
 import { z } from "zod";
@@ -25,13 +26,13 @@ const shiftSummary: DriverShiftSummary = {
   completionRate: 99,
   todayTrips: 8,
   earningsToday: 142.5,
-  activeTripId: "new-ride",
+  activeTripId: getConfiguredDemoRideId() ?? "new-ride",
   pendingQueueCount: 3,
   nextBreakLabel: "Break window opens after 2 more trips",
 };
 
 const queuedTrip: TripAssignment = {
-  id: "new-ride",
+  id: getConfiguredDemoRideId() ?? "new-ride",
   riderName: "Aisha R.",
   pickupLabel: "Community Clinic",
   pickupAddress: "1150 West End Ave",
@@ -50,7 +51,7 @@ const queuedTrip: TripAssignment = {
 };
 
 const activeTrip: ActiveDriverTrip = {
-  id: "new-ride",
+  id: getConfiguredDemoRideId() ?? "new-ride",
   riderName: "Aisha R.",
   riderRating: 4.8,
   pickupLabel: queuedTrip.pickupLabel,
@@ -102,26 +103,7 @@ export async function getRuntimeDriverUserId(
     // Session not available (e.g. no cookies in this context)
   }
 
-  // 3. Fallback: first driver in DB (dev convenience)
-  const hasSupabaseConfig =
-    Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL) &&
-    Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY);
-  if (!hasSupabaseConfig) {
-    return undefined;
-  }
-
-  const supabase = createServiceRoleClient();
-  const fallbackDriverResult = await supabase
-    .from("drivers")
-    .select("user_id")
-    .order("created_at", { ascending: true })
-    .limit(1);
-
-  if (fallbackDriverResult.error || !fallbackDriverResult.data?.length) {
-    return undefined;
-  }
-
-  return fallbackDriverResult.data[0]?.user_id ?? undefined;
+  return undefined;
 }
 
 function resolveConfiguredDriverUserId(driverUserId?: string): string | undefined {

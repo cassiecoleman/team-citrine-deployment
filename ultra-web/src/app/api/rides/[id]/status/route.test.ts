@@ -30,6 +30,7 @@ describe("GET /api/rides/[id]/status", () => {
   beforeEach(() => {
     process.env.NEXT_PUBLIC_SUPABASE_URL = "http://localhost:54321";
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "anon-key";
+    delete process.env.ULTRA_DEMO_RIDE_ID;
     getUser.mockReset();
     getRideStatus.mockReset();
   });
@@ -49,26 +50,27 @@ describe("GET /api/rides/[id]/status", () => {
     expect(getRideStatus).not.toHaveBeenCalled();
   });
 
-  it("allows unauthenticated demo rides to return status for connected flow tests", async () => {
+  it("allows the configured unauthenticated demo ride to return status", async () => {
+    process.env.ULTRA_DEMO_RIDE_ID = "ride-demo-1";
     getUser.mockResolvedValue({
       data: { user: null },
       error: null,
     });
     getRideStatus.mockResolvedValue({
-      id: "new-ride",
+      id: "ride-demo-1",
       status: "driver_en_route",
     });
 
     const response = await GET(new Request("http://localhost"), {
-      params: Promise.resolve({ id: "new-ride" }),
+      params: Promise.resolve({ id: "ride-demo-1" }),
     });
 
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({
-      id: "new-ride",
+      id: "ride-demo-1",
       status: "driver_en_route",
     });
-    expect(getRideStatus).toHaveBeenCalledWith("new-ride");
+    expect(getRideStatus).toHaveBeenCalledWith("ride-demo-1");
   });
 
   it("returns ride status for authenticated users", async () => {

@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { getConfiguredDemoRideId } from "@/lib/app-env";
 import { getRideStatus } from "@/features/ride-tracking/actions";
 import type { Database } from "@/types/supabase";
 
@@ -9,8 +10,9 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
+  const configuredDemoRideId = getConfiguredDemoRideId();
   const userId = await getAuthenticatedUserId();
-  if (!userId && id !== "new-ride") {
+  if (!userId && configuredDemoRideId !== id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

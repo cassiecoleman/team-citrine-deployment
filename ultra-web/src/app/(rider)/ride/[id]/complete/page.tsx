@@ -1,5 +1,6 @@
 import { getRideCompletion } from "@/features/ride-completion/actions";
 import { RideCompletePage } from "@/features/ride-completion/components/RideCompletePage";
+import { getConfiguredDemoRideId, isDemoModeEnabled } from "@/lib/app-env";
 import { createServerAuthClient } from "@/lib/supabase-server";
 import { aishaPayment, mockDriver, mockReceipt } from "@/lib/mock-data";
 import type { RideCompletionData } from "@/types";
@@ -31,6 +32,9 @@ function getFallbackRideCompletionData(rideId: string): RideCompletionData {
 
 export default async function CompleteRidePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const configuredDemoRideId = getConfiguredDemoRideId();
+  const isDemoRide = configuredDemoRideId === id;
+  const allowDemoFallback = isDemoModeEnabled() && (isDemoRide || !configuredDemoRideId);
 
   // Get logged-in user from session, fall back to env var
   let riderUserId: string | undefined;
@@ -46,11 +50,17 @@ export default async function CompleteRidePage({ params }: { params: Promise<{ i
   let data: RideCompletionData;
 
   if (!riderUserId) {
+    if (!allowDemoFallback) {
+      throw new Error("Rider user id is required to load ride completion.");
+    }
     data = getFallbackRideCompletionData(id);
   } else {
     try {
       data = await getRideCompletion(id, riderUserId);
     } catch {
+      if (!allowDemoFallback) {
+        throw new Error(`Unable to load ride completion for ${id}.`);
+      }
       data = getFallbackRideCompletionData(id);
     }
   }
