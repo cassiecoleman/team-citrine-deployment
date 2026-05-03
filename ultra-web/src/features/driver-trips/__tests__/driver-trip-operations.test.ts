@@ -14,6 +14,7 @@ import {
   updateDriverLocation,
 } from "../actions";
 
+const mockGetUser = vi.fn();
 const mockSingle = vi.fn();
 const mockEq = vi.fn(() => ({ single: mockSingle }));
 const mockDriverLimit = vi.fn();
@@ -83,7 +84,7 @@ vi.mock("@/lib/supabase-server", () => ({
   createServiceRoleClient: () => ({ from: mockFrom }),
   createServerAuthClient: vi.fn(async () => ({
     auth: {
-      getUser: vi.fn(async () => ({ data: { user: null } })),
+      getUser: mockGetUser,
     },
   })),
 }));
@@ -108,6 +109,8 @@ describe("driver trip operations", () => {
     mockLocationSelect.mockReset();
     mockLocationUpsertSelect.mockReset();
     mockHistoryInsert.mockResolvedValue({ error: null });
+    mockGetUser.mockReset();
+    mockGetUser.mockResolvedValue({ data: { user: null }, error: null });
     // Default: no busy ride for the driver (.in(...).maybeSingle() path
     // in the new acceptTrip guard). Individual tests can override.
     mockRideMaybeSingle.mockResolvedValue({ data: null, error: null });
@@ -118,6 +121,21 @@ describe("driver trip operations", () => {
     mockRideSelectEq.mockClear();
     mockRideSelect.mockClear();
     mockFrom.mockClear();
+  });
+
+  it("prefers the authenticated session over demo driver fallbacks", async () => {
+    mockGetUser.mockResolvedValueOnce({
+      data: { user: { id: "auth-driver-1" } },
+      error: null,
+    });
+    mockSingle.mockResolvedValueOnce({
+      data: { id: "driver-1", user_id: "auth-driver-1" },
+      error: null,
+    });
+
+    const result = await getRuntimeDriverUserId();
+
+    expect(result).toBe("auth-driver-1");
   });
 
   it("accepts a matching trip, assigns the driver, and moves status to driver_en_route", async () => {

@@ -80,13 +80,12 @@ const activeTrip: ActiveDriverTrip = {
 export async function getRuntimeDriverUserId(
   driverUserId?: string,
 ): Promise<string | undefined> {
-  // 1. Explicit parameter or env var
-  const configuredDriverUserId = resolveConfiguredDriverUserId(driverUserId);
-  if (configuredDriverUserId) {
-    return configuredDriverUserId;
+  if (driverUserId) {
+    return driverUserId;
   }
 
-  // 2. Try logged-in session
+  // 1. Try logged-in session first so a real account always wins over
+  // any demo fallback configured for deployed demo mode.
   try {
     const authClient = await createServerAuthClient();
     const { data: { user } } = await authClient.auth.getUser();
@@ -104,6 +103,13 @@ export async function getRuntimeDriverUserId(
     }
   } catch {
     // Session not available (e.g. no cookies in this context)
+  }
+
+  // 2. Fall back to the configured demo driver only if there is no
+  // authenticated session.
+  const configuredDriverUserId = resolveConfiguredDriverUserId();
+  if (configuredDriverUserId) {
+    return configuredDriverUserId;
   }
 
   return undefined;

@@ -1,8 +1,33 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import { LocationEntryCard } from "@/features/location/components/LocationEntryCard";
+import { createServerAuthClient } from "@/lib/supabase-server";
+import { roleHomePaths } from "../../../middleware";
 
-export default function HomePage() {
+export default async function HomePage() {
+  const supabase = await createServerAuthClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const { data: roleData } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", user.id)
+    .is("deleted_at", null)
+    .single();
+
+  if (!roleData?.role) {
+    redirect("/login");
+  }
+
+  if (roleData.role !== "rider") {
+    redirect(roleHomePaths[roleData.role as keyof typeof roleHomePaths]);
+  }
+
   return (
     <div className="flex flex-col gap-4 p-4">
       {/* Map placeholder */}

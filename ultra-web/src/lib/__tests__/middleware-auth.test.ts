@@ -13,6 +13,7 @@ describe('middleware route guards', () => {
     expect(isPublicRoute('/login')).toBe(true)
     expect(isPublicRoute('/register')).toBe(true)
     expect(isPublicRoute('/book')).toBe(false)
+    expect(isPublicRoute('/')).toBe(false)
   })
 
   it('maps real app routes to the expected required role', () => {
