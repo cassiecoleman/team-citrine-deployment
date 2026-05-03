@@ -317,7 +317,7 @@ export async function acceptTrip(input: {
     return { success: false, error: "Unable to find the trip to accept." };
   }
 
-  if (currentRideResult.data.status !== "matching") {
+  if (currentRideResult.data.status !== "matching" && currentRideResult.data.status !== "requested") {
     return { success: false, error: "Trip is not available to accept." };
   }
 
@@ -873,7 +873,7 @@ export async function getMatchingQueue(
     .select(
       "id,pickup_address,dropoff_address,fare_estimate,estimated_duration_min,distance_miles,riders(name)",
     )
-    .eq("status", "matching")
+    .in("status", ["requested", "matching"])
     .order("requested_at", { ascending: true });
 
   if (ridesResult.error || !ridesResult.data) {

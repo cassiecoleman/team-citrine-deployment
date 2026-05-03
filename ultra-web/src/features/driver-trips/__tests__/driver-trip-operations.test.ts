@@ -29,7 +29,10 @@ const mockRideUpdateSelect = vi.fn(() => ({
 const mockRideUpdateEq = vi.fn(() => ({ eq: mockRideUpdateEq, select: mockRideUpdateSelect }));
 const mockRideUpdate = vi.fn(() => ({ eq: mockRideUpdateEq }));
 const mockRideMaybeSingle = vi.fn();
-const mockRideIn = vi.fn(() => ({ maybeSingle: mockRideMaybeSingle }));
+const mockRideIn = vi.fn(() => ({
+  maybeSingle: mockRideMaybeSingle,
+  order: mockRideOrder,
+}));
 const mockRideSelectSingle = vi.fn();
 const mockRideOrder = vi.fn();
 const mockRideSelectEq = vi.fn(() => ({
@@ -38,7 +41,11 @@ const mockRideSelectEq = vi.fn(() => ({
   single: mockRideSelectSingle,
   order: mockRideOrder,
 }));
-const mockRideSelect = vi.fn(() => ({ eq: mockRideSelectEq }));
+const mockRideSelect = vi.fn(() => ({
+  eq: mockRideSelectEq,
+  in: mockRideIn,
+  order: mockRideOrder,
+}));
 const mockDriverUpdateEq = vi.fn();
 const mockDriverUpdate = vi.fn(() => ({ eq: mockDriverUpdateEq }));
 const mockHistoryInsert = vi.fn();
@@ -159,6 +166,42 @@ describe("driver trip operations", () => {
         from_status: "matching",
         to_status: "driver_en_route",
         change_source: "driver",
+      }),
+    );
+  });
+
+  it("accepts a requested trip from the queue", async () => {
+    mockSingle.mockResolvedValueOnce({
+      data: { id: "driver-1" },
+      error: null,
+    });
+    mockRideSelectSingle.mockResolvedValueOnce({
+      data: { id: "ride-22", status: "requested", version: 3 },
+      error: null,
+    });
+    mockRideUpdateMaybeSingle.mockResolvedValueOnce({
+      data: { id: "ride-22", status: "driver_en_route", driver_id: "driver-1" },
+      error: null,
+    });
+
+    const result = await acceptTrip({
+      rideId: "ride-22",
+      driverUserId: "auth-user-1",
+    });
+
+    expect(result).toEqual({
+      success: true,
+      data: {
+        id: "ride-22",
+        status: "driver_en_route",
+        driverId: "driver-1",
+      },
+    });
+    expect(mockHistoryInsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        ride_id: "ride-22",
+        from_status: "requested",
+        to_status: "driver_en_route",
       }),
     );
   });
@@ -1348,7 +1391,7 @@ describe("driver trip operations", () => {
     });
   });
 
-  it("fetches pending assigned trips from matching rides", async () => {
+  it("fetches pending assigned trips from requested or matching rides", async () => {
     mockSingle.mockResolvedValueOnce({
       data: { id: "driver-1" },
       error: null,
@@ -1378,6 +1421,39 @@ describe("driver trip operations", () => {
     }
     expect(mockFrom).toHaveBeenCalledWith("drivers");
     expect(mockFrom).toHaveBeenCalledWith("rides");
+  });
+
+  it("includes requested rides in the driver queue", async () => {
+    mockSingle.mockResolvedValueOnce({
+      data: { id: "driver-1" },
+      error: null,
+    });
+    mockRideOrder.mockResolvedValueOnce({
+      data: [
+        {
+          id: "ride-requested-1",
+          pickup_address: "120 Main St",
+          dropoff_address: "City Hospital",
+          fare_estimate: 18.5,
+          estimated_duration_min: 16,
+          distance_miles: 5.2,
+          riders: { name: "Maya Brooks" },
+        },
+      ],
+      error: null,
+    });
+
+    const result = await getAssignedTrips("auth-user-1");
+
+    expect(result).toEqual({
+      success: true,
+      data: [
+        expect.objectContaining({
+          id: "ride-requested-1",
+          riderName: "Maya Brooks",
+        }),
+      ],
+    });
   });
 
   it("returns an empty assigned-trip list when no matching rides exist", async () => {
