@@ -3,10 +3,24 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import type { NextRequest, NextResponse } from 'next/server'
 import type { Database } from '@/types/supabase'
 
+function getRequiredEnvVar(name: string): string {
+  const value = process.env[name]
+  if (!value) {
+    console.error(`[supabase-server] Missing required environment variable: ${name}`, {
+      NEXT_PUBLIC_SUPABASE_URL: Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL),
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: Boolean(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY),
+      SUPABASE_SERVICE_ROLE_KEY: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY),
+    })
+    throw new Error(`Missing required environment variable: ${name}`)
+  }
+
+  return value
+}
+
 export function createServiceRoleClient() {
   return createClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    getRequiredEnvVar('NEXT_PUBLIC_SUPABASE_URL'),
+    getRequiredEnvVar('SUPABASE_SERVICE_ROLE_KEY'),
     {
       auth: {
         autoRefreshToken: false,
@@ -24,8 +38,8 @@ export async function createServerAuthClient() {
   const cookieStore = await cookies()
 
   return createServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    getRequiredEnvVar('NEXT_PUBLIC_SUPABASE_URL'),
+    getRequiredEnvVar('NEXT_PUBLIC_SUPABASE_ANON_KEY'),
     {
       cookies: {
         getAll() {
@@ -54,8 +68,8 @@ export function createMiddlewareAuthClient(
   response: NextResponse
 ) {
   return createServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    getRequiredEnvVar('NEXT_PUBLIC_SUPABASE_URL'),
+    getRequiredEnvVar('NEXT_PUBLIC_SUPABASE_ANON_KEY'),
     {
       cookies: {
         getAll() {
