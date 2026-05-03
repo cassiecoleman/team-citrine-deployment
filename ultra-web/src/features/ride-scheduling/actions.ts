@@ -107,6 +107,17 @@ interface MatchDriverOptions {
   timeoutMs?: number;
 }
 
+function formatDatabaseError(
+  prefix: string,
+  error?: { message?: string | null; details?: string | null; code?: string | null } | null,
+): string {
+  const parts = [error?.message, error?.details, error?.code].filter(Boolean);
+  if (!parts.length) {
+    return prefix;
+  }
+
+  return `${prefix} (${parts.join(" | ")})`;
+}
 
 async function cancelRideForMatchingTimeout(
   rideId: string,
@@ -196,7 +207,10 @@ export async function createRide(
   if (riderResult.error || !riderResult.data) {
     return {
       success: false,
-      error: "No rider profile found for this account.",
+      error: formatDatabaseError(
+        "No rider profile found for this account.",
+        riderResult.error,
+      ),
     };
   }
 
@@ -218,7 +232,10 @@ export async function createRide(
   if (rideResult.error || !rideResult.data) {
     return {
       success: false,
-      error: "Unable to request a ride right now.",
+      error: formatDatabaseError(
+        "Unable to request a ride right now.",
+        rideResult.error,
+      ),
     };
   }
 

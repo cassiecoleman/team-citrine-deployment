@@ -101,6 +101,33 @@ describe("ride scheduling actions", () => {
     );
   });
 
+  it("surfaces the underlying database error when ride creation fails", async () => {
+    mockSingle
+      .mockResolvedValueOnce({ data: { id: "rider-1" }, error: null })
+      .mockResolvedValueOnce({
+        data: null,
+        error: { message: "new row violates row-level security policy", code: "42501" },
+      });
+
+    const result = await createRide(
+      {
+        pickup: { lat: 35.1495, lng: -90.049, address: "123 Beale St, Memphis, TN" },
+        dropoff: {
+          lat: 35.1174,
+          lng: -89.9711,
+          address: "456 Elvis Presley Blvd, Memphis, TN",
+        },
+      },
+      "user-1",
+    );
+
+    expect(result).toEqual({
+      success: false,
+      error:
+        "Unable to request a ride right now. (new row violates row-level security policy | 42501)",
+    });
+  });
+
   it("rejects scheduled rides outside the 7-day booking window", async () => {
     const inEightDays = new Date();
     inEightDays.setDate(inEightDays.getDate() + 8);
