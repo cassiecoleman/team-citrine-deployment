@@ -9,6 +9,8 @@ import { createClient } from '@supabase/supabase-js'
 import { config } from 'dotenv'
 import { resolve } from 'path'
 
+import { ensureSeededDriverRows } from '../src/lib/seed-test-driver'
+
 config({ path: resolve(__dirname, '../.env.local') })
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -42,7 +44,24 @@ async function seedDriver() {
   const existingUser = existing?.users?.find((u) => u.email === DRIVER.email)
 
   if (existingUser) {
-    console.log(`  [skip] ${DRIVER.email} — already exists (${existingUser.id})`)
+    const repairResult = await ensureSeededDriverRows(supabase, existingUser.id, {
+      name: DRIVER.name,
+      phone: DRIVER.phone,
+      vehicle_make: DRIVER.vehicle_make,
+      vehicle_model: DRIVER.vehicle_model,
+      vehicle_year: DRIVER.vehicle_year,
+      vehicle_color: DRIVER.vehicle_color,
+      license_plate: DRIVER.license_plate,
+      is_child_safe: DRIVER.is_child_safe,
+      status: 'available',
+    })
+
+    if (!repairResult.success) {
+      console.error(`  [fail] ${repairResult.error}`)
+      return
+    }
+
+    console.log(`  [done] ${DRIVER.email} — existing auth user verified (${existingUser.id})`)
     console.log(`\nCredentials: ${DRIVER.email} / ${DRIVER.password}`)
     return
   }
@@ -63,40 +82,25 @@ async function seedDriver() {
   const userId = authData.user.id
   console.log(`  [done] Auth user created (${userId})`)
 
-  // Assign driver role
-  const { error: roleError } = await supabase
-    .from('user_roles')
-    .insert({ user_id: userId, role: 'driver' })
+  const repairResult = await ensureSeededDriverRows(supabase, userId, {
+    name: DRIVER.name,
+    phone: DRIVER.phone,
+    vehicle_make: DRIVER.vehicle_make,
+    vehicle_model: DRIVER.vehicle_model,
+    vehicle_year: DRIVER.vehicle_year,
+    vehicle_color: DRIVER.vehicle_color,
+    license_plate: DRIVER.license_plate,
+    is_child_safe: DRIVER.is_child_safe,
+    status: 'available',
+  })
 
-  if (roleError) {
-    console.error(`  [fail] Role insert — ${roleError.message}`)
-    await supabase.auth.admin.deleteUser(userId)
-    return
-  }
-  console.log(`  [done] Role assigned: driver`)
-
-  // Create drivers row
-  const { error: driverError } = await supabase
-    .from('drivers')
-    .insert({
-      user_id: userId,
-      name: DRIVER.name,
-      phone: DRIVER.phone,
-      vehicle_make: DRIVER.vehicle_make,
-      vehicle_model: DRIVER.vehicle_model,
-      vehicle_year: DRIVER.vehicle_year,
-      vehicle_color: DRIVER.vehicle_color,
-      license_plate: DRIVER.license_plate,
-      is_child_safe: DRIVER.is_child_safe,
-      status: 'available',
-    })
-
-  if (driverError) {
-    console.error(`  [fail] Driver row — ${driverError.message}`)
+  if (!repairResult.success) {
+    console.error(`  [fail] ${repairResult.error}`)
     await supabase.from('user_roles').delete().eq('user_id', userId)
     await supabase.auth.admin.deleteUser(userId)
     return
   }
+  console.log(`  [done] Role assigned: driver`)
   console.log(`  [done] Driver profile created: ${DRIVER.name}`)
 
   console.log(`\nDriver seeding complete.`)
