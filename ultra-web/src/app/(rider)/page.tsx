@@ -1,21 +1,10 @@
 import Link from "next/link";
-import dynamic from "next/dynamic";
 import { redirect } from "next/navigation";
 
 import { LocationEntryCard } from "@/features/location/components/LocationEntryCard";
-import { homeLocation, hospitalLocation } from "@/lib/mock-data";
 import { createServerAuthClient } from "@/lib/supabase-server";
 import { roleHomePaths } from "../../../middleware";
-
-const RideMap = dynamic(
-  () => import("@/features/maps/components/RideMap").then((mod) => mod.RideMap),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="h-48 w-full rounded-xl border border-border bg-primary-light" />
-    ),
-  },
-);
+import { HomeRideMap } from "./HomeRideMap";
 
 export default async function HomePage() {
   const supabase = await createServerAuthClient();
@@ -42,13 +31,7 @@ export default async function HomePage() {
 
   return (
     <div className="flex flex-col gap-4 p-4">
-      <div className="h-48">
-        <RideMap
-          pickup={homeLocation}
-          dropoff={hospitalLocation}
-          className="h-full w-full rounded-xl border border-border"
-        />
-      </div>
+      <HomeRideMap />
 
       <LocationEntryCard />
 

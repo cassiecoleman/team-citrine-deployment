@@ -1,0 +1,26 @@
+"use client";
+
+import dynamic from "next/dynamic";
+import { homeLocation, hospitalLocation } from "@/lib/mock-data";
+
+const RideMap = dynamic(
+  () => import("@/features/maps/components/RideMap").then((mod) => mod.RideMap),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-48 w-full rounded-xl border border-border bg-primary-light" />
+    ),
+  },
+);
+
+export function HomeRideMap() {
+  return (
+    <div className="h-48">
+      <RideMap
+        pickup={homeLocation}
+        dropoff={hospitalLocation}
+        className="h-full w-full rounded-xl border border-border"
+      />
+    </div>
+  );
+}
