@@ -41,9 +41,15 @@ npm run dev
 - `/book` — ride booking
 - `/book/split` — split-fare invite
 - `/book/split/confirm` — shared ride confirmation
+- `/book/schedule` — scheduled ride flow
+- `/ride/:id` — ride status / tracking
+- `/ride/:id/complete` — ride completion / tip / rating
 - `/passes` — ride pass dashboard
 - `/passes/review` — ride pass review
 - `/passes/active` — active pass details
+- `/profile/safety` — safety sharing settings
+- `/profile/notifications` — notification preferences
+- `/safety/trusted-drivers` — trusted drivers list
 - `/profile` — rider profile
 - `/receipt` — ride receipt
 
@@ -56,6 +62,15 @@ npm run dev
 
 Filesystem note:
 The driver pages are organized under `ultra-web/src/app/(driver)/...` to match the route-group structure described in the project documentation. The `(driver)` folder does not add a URL segment, so the local routes above stay the same.
+
+## Deployment
+
+- Live deployment URL:
+  - `https://feature-p6-amplify-ssr-deployment.d2krzs8ygbygso.amplifyapp.com`
+- Auto-deploy source:
+  - Repository: `https://github.com/cassiecoleman/team-citrine-deployment`
+  - Branch: `feature/p6-amplify-ssr-deployment`
+  - Deploys are triggered automatically on new commits pushed to that branch.
 
 ## Running tests
 
@@ -118,8 +133,3 @@ For Stripe payment testing in test mode, use:
 - Visa: `4242424242424242`
 - CVC: any 3 digits
 - Expiration: any future date
-
-## Notes
-
-- The driver screens are currently wireframes built inside the existing `ultra-web` app structure.
-- Shared rider navigation components were left in their original location to reduce merge conflicts with parallel wireframe work.
