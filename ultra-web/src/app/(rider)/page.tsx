@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { LocationEntryCard } from "@/features/location/components/LocationEntryCard";
 import { createServerAuthClient } from "@/lib/supabase-server";
 import { roleHomePaths } from "../../../middleware";
 import { HomeRideMap } from "./HomeRideMap";
@@ -33,8 +32,6 @@ export default async function HomePage() {
     <div className="flex flex-col gap-4 p-4">
       <HomeRideMap />
 
-      <LocationEntryCard />
-
       {/* Ride Pass banner */}
       <Link
         href="/passes"
@@ -64,7 +61,7 @@ export default async function HomePage() {
           <span>{"\uD83C\uDFE0"}</span>
           <div className="flex-1">
             <p className="text-sm font-medium">Home</p>
-            <p className="text-xs text-muted">742 Elm St</p>
+            <p className="text-xs text-muted">2145 Young Ave</p>
           </div>
           <span className="text-muted">{"\u2B50"}</span>
         </Link>
@@ -75,7 +72,7 @@ export default async function HomePage() {
           <span>{"\uD83C\uDFE2"}</span>
           <div className="flex-1">
             <p className="text-sm font-medium">Office</p>
-            <p className="text-xs text-muted">Downtown Office</p>
+            <p className="text-xs text-muted">i-Bank Tower</p>
           </div>
           <span className="text-muted">{"\u2B50"}</span>
         </Link>

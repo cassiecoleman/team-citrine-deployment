@@ -9,6 +9,7 @@ interface RideMapProps {
   dropoff: RoutePoint & { address: string };
   routeCoordinates?: RoutePoint[];
   driverLocation?: RoutePoint;
+  centerPoint?: RoutePoint;
   className?: string;
 }
 
@@ -17,11 +18,12 @@ export function RideMap({
   dropoff,
   routeCoordinates,
   driverLocation,
+  centerPoint,
   className,
 }: RideMapProps) {
   const center: [number, number] = [
-    (pickup.lat + dropoff.lat) / 2,
-    (pickup.lng + dropoff.lng) / 2,
+    (centerPoint?.lat ?? (pickup.lat + dropoff.lat) / 2),
+    (centerPoint?.lng ?? (pickup.lng + dropoff.lng) / 2),
   ];
 
   return (

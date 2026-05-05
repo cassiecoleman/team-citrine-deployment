@@ -16,15 +16,15 @@ import type {
 // --- Locations ---
 
 export const homeLocation: Location = {
-  lat: 40.7128,
-  lng: -74.006,
-  address: "742 Elm St (Home)",
+  lat: 35.1201,
+  lng: -89.9397,
+  address: "720 Alumni Ave",
 };
 
 export const officeLocation: Location = {
-  lat: 40.758,
-  lng: -73.9855,
-  address: "Downtown Office",
+  lat: 35.1132,
+  lng: -89.8929,
+  address: "i-Bank Tower",
 };
 
 export const hospitalLocation: Location = {
