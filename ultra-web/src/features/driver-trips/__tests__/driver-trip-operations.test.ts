@@ -1576,9 +1576,9 @@ describe("driver trip operations", () => {
     expect(result.data[0]?.riderName).toBe("Aisha R.");
     expect(result.data[1]).toMatchObject({
       riderName: "Rider",
-      offeredFare: 0,
-      estimatedTripTimeMin: 0,
-      mileageMi: 0,
+      offeredFare: 19,
+      estimatedTripTimeMin: 18,
+      mileageMi: 5.1,
     });
   });
 

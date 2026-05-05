@@ -912,6 +912,9 @@ export async function getMatchingQueue(
           : !Array.isArray(ride.riders) && ride.riders?.name
             ? ride.riders.name
             : "Rider";
+      const estimatedTripTimeMin = ride.estimated_duration_min ?? 18;
+      const mileageMi = ride.distance_miles ?? 5.1;
+      const pickupEtaMin = Math.max(3, Math.min(12, Math.round(estimatedTripTimeMin / 3)));
 
       return {
         id: ride.id,
@@ -920,10 +923,11 @@ export async function getMatchingQueue(
         pickupAddress: ride.pickup_address,
         dropoffLabel: "Dropoff",
         dropoffAddress: ride.dropoff_address,
-        offeredFare: ride.fare_final ?? ride.fare_estimate ?? queuedTrip.offeredFare,
-        estimatedTripTimeMin: ride.estimated_duration_min ?? 0,
-        mileageMi: ride.distance_miles ?? 0,
-        pickupEtaMin: 5,
+        // Keep queue fallback aligned with rider-side matching estimate defaults.
+        offeredFare: ride.fare_final ?? ride.fare_estimate ?? 19.0,
+        estimatedTripTimeMin,
+        mileageMi,
+        pickupEtaMin,
         note: "Driver assignment pending confirmation.",
         urgencyLabel: "Standard ride",
         accessibilityNotes: ["No additional accessibility notes."],
