@@ -19,26 +19,15 @@ export default async function DriverTripPage({
   const driverUserId = await getRuntimeDriverUserId();
 
   if (driverUserId) {
-    const acceptResult = await Promise.race<Awaited<ReturnType<typeof acceptTrip>>>([
-      acceptTrip({
+    const acceptResult = await acceptTrip({
+      rideId: id,
+      driverUserId,
+    });
+    if (!acceptResult.success) {
+      console.error("[DriverTripPage] acceptTrip failed", {
         rideId: id,
         driverUserId,
-      }),
-      new Promise<Awaited<ReturnType<typeof acceptTrip>>>((resolve) =>
-        setTimeout(
-          () =>
-            resolve({
-              success: false,
-              error: "Trip acceptance timed out.",
-            }),
-          1500,
-        ),
-      ),
-    ]);
-    if (!acceptResult.success) {
-      await setDemoRideStatusForDriverFlow({
-        rideId: id,
-        status: "driver_en_route",
+        error: acceptResult.error,
       });
     }
   } else {

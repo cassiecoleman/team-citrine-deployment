@@ -21,30 +21,18 @@ export default async function DriverPickupPage({
   let isPickupConfirmed = false;
 
   if (driverUserId && query.confirmed === "1") {
-    const result = await Promise.race([
-      confirmPickup({
-        rideId: id,
-        driverUserId,
-      }),
-      new Promise<Awaited<ReturnType<typeof confirmPickup>>>((resolve) =>
-        setTimeout(
-          () =>
-            resolve({
-              success: false,
-              error: "Pickup confirmation timed out.",
-            }),
-          1500,
-        ),
-      ),
-    ]);
+    const result = await confirmPickup({
+      rideId: id,
+      driverUserId,
+    });
     if (result.success) {
       isPickupConfirmed = true;
     } else {
-      await setDemoRideStatusForDriverFlow({
+      console.error("[DriverPickupPage] confirmPickup failed", {
         rideId: id,
-        status: "in_progress",
+        driverUserId,
+        error: result.error,
       });
-      isPickupConfirmed = true;
     }
   } else if (!driverUserId && query.confirmed === "1") {
     await setDemoRideStatusForDriverFlow({
