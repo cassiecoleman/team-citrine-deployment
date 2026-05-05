@@ -51,7 +51,16 @@ function buildDisplayAddress(entry: NominatimResult): string {
   if (road) {
     return road;
   }
-  return entry.display_name.split(",")[0]?.trim() || entry.display_name;
+  const parts = entry.display_name
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean);
+  const first = parts[0] ?? "";
+  const second = parts[1] ?? "";
+  if (/^\d+[a-zA-Z-]?$/.test(first) && second) {
+    return `${first} ${second}`;
+  }
+  return first || entry.display_name;
 }
 
 function scoreResult(
