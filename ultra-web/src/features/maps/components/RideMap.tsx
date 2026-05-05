@@ -1,6 +1,8 @@
 "use client";
 
+import { useEffect } from "react";
 import { MapContainer, TileLayer, CircleMarker, Popup, Polyline } from "react-leaflet";
+import { useMap } from "react-leaflet";
 import type { RoutePoint } from "../routing-provider";
 import "leaflet/dist/leaflet.css";
 
@@ -11,6 +13,37 @@ interface RideMapProps {
   driverLocation?: RoutePoint;
   centerPoint?: RoutePoint;
   className?: string;
+}
+
+function FitBoundsController({
+  pickup,
+  dropoff,
+  routeCoordinates,
+  driverLocation,
+}: {
+  pickup: RoutePoint;
+  dropoff: RoutePoint;
+  routeCoordinates?: RoutePoint[];
+  driverLocation?: RoutePoint;
+}) {
+  const map = useMap();
+
+  useEffect(() => {
+    const points =
+      routeCoordinates && routeCoordinates.length > 1
+        ? routeCoordinates
+        : [pickup, dropoff, ...(driverLocation ? [driverLocation] : [])];
+
+    if (points.length < 2) {
+      map.setView([pickup.lat, pickup.lng], 13);
+      return;
+    }
+
+    const bounds = points.map((point) => [point.lat, point.lng] as [number, number]);
+    map.fitBounds(bounds, { padding: [32, 32], maxZoom: 14 });
+  }, [driverLocation, dropoff, map, pickup, routeCoordinates]);
+
+  return null;
 }
 
 export function RideMap({
@@ -34,6 +67,12 @@ export function RideMap({
         scrollWheelZoom={false}
         className="h-full w-full rounded-xl"
       >
+        <FitBoundsController
+          pickup={pickup}
+          dropoff={dropoff}
+          routeCoordinates={routeCoordinates}
+          driverLocation={driverLocation}
+        />
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
