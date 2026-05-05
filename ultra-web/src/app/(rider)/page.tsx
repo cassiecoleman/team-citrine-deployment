@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { homeLocation } from "@/lib/mock-data";
 import { createServerAuthClient } from "@/lib/supabase-server";
 import { roleHomePaths } from "../../../middleware";
 import { HomeRideMap } from "./HomeRideMap";
@@ -45,7 +46,7 @@ export default async function HomePage() {
         <span className="text-lg">{"\u279C"}</span>
       </Link>
 
-      <WhereToCard />
+      <WhereToCard fromLat={homeLocation.lat} fromLng={homeLocation.lng} />
 
       {/* Saved locations */}
       <div className="space-y-2">

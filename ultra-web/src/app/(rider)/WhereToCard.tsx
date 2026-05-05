@@ -4,7 +4,13 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
 
-export function WhereToCard() {
+export function WhereToCard({
+  fromLat,
+  fromLng,
+}: {
+  fromLat: number;
+  fromLng: number;
+}) {
   const router = useRouter();
   const [destination, setDestination] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -22,9 +28,11 @@ export function WhereToCard() {
     setError(null);
 
     try {
-      const response = await fetch(`/api/geocode?q=${encodeURIComponent(query)}`, {
-        cache: "no-store",
-      });
+      const geocodeUrl = new URL("/api/geocode", window.location.origin);
+      geocodeUrl.searchParams.set("q", query);
+      geocodeUrl.searchParams.set("fromLat", String(fromLat));
+      geocodeUrl.searchParams.set("fromLng", String(fromLng));
+      const response = await fetch(geocodeUrl.toString(), { cache: "no-store" });
       if (!response.ok) {
         throw new Error("Geocode request failed");
       }
