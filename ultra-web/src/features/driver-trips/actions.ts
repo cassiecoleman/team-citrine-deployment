@@ -78,6 +78,14 @@ const activeTrip: ActiveDriverTrip = {
   destinationEtaMin: 18,
 };
 
+function getLocationLabelFromAddress(address: string, fallback: string): string {
+  const primarySegment = address.split(",")[0]?.trim();
+  if (!primarySegment) {
+    return fallback;
+  }
+  return primarySegment;
+}
+
 export async function getRuntimeDriverUserId(
   driverUserId?: string,
 ): Promise<string | undefined> {
@@ -230,9 +238,17 @@ export async function getActiveDriverTrip(
     ...activeTrip,
     id: rideResult.data.id,
     riderName,
+    pickupLabel: getLocationLabelFromAddress(
+      rideResult.data.pickup_address,
+      activeTrip.pickupLabel,
+    ),
     pickupAddress: rideResult.data.pickup_address,
     pickupLat: Number(rideResult.data.pickup_lat),
     pickupLng: Number(rideResult.data.pickup_lng),
+    dropoffLabel: getLocationLabelFromAddress(
+      rideResult.data.dropoff_address,
+      activeTrip.dropoffLabel,
+    ),
     dropoffAddress: rideResult.data.dropoff_address,
     dropoffLat: Number(rideResult.data.dropoff_lat),
     dropoffLng: Number(rideResult.data.dropoff_lng),
