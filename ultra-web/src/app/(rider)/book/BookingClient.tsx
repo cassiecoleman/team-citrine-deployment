@@ -1,12 +1,10 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { MapPin, CreditCard, Users, Calendar } from "lucide-react";
 import type { FareEstimate } from "@/features/fare-split/types";
-import { createGeocodingProvider } from "@/features/maps/geocoding-provider";
-import { createRoutingProvider } from "@/features/maps/routing-provider";
 import { formatCurrency } from "@/lib/utils";
 import type { Location } from "@/types";
 
@@ -48,14 +46,10 @@ export function BookingClient({
     requestRideAction,
     INITIAL_REQUEST_STATE,
   );
-  const [destinationQuery, setDestinationQuery] = useState("");
-  const [dropoff, setDropoff] = useState(initialDropoff);
-  const [distanceMi, setDistanceMi] = useState(estimate.distanceMi);
-  const [etaMin, setEtaMin] = useState(estimate.durationMin);
-  const [routeCoordinates, setRouteCoordinates] = useState<
-    Array<{ lat: number; lng: number }> | undefined
-  >(undefined);
-  const [searchError, setSearchError] = useState<string | null>(null);
+  const dropoff = initialDropoff;
+  const distanceMi = estimate.distanceMi;
+  const etaMin = estimate.durationMin;
+  const routeCoordinates: Array<{ lat: number; lng: number }> = [pickup, dropoff];
 
   useEffect(() => {
     if (requestState.error) {
@@ -67,51 +61,6 @@ export function BookingClient({
     }
   }, [dropoff, pickup, requestState.error]);
 
-  async function handleDestinationSearch() {
-    try {
-      const geocoder = createGeocodingProvider();
-      const router = createRoutingProvider();
-      const results = await geocoder.search(destinationQuery);
-      const topResult = results[0];
-
-      if (!topResult) {
-        setSearchError("No destination match found. Try a Memphis address.");
-        console.warn("[BookingClient] destination search returned no results", {
-          destinationQuery,
-        });
-        return;
-      }
-
-      setDropoff({
-        address: topResult.address,
-        lat: topResult.lat,
-        lng: topResult.lng,
-      });
-      setSearchError(null);
-
-      const route = await router.getRoute(
-        { lat: pickup.lat, lng: pickup.lng },
-        { lat: topResult.lat, lng: topResult.lng },
-      );
-
-      setRouteCoordinates(route.coordinates);
-      setDistanceMi(route.distanceMiles);
-
-      const etaFromMatrix = await router.getEtaMinutes(
-        { lat: pickup.lat, lng: pickup.lng },
-        { lat: topResult.lat, lng: topResult.lng },
-      );
-      setEtaMin(etaFromMatrix || route.durationMinutes);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Unknown error";
-      setSearchError("Destination lookup failed. Check the console for details.");
-      console.error("[BookingClient] destination search failed", {
-        destinationQuery,
-        error: message,
-      });
-    }
-  }
-
   return (
     <div className="flex flex-col gap-4 p-4">
       <div className="h-40">
@@ -119,6 +68,7 @@ export function BookingClient({
           pickup={pickup}
           dropoff={dropoff}
           routeCoordinates={routeCoordinates}
+          centerPoint={pickup}
           className="h-full w-full rounded-xl border border-border"
         />
       </div>
@@ -130,26 +80,6 @@ export function BookingClient({
           <MapPin size={16} className="text-success" />
           {pickup.address}
         </div>
-        <label className="text-xs text-muted" htmlFor="destination-search">
-          Destination
-        </label>
-        <div className="flex gap-2">
-          <input
-            id="destination-search"
-            value={destinationQuery}
-            onChange={(event) => setDestinationQuery(event.target.value)}
-            placeholder="Search destination"
-            className="flex-1 rounded-lg border border-border px-3 py-2 text-sm"
-          />
-          <button
-            type="button"
-            onClick={handleDestinationSearch}
-            className="rounded-lg border border-primary px-3 py-2 text-sm font-semibold text-primary"
-          >
-            Find destination
-          </button>
-        </div>
-        {searchError ? <p className="text-xs text-destructive">{searchError}</p> : null}
         <label className="text-xs text-muted">To:</label>
         <div className="flex items-center gap-2 rounded-lg border border-border px-4 py-2.5 text-sm">
           <MapPin size={16} className="text-primary" />

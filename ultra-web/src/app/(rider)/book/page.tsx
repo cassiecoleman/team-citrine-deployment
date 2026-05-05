@@ -5,12 +5,29 @@ import {
   getConfiguredDemoUserId,
 } from "@/lib/app-env";
 import { createServerAuthClient } from "@/lib/supabase-server";
-import { homeLocation, hospitalLocation } from "@/lib/mock-data";
+import { homeLocation, hospitalLocation, officeLocation } from "@/lib/mock-data";
 import { redirect } from "next/navigation";
 import { BookingClient, type BookingRequestState } from "./BookingClient";
 
-export default async function BookingPage() {
+const savedHomeDestination = {
+  lat: 35.1277,
+  lng: -89.9765,
+  address: "2145 Young Ave",
+};
+
+export default async function BookingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ to?: string }>;
+}) {
+  const query = await searchParams;
   const estimate = await getFareEstimate();
+  const selectedDropoff =
+    query.to === "home"
+      ? savedHomeDestination
+      : query.to === "hospital"
+        ? hospitalLocation
+        : officeLocation;
 
   async function requestRideAction(
     _prevState: BookingRequestState,
@@ -90,7 +107,7 @@ export default async function BookingPage() {
     <BookingClient
       estimate={estimate}
       pickup={homeLocation}
-      initialDropoff={hospitalLocation}
+      initialDropoff={selectedDropoff}
       requestRideAction={requestRideAction}
     />
   );

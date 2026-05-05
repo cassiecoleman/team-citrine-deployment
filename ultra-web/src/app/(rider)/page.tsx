@@ -46,7 +46,7 @@ export default async function HomePage() {
 
       {/* Where to? */}
       <Link
-        href="/book"
+        href="/book?to=office"
         className="rounded-xl border border-border px-4 py-3 text-muted text-sm"
       >
         {"\uD83D\uDD0D"} Where to?
@@ -55,7 +55,7 @@ export default async function HomePage() {
       {/* Saved locations */}
       <div className="space-y-2">
         <Link
-          href="/book"
+          href="/book?to=home"
           className="flex items-center gap-3 rounded-xl border border-border px-4 py-3"
         >
           <span>{"\uD83C\uDFE0"}</span>
@@ -66,7 +66,7 @@ export default async function HomePage() {
           <span className="text-muted">{"\u2B50"}</span>
         </Link>
         <Link
-          href="/book"
+          href="/book?to=office"
           className="flex items-center gap-3 rounded-xl border border-border px-4 py-3"
         >
           <span>{"\uD83C\uDFE2"}</span>

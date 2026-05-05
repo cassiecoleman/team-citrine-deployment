@@ -3,12 +3,6 @@
 import dynamic from "next/dynamic";
 import { homeLocation, officeLocation } from "@/lib/mock-data";
 
-const defaultHomeAddress = {
-  lat: 35.1277,
-  lng: -89.9765,
-  address: "2145 Young Ave",
-};
-
 const RideMap = dynamic(
   () => import("@/features/maps/components/RideMap").then((mod) => mod.RideMap),
   {
@@ -25,7 +19,7 @@ export function HomeRideMap() {
       <RideMap
         pickup={homeLocation}
         dropoff={officeLocation}
-        routeCoordinates={[homeLocation, defaultHomeAddress, officeLocation]}
+        routeCoordinates={[homeLocation, officeLocation]}
         centerPoint={homeLocation}
         className="h-full w-full rounded-xl border border-border"
       />
