@@ -128,7 +128,9 @@ describe("driver trip components", () => {
   });
 
   it("renders trip navigation details and the pickup transition route", () => {
-    const html = renderHtml(<TripNavigationView trip={activeTrip} />);
+    const html = renderHtml(
+      <TripNavigationView trip={activeTrip} rideStatus="driver_en_route" />,
+    );
 
     expect(html).toContain("En route to rider");
     expect(html).toContain("Turn-by-turn map preview");

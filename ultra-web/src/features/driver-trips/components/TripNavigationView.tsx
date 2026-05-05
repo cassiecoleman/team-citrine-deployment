@@ -20,8 +20,10 @@ const RideMap = dynamic(
 
 export function TripNavigationView({
   trip,
+  rideStatus,
 }: {
   trip: ActiveDriverTrip;
+  rideStatus: string;
 }) {
   const [completedChecks, setCompletedChecks] = useState<string[]>([]);
   const completedCount = completedChecks.length;
@@ -34,18 +36,25 @@ export function TripNavigationView({
     );
   }
 
+  const isInProgress = rideStatus === "in_progress";
+  const statusEyebrow = isInProgress ? "Driving to destination" : "En route to rider";
+  const statusHeadline = isInProgress
+    ? "Head to dropoff destination"
+    : trip.routeProgressLabel;
+  const statusDescription = isInProgress
+    ? `Drive ${trip.riderName} to ${trip.dropoffLabel}.`
+    : `${trip.pickupEtaMin} min to pickup for ${trip.riderName}`;
+
   return (
     <div className="flex flex-col gap-4">
       <section className="rounded-xl border border-border bg-primary-light p-4">
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-xs uppercase tracking-[0.2em] text-primary">
-              En route to rider
+              {statusEyebrow}
             </p>
-            <h2 className="mt-1 text-xl font-semibold">{trip.routeProgressLabel}</h2>
-            <p className="mt-1 text-sm text-muted">
-              {trip.pickupEtaMin} min to pickup for {trip.riderName}
-            </p>
+            <h2 className="mt-1 text-xl font-semibold">{statusHeadline}</h2>
+            <p className="mt-1 text-sm text-muted">{statusDescription}</p>
           </div>
           <span className="rounded-full bg-card px-3 py-1 text-xs font-semibold text-primary">
             {formatCurrency(trip.offeredFare)}
@@ -187,13 +196,15 @@ export function TripNavigationView({
         </ul>
       </section>
 
-      <a
-        href={`/trip/${trip.id}/pickup`}
-        aria-label="Advance to pickup confirmation"
-        className="rounded-xl bg-primary py-3 text-center text-sm font-semibold text-white"
-      >
-        Arrived at Pickup
-      </a>
+      {!isInProgress ? (
+        <a
+          href={`/trip/${trip.id}/pickup`}
+          aria-label="Advance to pickup confirmation"
+          className="rounded-xl bg-primary py-3 text-center text-sm font-semibold text-white"
+        >
+          Arrived at Pickup
+        </a>
+      ) : null}
     </div>
   );
 }

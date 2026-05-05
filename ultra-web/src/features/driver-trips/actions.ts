@@ -189,7 +189,7 @@ export async function getActiveDriverTrip(
   const rideResult = await supabase
     .from("rides")
     .select(
-      "id,pickup_address,pickup_lat,pickup_lng,dropoff_address,dropoff_lat,dropoff_lng,fare_estimate,distance_miles,driver_id,riders(name,phone)",
+      "id,pickup_address,pickup_lat,pickup_lng,dropoff_address,dropoff_lat,dropoff_lng,fare_estimate,fare_final,distance_miles,driver_id,riders(name,phone)",
     )
     .eq("id", id)
     .maybeSingle();
@@ -238,7 +238,10 @@ export async function getActiveDriverTrip(
     dropoffLng: Number(rideResult.data.dropoff_lng),
     driverLat,
     driverLng,
-    offeredFare: rideResult.data.fare_estimate ?? activeTrip.offeredFare,
+    offeredFare:
+      rideResult.data.fare_final ??
+      rideResult.data.fare_estimate ??
+      activeTrip.offeredFare,
     mileageMi: rideResult.data.distance_miles ?? activeTrip.mileageMi,
     riderPhone: riderPhone ?? activeTrip.riderPhone,
   };
@@ -891,7 +894,7 @@ export async function getMatchingQueue(
   const ridesResult = await supabase
     .from("rides")
     .select(
-      "id,pickup_address,dropoff_address,fare_estimate,estimated_duration_min,distance_miles,riders(name)",
+      "id,pickup_address,dropoff_address,fare_estimate,fare_final,estimated_duration_min,distance_miles,riders(name)",
     )
     .in("status", ["requested", "matching"])
     .order("requested_at", { ascending: true });
@@ -917,7 +920,7 @@ export async function getMatchingQueue(
         pickupAddress: ride.pickup_address,
         dropoffLabel: "Dropoff",
         dropoffAddress: ride.dropoff_address,
-        offeredFare: ride.fare_estimate ?? 0,
+        offeredFare: ride.fare_final ?? ride.fare_estimate ?? queuedTrip.offeredFare,
         estimatedTripTimeMin: ride.estimated_duration_min ?? 0,
         mileageMi: ride.distance_miles ?? 0,
         pickupEtaMin: 5,

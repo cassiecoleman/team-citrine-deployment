@@ -19,6 +19,14 @@ interface RideStatusRow {
         vehicle_model: string | null;
         license_plate: string | null;
       }
+    | Array<{
+        id: string;
+        name: string | null;
+        rating: number | null;
+        vehicle_make: string | null;
+        vehicle_model: string | null;
+        license_plate: string | null;
+      }>
     | null;
   pickup_lat: number;
   pickup_lng: number;
@@ -94,8 +102,20 @@ export async function getRideStatus(id: string): Promise<RideDetail> {
   }
 
   const row = rideResult.data as RideStatusRow;
+  const joinedDriver = Array.isArray(row.drivers) ? row.drivers[0] : row.drivers;
+  let resolvedDriver = joinedDriver;
+
+  if (row.driver_id && !resolvedDriver) {
+    const { data: driverRow } = await supabase
+      .from("drivers")
+      .select("id,name,rating,vehicle_make,vehicle_model,license_plate")
+      .eq("id", row.driver_id)
+      .maybeSingle();
+    resolvedDriver = driverRow;
+  }
+
   const status = normalizeRideStatus(row.status);
-  const driverVehicle = [row.drivers?.vehicle_make, row.drivers?.vehicle_model]
+  const driverVehicle = [resolvedDriver?.vehicle_make, resolvedDriver?.vehicle_model]
     .filter(Boolean)
     .join(" ");
 
@@ -119,10 +139,10 @@ export async function getRideStatus(id: string): Promise<RideDetail> {
       row.actual_duration_min ?? row.estimated_duration_min ?? fallbackRide.durationMin,
     driver: {
       id: row.driver_id ?? fallbackDriver.id,
-      name: row.drivers?.name ?? fallbackDriver.name,
-      rating: row.drivers?.rating ?? fallbackDriver.rating,
+      name: resolvedDriver?.name ?? fallbackDriver.name,
+      rating: resolvedDriver?.rating ?? fallbackDriver.rating,
       vehicle: driverVehicle || fallbackDriver.vehicle,
-      licensePlate: row.drivers?.license_plate ?? fallbackDriver.licensePlate,
+      licensePlate: resolvedDriver?.license_plate ?? fallbackDriver.licensePlate,
       etaMinutes: fallbackDriver.etaMinutes,
     },
     progressPercent: status === "matching" ? 0 : fallbackRide.progressPercent,

@@ -67,7 +67,7 @@ export default async function DriverTripPage({
 
   return (
     <div>
-      <TripNavigationView trip={trip} />
+      <TripNavigationView trip={trip} rideStatus={rideStatus} />
       <div className="px-4 pb-6">
         <SimulationButtons
           rideId={id}
