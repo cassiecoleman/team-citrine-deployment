@@ -6,7 +6,13 @@ export function AppHeader() {
   const router = useRouter();
   const pathname = usePathname();
   const isHome = pathname === "/";
-  const isDriverTripFlow = pathname.startsWith("/trip/");
+  const homePath = pathname.startsWith("/admin")
+    ? "/admin"
+    : pathname.startsWith("/driver") ||
+        pathname.startsWith("/queue") ||
+        pathname.startsWith("/trip/")
+      ? "/driver"
+      : "/";
 
   const titles: Record<string, string> = {
     "/": "Ultra",
@@ -34,16 +40,12 @@ export function AppHeader() {
   return (
     <header className="flex items-center justify-between px-4 py-3 border-b border-border bg-card">
       {isHome ? (
-        <button className="text-xl" aria-label="Menu">
-          &#9776;
-        </button>
-      ) : isDriverTripFlow ? (
         <div className="w-6" aria-hidden="true" />
       ) : (
         <button
-          onClick={() => router.back()}
+          onClick={() => router.push(homePath)}
           className="text-lg"
-          aria-label="Go back"
+          aria-label="Go to home"
         >
           &larr;
         </button>
