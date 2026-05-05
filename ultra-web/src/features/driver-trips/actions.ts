@@ -548,6 +548,18 @@ export async function confirmPickup(input: {
     return { success: false, error: "Trip is not assigned to this driver." };
   }
 
+  // Treat repeated pickup confirmation as success so the flow remains stable
+  // even if the same request is rendered more than once.
+  if (currentRideResult.data.status === "in_progress") {
+    return {
+      success: true,
+      data: {
+        id: currentRideResult.data.id,
+        status: "in_progress",
+      },
+    };
+  }
+
   if (
     currentRideResult.data.status !== "driver_en_route" &&
     currentRideResult.data.status !== "arrived"
