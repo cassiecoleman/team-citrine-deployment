@@ -23,8 +23,14 @@ export function WhereToCard() {
     setError(null);
 
     try {
-      const geocoder = createGeocodingProvider();
-      const results = await geocoder.search(query);
+      // Prefer live geocoding for free-form addresses.
+      const liveGeocoder = createGeocodingProvider("nominatim");
+      let results = await liveGeocoder.search(query);
+      if (!results.length) {
+        // Keep stub fallback for local/demo environments.
+        const stubGeocoder = createGeocodingProvider("stub");
+        results = await stubGeocoder.search(query);
+      }
       const topResult = results[0];
       if (!topResult) {
         setError("Destination not recognized. Try a full Memphis address.");
