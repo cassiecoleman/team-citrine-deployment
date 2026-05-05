@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
-import { createGeocodingProvider } from "@/features/maps/geocoding-provider";
 
 export function WhereToCard() {
   const router = useRouter();
@@ -23,15 +22,16 @@ export function WhereToCard() {
     setError(null);
 
     try {
-      // Prefer live geocoding for free-form addresses.
-      const liveGeocoder = createGeocodingProvider("nominatim");
-      let results = await liveGeocoder.search(query);
-      if (!results.length) {
-        // Keep stub fallback for local/demo environments.
-        const stubGeocoder = createGeocodingProvider("stub");
-        results = await stubGeocoder.search(query);
+      const response = await fetch(`/api/geocode?q=${encodeURIComponent(query)}`, {
+        cache: "no-store",
+      });
+      if (!response.ok) {
+        throw new Error("Geocode request failed");
       }
-      const topResult = results[0];
+      const payload = (await response.json()) as {
+        results?: Array<{ address: string; lat: number; lng: number }>;
+      };
+      const topResult = payload.results?.[0];
       if (!topResult) {
         setError("Destination not recognized. Try a full Memphis address.");
         return;
