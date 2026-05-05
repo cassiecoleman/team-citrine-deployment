@@ -24,6 +24,31 @@ export function useRideStatus({ rideId, initialRide }: UseRideStatusInput): {
   const [ride, setRide] = useState<RideDetail>(initialRide);
   const supabase = useMemo(() => createClient(), []);
 
+  const mergeRideFromPayload = (
+    payload: { status?: string; driver?: Partial<RideDetail["driver"]> | null },
+  ) => {
+    setRide((prev) => {
+      const previousDriver = prev.driver ?? initialRide.driver ?? mockDriver;
+      const nextStatus = buildRideViewModel(prev, { status: payload.status }).status;
+      const hasDriverUpdate = Boolean(payload.driver);
+
+      return {
+        ...prev,
+        status: nextStatus,
+        driver: hasDriverUpdate
+          ? {
+              ...previousDriver,
+              id: payload.driver?.id ?? previousDriver.id,
+              name: payload.driver?.name ?? previousDriver.name,
+              rating: payload.driver?.rating ?? previousDriver.rating,
+              vehicle: payload.driver?.vehicle ?? previousDriver.vehicle,
+              licensePlate: payload.driver?.licensePlate ?? previousDriver.licensePlate,
+            }
+          : prev.driver,
+      };
+    });
+  };
+
   useEffect(() => {
     let channel: ReturnType<typeof supabase.channel> | undefined;
     let reconnectTimer: ReturnType<typeof setTimeout> | undefined;
@@ -46,26 +71,12 @@ export function useRideStatus({ rideId, initialRide }: UseRideStatusInput): {
           cache: "no-store",
         });
         if (!response.ok) return;
-        const payload = await response.json();
-        if (payload.driver) {
-          setRide((prev) => {
-            const previousDriver = prev.driver ?? initialRide.driver ?? mockDriver;
-
-            return {
-              ...prev,
-              status: buildRideViewModel(prev, { status: payload.status }).status,
-              driver: {
-                ...previousDriver,
-                id: payload.driver.id ?? previousDriver.id,
-                name: payload.driver.name ?? previousDriver.name,
-                rating: payload.driver.rating ?? previousDriver.rating,
-                vehicle: payload.driver.vehicle ?? previousDriver.vehicle,
-                licensePlate: payload.driver.licensePlate ?? previousDriver.licensePlate,
-              },
-            };
-          });
-          return;
-        }
+        const payload = (await response.json()) as {
+          status?: string;
+          driver?: Partial<RideDetail["driver"]> | null;
+        };
+        mergeRideFromPayload(payload);
+        return;
       } catch {
         // fall through to simple status update
       }
@@ -113,21 +124,20 @@ export function useRideStatus({ rideId, initialRide }: UseRideStatusInput): {
 
     const syncStatus = async () => {
       try {
-        const response = await fetch(`/api/rides/${rideId}/status`, {
+        const response = await fetch(`/api/rides/${rideId}/status?full=1`, {
           cache: "no-store",
         });
         if (!response.ok) {
           return;
         }
-        const payload = (await response.json()) as { status?: string };
+        const payload = (await response.json()) as {
+          status?: string;
+          driver?: Partial<RideDetail["driver"]> | null;
+        };
         if (!isActive || !payload.status) {
           return;
         }
-        setRide((previousRide) =>
-          buildRideViewModel(previousRide, {
-            status: payload.status,
-          }),
-        );
+        mergeRideFromPayload(payload);
       } catch {
         // Ignore transient polling errors; realtime/debug updates still apply.
       }

@@ -25,7 +25,7 @@ export function InProgressTracker({ ride }: { ride: RideDetail }) {
   });
   const locationLabel = location
     ? `${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}`
-    : "Waiting for driver location...";
+    : null;
 
   return (
     <div className="flex flex-col gap-4 p-4">
@@ -42,11 +42,13 @@ export function InProgressTracker({ ride }: { ride: RideDetail }) {
           driverLocation={location ? { lat: location.lat, lng: location.lng } : undefined}
           className="h-full w-full rounded-xl border border-border"
         />
-        <div className="mt-2 flex items-center justify-center gap-2">
-          <MapPin className="text-muted" size={16} />
-          <p className="text-xs text-muted">Driver location</p>
-          <p className="text-sm font-semibold">{locationLabel}</p>
-        </div>
+        {locationLabel ? (
+          <div className="mt-2 flex items-center justify-center gap-2">
+            <MapPin className="text-muted" size={16} />
+            <p className="text-xs text-muted">Driver location</p>
+            <p className="text-sm font-semibold">{locationLabel}</p>
+          </div>
+        ) : null}
       </div>
 
       <div className="rounded-xl border border-border p-4">

@@ -118,6 +118,11 @@ export async function getRideStatus(id: string): Promise<RideDetail> {
   const driverVehicle = [resolvedDriver?.vehicle_make, resolvedDriver?.vehicle_model]
     .filter(Boolean)
     .join(" ");
+  const estimatedMinutes = row.estimated_duration_min ?? fallbackRide.durationMin;
+  const representativeEta =
+    status === "arrived"
+      ? 0
+      : Math.max(3, Math.min(20, Math.round(estimatedMinutes / 2)));
 
   return {
     id: row.id,
@@ -147,6 +152,6 @@ export async function getRideStatus(id: string): Promise<RideDetail> {
     },
     progressPercent: status === "matching" ? 0 : fallbackRide.progressPercent,
     distanceRemainingMi: fallbackRide.distanceRemainingMi,
-    etaMin: status === "arrived" ? 0 : fallbackRide.etaMin,
+    etaMin: representativeEta,
   };
 }

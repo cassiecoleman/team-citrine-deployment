@@ -196,7 +196,7 @@ export function TripNavigationView({
         </ul>
       </section>
 
-      {!isInProgress ? (
+      {rideStatus === "arrived" ? (
         <a
           href={`/trip/${trip.id}/pickup`}
           aria-label="Advance to pickup confirmation"
