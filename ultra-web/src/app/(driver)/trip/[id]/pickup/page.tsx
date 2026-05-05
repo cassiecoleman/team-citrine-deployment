@@ -7,6 +7,7 @@ import {
 } from "@/features/driver-trips/actions";
 import { PickupConfirmationCard } from "@/features/driver-trips/components/PickupConfirmationCard";
 import { SimulationButtons } from "@/features/driver-trips/components/SimulationButtons";
+import { redirect } from "next/navigation";
 
 export default async function DriverPickupPage({
   params,
@@ -18,15 +19,13 @@ export default async function DriverPickupPage({
   const { id } = await params;
   const query = await searchParams;
   const driverUserId = await getRuntimeDriverUserId();
-  let isPickupConfirmed = false;
-
   if (driverUserId && query.confirmed === "1") {
     const result = await confirmPickup({
       rideId: id,
       driverUserId,
     });
     if (result.success) {
-      isPickupConfirmed = true;
+      redirect(`/trip/${id}`);
     } else {
       console.error("[DriverPickupPage] confirmPickup failed", {
         rideId: id,
@@ -39,7 +38,7 @@ export default async function DriverPickupPage({
       rideId: id,
       status: "in_progress",
     });
-    isPickupConfirmed = true;
+    redirect(`/trip/${id}`);
   }
 
   const trip = await getActiveDriverTrip(id, driverUserId);
@@ -57,17 +56,15 @@ export default async function DriverPickupPage({
 
   return (
     <div>
-      <PickupConfirmationCard trip={trip} isPickupConfirmed={isPickupConfirmed} />
-      {isPickupConfirmed && (
-        <div className="px-4 pb-6">
-          <SimulationButtons
-            rideId={id}
-            rideStatus="in_progress"
-            arriveAction={handleNoOp}
-            completeAction={handleComplete}
-          />
-        </div>
-      )}
+      <PickupConfirmationCard trip={trip} />
+      <div className="px-4 pb-6">
+        <SimulationButtons
+          rideId={id}
+          rideStatus="arrived"
+          arriveAction={handleNoOp}
+          completeAction={handleComplete}
+        />
+      </div>
     </div>
   );
 }
