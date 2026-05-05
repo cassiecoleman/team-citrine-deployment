@@ -16,7 +16,7 @@ const driverTabs = [
   { label: "Shift", href: "/driver", icon: CarFront },
   { label: "Queue", href: "/queue", icon: ClipboardList },
   { label: "Trip", href: "/trip/new-ride", icon: Navigation },
-  { label: "Account", href: "/profile", icon: User },
+  { label: "Account", href: "/driver", icon: User },
 ] as const;
 
 function renderTabIcon(icon: (typeof riderTabs)[number]["icon"] | (typeof driverTabs)[number]["icon"]) {
