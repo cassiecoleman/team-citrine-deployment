@@ -27,7 +27,12 @@ const mockRideUpdateSelect = vi.fn(() => ({
   single: mockRideUpdateSingle,
   maybeSingle: mockRideUpdateMaybeSingle,
 }));
-const mockRideUpdateEq = vi.fn(() => ({ eq: mockRideUpdateEq, select: mockRideUpdateSelect }));
+const mockRideUpdateIn = vi.fn(() => ({ select: mockRideUpdateSelect }));
+const mockRideUpdateEq = vi.fn(() => ({
+  eq: mockRideUpdateEq,
+  in: mockRideUpdateIn,
+  select: mockRideUpdateSelect,
+}));
 const mockRideUpdate = vi.fn(() => ({ eq: mockRideUpdateEq }));
 const mockRideMaybeSingle = vi.fn();
 const mockRideIn = vi.fn(() => ({
@@ -95,6 +100,7 @@ describe("driver trip operations", () => {
     mockSingle.mockReset();
     mockRideUpdateSingle.mockReset();
     mockRideUpdateMaybeSingle.mockReset();
+    mockRideUpdateIn.mockReset();
     mockRideMaybeSingle.mockReset();
     mockRideSelectSingle.mockReset();
     mockRideOrder.mockReset();
@@ -176,7 +182,8 @@ describe("driver trip operations", () => {
     );
     expect(mockRideUpdateEq).toHaveBeenCalledWith("id", "ride-22");
     expect(mockRideUpdateEq).toHaveBeenCalledWith("version", 3);
-    expect(mockRideUpdateEq).toHaveBeenCalledWith("status", "matching");
+    expect(mockRideUpdateEq).not.toHaveBeenCalledWith("status", "matching");
+    expect(mockRideUpdateIn).toHaveBeenCalledWith("status", ["matching", "requested"]);
     expect(mockFrom).toHaveBeenCalledWith("ride_status_history");
     expect(mockHistoryInsert).toHaveBeenCalledWith(
       expect.objectContaining({

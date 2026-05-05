@@ -7,6 +7,7 @@ export interface DriverShiftSummary {
   todayTrips: number;
   earningsToday: number;
   activeTripId: string;
+  hasActiveTrip: boolean;
   pendingQueueCount: number;
   nextBreakLabel: string;
 }

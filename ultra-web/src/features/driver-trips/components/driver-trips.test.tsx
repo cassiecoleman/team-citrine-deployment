@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import { DriverShiftBoard } from "./DriverShiftBoard";
 import { PickupConfirmationCard } from "./PickupConfirmationCard";
+import { SimulationButtons } from "./SimulationButtons";
 import { TripAssignmentCard } from "./TripAssignmentCard";
 import { TripNavigationView } from "./TripNavigationView";
 import type {
@@ -39,6 +40,7 @@ const shiftSummary: DriverShiftSummary = {
   todayTrips: 8,
   earningsToday: 142.5,
   activeTripId: "new-ride",
+  hasActiveTrip: false,
   pendingQueueCount: 3,
   nextBreakLabel: "Break window opens after 2 more trips",
 };
@@ -99,7 +101,20 @@ describe("driver trip components", () => {
     expect(html).toContain("Queue waiting");
     expect(html).toContain("Break window opens after 2 more trips");
     expect(html).toContain('href="/queue"');
-    expect(html).toContain('href="/trip/new-ride"');
+    expect(html).not.toContain("Open Active Trip");
+    expect(html).not.toContain('href="/trip/new-ride"');
+  });
+
+  it("hides queue review when an active trip is present", () => {
+    const html = renderHtml(
+      <DriverShiftBoard
+        summary={{ ...shiftSummary, hasActiveTrip: true }}
+      />,
+    );
+
+    expect(html).not.toContain('href="/queue"');
+    expect(html).toContain("Open Active Trip");
+    expect(html).toContain("shadow-md");
   });
 
   it("renders assignment details, accessibility notes, and accept routing", () => {
@@ -130,5 +145,28 @@ describe("driver trip components", () => {
     expect(html).toContain("Identity check steps");
     expect(html).toContain("Confirm Pickup");
     expect(html).toContain('href="/trip/new-ride"');
+  });
+
+  it("only shows completion simulation when trip is in progress", () => {
+    const arrivedHtml = renderHtml(
+      <SimulationButtons
+        rideId="new-ride"
+        rideStatus="arrived"
+        arriveAction={async () => ({ success: true })}
+        completeAction={async () => ({ success: true })}
+      />,
+    );
+    const inProgressHtml = renderHtml(
+      <SimulationButtons
+        rideId="new-ride"
+        rideStatus="in_progress"
+        arriveAction={async () => ({ success: true })}
+        completeAction={async () => ({ success: true })}
+      />,
+    );
+
+    expect(arrivedHtml).toContain("Complete trip becomes available");
+    expect(arrivedHtml).not.toContain("Simulate Trip Completion");
+    expect(inProgressHtml).toContain("Simulate Trip Completion");
   });
 });

@@ -12,6 +12,7 @@ export function DriverShiftBoard({
   summary: DriverShiftSummary;
 }) {
   const isOnline = summary.status === "online";
+  const hasActiveTrip = summary.hasActiveTrip;
   const activeStatusLabel = isOnline
     ? "Available for the next assignment"
     : "Offline until the next dispatch window";
@@ -108,29 +109,35 @@ export function DriverShiftBoard({
               {isOnline ? "Go Offline" : "Go Online"}
             </button>
           </form>
-          <Link
-            href="/queue"
-            className="rounded-xl bg-primary px-4 py-3 text-center text-sm font-semibold text-white"
-          >
-            Review Queue
-          </Link>
-          <a
-            href={`/trip/${summary.activeTripId}`}
-            aria-label="Open active trip details"
-            className="rounded-xl border border-border px-4 py-3 text-center text-sm font-semibold"
-          >
-            Open Active Trip
-          </a>
+          {!hasActiveTrip ? (
+            <Link
+              href="/queue"
+              className="rounded-xl bg-primary px-4 py-3 text-center text-sm font-semibold text-white"
+            >
+              Review Queue
+            </Link>
+          ) : null}
+          {hasActiveTrip ? (
+            <a
+              href={`/trip/${summary.activeTripId}`}
+              aria-label="Open active trip details"
+              className="rounded-xl bg-primary px-4 py-3 text-center text-sm font-semibold text-white shadow-md shadow-primary/25"
+            >
+              Open Active Trip
+            </a>
+          ) : null}
         </div>
       </section>
 
-      <section className="rounded-xl border border-border bg-card p-4">
-        <p className="text-sm font-semibold">Active trip handoff</p>
-        <p className="mt-1 text-xs text-muted">
-          Current trip ID {summary.activeTripId} stays one tap away while you
-          review your shift.
-        </p>
-      </section>
+      {hasActiveTrip ? (
+        <section className="rounded-xl border border-border bg-card p-4">
+          <p className="text-sm font-semibold">Active trip handoff</p>
+          <p className="mt-1 text-xs text-muted">
+            Current trip ID {summary.activeTripId} stays one tap away while you
+            review your shift.
+          </p>
+        </section>
+      ) : null}
 
       <section className="rounded-xl border border-border bg-card p-4">
         <p className="text-sm font-semibold">Account</p>

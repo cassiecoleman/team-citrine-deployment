@@ -30,6 +30,7 @@ const shiftSummary: DriverShiftSummary = {
   todayTrips: 8,
   earningsToday: 142.5,
   activeTripId: getConfiguredDemoRideId() ?? "new-ride",
+  hasActiveTrip: false,
   pendingQueueCount: 3,
   nextBreakLabel: "Break window opens after 2 more trips",
 };
@@ -142,6 +143,7 @@ export async function getDriverShiftSummary(
     driverName: statusResult.data.driverName,
     status: statusResult.data.status === "offline" ? "offline" : "online",
     activeTripId: statusResult.data.activeTripId ?? shiftSummary.activeTripId,
+    hasActiveTrip: Boolean(statusResult.data.activeTripId),
     pendingQueueCount,
   };
 }
@@ -337,7 +339,7 @@ export async function acceptTrip(input: {
     })
     .eq("id", parsed.data.rideId)
     .eq("version", currentRideResult.data.version)
-    .eq("status", "matching")
+    .in("status", ["matching", "requested"])
     .select("id,status,driver_id")
     .maybeSingle();
 

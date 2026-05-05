@@ -59,7 +59,13 @@ export function SimulationButtons({
           {loading ? "Simulating..." : "⏩ Simulate Drive to Rider"}
         </button>
       )}
-      {(rideStatus === "arrived" || rideStatus === "in_progress") && (
+      {rideStatus === "arrived" && (
+        <p className="rounded bg-amber-50 p-2 text-xs text-amber-800">
+          Rider pickup is confirmed on the pickup screen. Complete trip becomes
+          available after pickup confirmation.
+        </p>
+      )}
+      {rideStatus === "in_progress" && (
         <button
           onClick={handleComplete}
           disabled={loading}
