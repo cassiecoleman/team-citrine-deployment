@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import { CarFront, ClipboardList, Navigation, User } from "lucide-react";
 
 const riderTabs = [
@@ -33,12 +34,53 @@ export function BottomTabs() {
     pathname === "/driver" ||
     pathname === "/queue" ||
     pathname.startsWith("/trip/");
+  const [driverTripHref, setDriverTripHref] = useState<string | null>("/trip/new-ride");
+  const [tripTabResolved, setTripTabResolved] = useState(false);
   const tabs = isDriverRoute ? driverTabs : riderTabs;
+
+  useEffect(() => {
+    if (!isDriverRoute) {
+      setTripTabResolved(false);
+      return;
+    }
+
+    let cancelled = false;
+    async function loadActiveTrip() {
+      try {
+        const response = await fetch("/api/driver/active-trip", {
+          cache: "no-store",
+        });
+        if (!response.ok) {
+          if (!cancelled) {
+            setDriverTripHref(null);
+            setTripTabResolved(true);
+          }
+          return;
+        }
+
+        const payload = (await response.json()) as { href?: string | null };
+        if (!cancelled) {
+          setDriverTripHref(payload.href ?? null);
+          setTripTabResolved(true);
+        }
+      } catch {
+        if (!cancelled) {
+          setDriverTripHref(null);
+          setTripTabResolved(true);
+        }
+      }
+    }
+
+    loadActiveTrip();
+    return () => {
+      cancelled = true;
+    };
+  }, [isDriverRoute, pathname]);
 
   function isActive(href: string) {
     if (href === "/driver") return pathname === "/driver";
     if (href === "/queue") return pathname === "/queue";
-    if (href === "/trip/new-ride") return pathname.startsWith("/trip/");
+    if (href.startsWith("/trip/")) return pathname.startsWith("/trip/");
     if (href === "/") return pathname === "/";
     return pathname.startsWith(href);
   }
@@ -46,12 +88,23 @@ export function BottomTabs() {
   return (
     <nav className="flex items-center justify-around border-t border-border bg-card py-2">
       {tabs.map((tab) => {
+        if (tab.label === "Trip" && isDriverRoute) {
+          if (!tripTabResolved || !driverTripHref) {
+            return null;
+          }
+        }
+
+        const href =
+          tab.label === "Trip" && isDriverRoute && driverTripHref
+            ? driverTripHref
+            : tab.href;
+
         return (
           <Link
-            key={tab.href}
-            href={tab.href}
+            key={`${tab.label}:${href}`}
+            href={href}
             className={`flex flex-col items-center gap-0.5 px-3 py-1 text-xs transition-colors ${
-              isActive(tab.href)
+              isActive(href)
                 ? "text-primary font-semibold"
                 : "text-muted hover:text-foreground"
             }`}

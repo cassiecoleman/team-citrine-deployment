@@ -6,6 +6,7 @@ export function AppHeader() {
   const router = useRouter();
   const pathname = usePathname();
   const isHome = pathname === "/";
+  const isDriverTripFlow = pathname.startsWith("/trip/");
 
   const titles: Record<string, string> = {
     "/": "Ultra",
@@ -36,6 +37,8 @@ export function AppHeader() {
         <button className="text-xl" aria-label="Menu">
           &#9776;
         </button>
+      ) : isDriverTripFlow ? (
+        <div className="w-6" aria-hidden="true" />
       ) : (
         <button
           onClick={() => router.back()}

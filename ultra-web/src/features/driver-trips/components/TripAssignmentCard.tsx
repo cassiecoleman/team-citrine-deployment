@@ -7,10 +7,8 @@ import type { TripAssignment } from "../types";
 
 export function TripAssignmentCard({
   assignment,
-  showRejectedNotice = false,
 }: {
   assignment: TripAssignment;
-  showRejectedNotice?: boolean;
 }) {
   return (
     <div className="flex flex-col gap-4">
@@ -89,44 +87,12 @@ export function TripAssignmentCard({
         </ul>
       </section>
 
-      {showRejectedNotice ? (
-        <section
-          aria-live="polite"
-          className="rounded-xl border border-border bg-card p-4"
-        >
-          <p className="text-sm font-semibold">Assignment declined</p>
-          <p className="mt-1 text-sm text-muted">
-            This is a front-end stub, so the same assignment stays available for
-            review until the next mock dispatch refresh.
-          </p>
-          <form action="/queue">
-            <button
-              type="submit"
-              className="mt-4 w-full rounded-xl border border-border py-3 text-sm font-semibold"
-            >
-              Review Next Request
-            </button>
-          </form>
-        </section>
-      ) : (
-        <div className="grid grid-cols-2 gap-3">
-          <form action="/queue">
-            <input type="hidden" name="rejected" value={assignment.id} />
-            <button
-              type="submit"
-              className="w-full rounded-xl border border-border py-3 text-sm font-semibold text-muted"
-            >
-              Reject
-            </button>
-          </form>
-          <Link
-            href={`/trip/${assignment.id}`}
-            className="rounded-xl bg-primary py-3 text-center text-sm font-semibold text-white"
-          >
-            Accept Trip
-          </Link>
-        </div>
-      )}
+      <Link
+        href={`/trip/${assignment.id}`}
+        className="rounded-xl bg-primary py-3 text-center text-sm font-semibold text-white"
+      >
+        Accept Trip
+      </Link>
     </div>
   );
 }

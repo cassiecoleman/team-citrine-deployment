@@ -123,7 +123,7 @@ describe("driver trip components", () => {
     expect(html).toContain("Incoming assignment");
     expect(html).toContain("Medical appointment");
     expect(html).toContain("Allow extra trunk room for a folded walker");
-    expect(html).toContain("Reject");
+    expect(html).not.toContain("Reject");
     expect(html).toContain('href="/trip/new-ride"');
   });
 
