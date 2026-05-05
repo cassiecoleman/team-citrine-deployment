@@ -18,16 +18,37 @@ const savedHomeDestination = {
 export default async function BookingPage({
   searchParams,
 }: {
-  searchParams: Promise<{ to?: string }>;
+  searchParams: Promise<{
+    to?: string;
+    address?: string;
+    lat?: string;
+    lng?: string;
+  }>;
 }) {
   const query = await searchParams;
   const estimate = await getFareEstimate();
+  const customLat = Number(query.lat);
+  const customLng = Number(query.lng);
+  const hasValidCustomCoordinates =
+    Number.isFinite(customLat) && Number.isFinite(customLng);
+  const customDestination =
+    query.to === "custom" &&
+    hasValidCustomCoordinates &&
+    typeof query.address === "string" &&
+    query.address.trim().length > 0
+      ? {
+          lat: customLat,
+          lng: customLng,
+          address: query.address.trim(),
+        }
+      : null;
   const selectedDropoff =
-    query.to === "home"
+    customDestination ??
+    (query.to === "home"
       ? savedHomeDestination
       : query.to === "hospital"
         ? hospitalLocation
-        : officeLocation;
+        : officeLocation);
 
   async function requestRideAction(
     _prevState: BookingRequestState,

@@ -34,6 +34,36 @@ export class StubGeocodingProvider {
       ];
     }
 
+    if (normalized.includes("720 alumni ave")) {
+      return [
+        {
+          address: "720 Alumni Ave, Memphis, TN 38152, USA",
+          lat: 35.1201,
+          lng: -89.9397,
+        },
+      ];
+    }
+
+    if (normalized.includes("2145 young ave")) {
+      return [
+        {
+          address: "2145 Young Ave, Memphis, TN 38104, USA",
+          lat: 35.1277,
+          lng: -89.9765,
+        },
+      ];
+    }
+
+    if (normalized.includes("5050 poplar ave") || normalized.includes("i-bank tower")) {
+      return [
+        {
+          address: "5050 Poplar Ave, Memphis, TN 38157, USA",
+          lat: 35.1132,
+          lng: -89.8929,
+        },
+      ];
+    }
+
     return [];
   }
 }

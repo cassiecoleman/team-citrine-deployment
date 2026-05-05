@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { createServerAuthClient } from "@/lib/supabase-server";
 import { roleHomePaths } from "../../../middleware";
 import { HomeRideMap } from "./HomeRideMap";
+import { WhereToCard } from "./WhereToCard";
 
 export default async function HomePage() {
   const supabase = await createServerAuthClient();
@@ -44,13 +45,7 @@ export default async function HomePage() {
         <span className="text-lg">{"\u279C"}</span>
       </Link>
 
-      {/* Where to? */}
-      <Link
-        href="/book?to=office"
-        className="rounded-xl border border-border px-4 py-3 text-muted text-sm"
-      >
-        {"\uD83D\uDD0D"} Where to?
-      </Link>
+      <WhereToCard />
 
       {/* Saved locations */}
       <div className="space-y-2">
