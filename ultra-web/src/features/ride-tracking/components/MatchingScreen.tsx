@@ -1,10 +1,38 @@
 "use client";
 
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Loader2, MapPin } from "lucide-react";
 import type { RideDetail } from "../types";
 import { formatCurrency } from "@/lib/utils";
 
 export function MatchingScreen({ ride }: { ride: RideDetail }) {
+  const router = useRouter();
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleCancelRequest() {
+    setIsCancelling(true);
+    setError(null);
+    try {
+      const response = await fetch(`/api/rides/${ride.id}/cancel`, {
+        method: "POST",
+      });
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => ({}))) as {
+          error?: string;
+        };
+        setError(payload.error ?? "Unable to cancel ride right now.");
+        return;
+      }
+      router.push("/");
+    } catch {
+      setError("Unable to cancel ride right now.");
+    } finally {
+      setIsCancelling(false);
+    }
+  }
+
   return (
     <div className="flex flex-col gap-4 p-4">
       <div className="flex flex-col items-center gap-4 py-8">
@@ -36,8 +64,18 @@ export function MatchingScreen({ ride }: { ride: RideDetail }) {
         </div>
       </div>
 
-      <button className="rounded-xl border border-border px-4 py-3 text-sm font-semibold">
-        Cancel Request
+      {error ? (
+        <p className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          {error}
+        </p>
+      ) : null}
+
+      <button
+        onClick={handleCancelRequest}
+        disabled={isCancelling}
+        className="rounded-xl border border-border px-4 py-3 text-sm font-semibold disabled:opacity-60"
+      >
+        {isCancelling ? "Cancelling..." : "Cancel Request"}
       </button>
     </div>
   );
