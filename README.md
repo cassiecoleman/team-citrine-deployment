@@ -72,6 +72,42 @@ The driver pages are organized under `ultra-web/src/app/(driver)/...` to match t
   - Branch: `feature/p6-amplify-ssr-deployment`
   - Deploys are triggered automatically on new commits pushed to that branch.
 
+## Infrastructure Overview
+
+### Runtime architecture
+
+- Frontend/app runtime:
+  - Next.js 16 (App Router) + React 19 + TypeScript in `ultra-web/`
+  - Server Components for page data loading, Client Components for interactive UI
+- Hosting/deployment:
+  - AWS Amplify Hosting (SSR-compatible build for Next.js)
+  - Branch-based CI/CD on `feature/p6-amplify-ssr-deployment`
+- Data/auth/backend:
+  - Supabase PostgreSQL for relational data (rides, drivers, riders, admin views)
+  - Supabase Auth for email/password login
+  - Supabase Realtime for live trip and driver-location updates
+- Payments:
+  - Stripe (test mode) for rider pass/payment flows
+
+### Environments
+
+- Local development:
+  - App runs via `npm run dev` in `ultra-web/`
+  - Config loaded from `ultra-web/.env.local`
+- AWS demo deployment ("production" for class demo):
+  - Built and served by Amplify
+  - Config injected from Amplify environment variables
+  - Uses the same Supabase/Stripe integration points with deployment-specific keys
+
+### Key infrastructure configuration
+
+- Core environment variables:
+  - Supabase: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_DB_URL`
+  - Stripe: `STRIPE_SECRET_KEY`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
+  - App/deploy flags may also be set in Amplify to control demo behavior.
+- Monorepo note:
+  - This repository contains project docs plus the deployable app under `ultra-web/`.
+
 ## Running tests
 
 From the `ultra-web` directory:
